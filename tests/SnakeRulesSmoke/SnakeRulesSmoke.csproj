@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Optimize>true</Optimize>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../Snake/SnakeGame.cs" Link="SnakeGame.cs" />
+    <Compile Include="../../Snake/SnakeSaveCodec.cs" Link="SnakeSaveCodec.cs" />
+    <Compile Include="../../Snake/SaveInterval.cs" Link="SaveInterval.cs" />
+    <Compile Include="../../Snake/SnakeSaveStore.cs" Link="SnakeSaveStore.cs" />
+  </ItemGroup>
+</Project>
