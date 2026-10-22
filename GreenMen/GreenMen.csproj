@@ -1,0 +1,10 @@
+<Project Sdk="DolphinDotNet.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="DolphinDotNet.GameCube" Version="$(DndPackageVersion)" />
+  </ItemGroup>
+</Project>
