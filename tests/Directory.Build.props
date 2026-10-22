@@ -1,0 +1,8 @@
+<Project>
+  <!-- Test projects intentionally do not import the root Directory.Build.props:
+       it includes Common/*.cs in every game, while host tests compile only
+       targeted sample sources and sometimes supply fake platform dependencies. -->
+  <PropertyGroup>
+    <DndPackageVersion>0.1.0-preview.15.1</DndPackageVersion>
+  </PropertyGroup>
+</Project>

@@ -181,3 +181,24 @@ records ManagedGameCube's complete frame and Start-button exit through a host
 backend, and executes AsyncNetworking against the DNS/HTTP fixture with normal
 and stressed GC. AudioDemo is compiled through AOT; GoogleLogoAram is compiled through AOT; its live relay and console
 network/ARAM operation need hardware testing.
+
+## Sample regression tests
+
+The sample-specific host tests from the original [DolphinDotNet repository](https://github.com/capz/DolphinDotNet) now live under [tests](tests).
+They cover gameplay and generated audio for Pong, Snake (including saves and card hotplug), Fox,
+GreenMen and Kart; Kart input/items/networking; DiscBrowser navigation; and shared
+network-download and memory-card-record helpers. The tests compile the corresponding
+sample source files directly and, where necessary, resolve `DolphinDotNet.Core`
+or `DolphinDotNet.GameCube` from the same pinned preview NuGet release.
+
+Run all sample behavior tests without the GameCube toolchain:
+
+```sh
+python3 ci/validate_sample_tests.py
+for project in tests/*/*.csproj; do dotnet run --project "$project" -c Release || exit 1; done
+```
+
+CI runs these tests separately from the fifteen managed sample builds.
+Compiler runtime, native GX, PowerPC, and emulator integration tests remain
+in the [DolphinDotNet runtime repository](https://github.com/capz/DolphinDotNet),
+where their internal native sources and fixtures are maintained.

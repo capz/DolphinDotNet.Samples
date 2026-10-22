@@ -29,3 +29,23 @@ jobs:
             dotnet build "$project" -c Release --no-restore -p:DndBuildNative=false
             echo "::endgroup::"
           done
+
+  sample-tests:
+    name: Test migrated sample behavior against NuGet
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Validate migrated tests and their sample links
+        run: python3 ci/validate_sample_tests.py
+      - name: Execute source-repository sample regression tests
+        run: |
+          set -euo pipefail
+          for project in tests/*/*.csproj; do
+            echo "::group::${project}"
+            dotnet run --project "$project" -c Release
+            echo "::endgroup::"
+          done
