@@ -22,7 +22,7 @@ def check(name: str, configuration: str, generated_c: Path) -> None:
     if not valid or not any(sizes[:7]):
         raise RuntimeError(f"{name}: DOL lacks valid executable sections")
     header = elf.read_bytes()[:20]
-    if len(header) < 20 or header[:6] != b"\\x7fELF\\x01\\x02" or header[18:20] != b"\\x00\\x14":
+    if len(header) < 20 or header[:6] != b"\x7fELF\x01\x02" or header[18:20] != b"\x00\x14":
         raise RuntimeError(f"{name}: expected a big-endian 32-bit PowerPC ELF")
     print(f"{name}: NuGet SDK AOT C, valid GameCube DOL and PowerPC ELF")
 

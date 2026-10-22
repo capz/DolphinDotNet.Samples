@@ -72,13 +72,13 @@ those shared defaults instead of forcing optimization in Debug.
 From the repository root, substitute any sample name from the table:
 
 ```powershell
-dotnet build Snake/Snake.sln -c Debug
-python3 ci/verify_aot.py Snake --configuration Debug --generated-c /tmp/Snake.c
+dotnet build Snake/Snake.sln -c Debug -p:DndBuildBackend=Docker
+$version = (Get-Content global.json | ConvertFrom-Json).'msbuild-sdks'.'DolphinDotNet.Sdk'
+dotnet "$HOME/.nuget/packages/dolphindotnet.sdk/$version/tools/compiler/DolphinDotNet.Compiler.dll" --aot Snake/bin/Debug/net8.0/Snake.dll Snake/snake-generated.c
+python3 ci/verify_aot.py Snake --configuration Debug --generated-c Snake/snake-generated.c
 ```
 
-The validator checks the DOL, PowerPC ELF, launcher, LF-only bundled shell script,
-matching map hashes and verified breakpoint addresses in the sample's own
-`Program.cs`. A successful build must produce these files together:
+The verifier checks that the published SDK's AOT compiler emitted the managed C entry point and that the native build produced a valid GameCube DOL and a 32-bit big-endian PowerPC ELF. Debug source maps remain produced by the SDK; the verifier does not validate their breakpoint hashes. Expected Debug build artifacts:
 
 ```text
 <sample>/bin/Debug/net8.0/<sample>.dol
