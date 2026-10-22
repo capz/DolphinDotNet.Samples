@@ -27,4 +27,13 @@ for path in projects:
     assert "DolphinDotNet.GameCube.csproj" not in source
     assert "DolphinDotNet.Core.csproj" not in source
     assert not re.search(r"\.\.\\\.\.\\src\\", source), str(sln)
-print(f"All {len(projects)} sample projects use NuGet preview {VERSION}.")
+# The required native matrix must explicitly cover all migrated applications.
+workflow = (ROOT / ".github/workflows/samples.yml").read_text()
+for group in ("basics", "games", "services"):
+    assert group in workflow, group
+for name in sorted(path.stem for path in projects):
+    assert name in workflow, f"{name} missing from packaged AOT build matrix"
+for condition in ("DND_AOT_COMPILER", " --aot ", "DndBuildNative=true",
+                  "DndBuildBackend=Docker", "verify_aot.py"):
+    assert condition in workflow, condition
+print(f"All {len(projects)} sample projects use NuGet preview {VERSION} and require native AOT CI.")

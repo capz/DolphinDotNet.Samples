@@ -131,6 +131,22 @@ This verifies compilation and debugger artifacts. Each sample still needs the
 controllers, storage, assets or services listed above; interactive Rider and
 physical console acceptance remain separate checks.
 
+## Required native AOT builds
+
+The [CI workflow](.github/workflows/samples.yml) validates all **15 sample projects** in independent NuGet-only builds. The native matrix additionally:
+
+1. Builds the managed .NET assembly and invokes the **published SDK's own `tools/compiler/DolphinDotNet.Compiler.dll --aot`** to emit and check native C.
+2. Uses the NuGet SDK's native build target (`DndBuildNative=true`, `DndBuildBackend=Docker`) to produce a linked GameCube `.dol` and PowerPC `.elf`.
+3. Verifies both outputs and uploads them as CI artifacts.
+
+A source checkout of the framework compiler is neither referenced nor used. For a local, complete native AOT build:
+
+```sh
+dotnet build Pong/Pong.csproj -c Release -p:DndBuildBackend=Docker
+```
+
+For a fast **managed-only** edit/build, explicitly pass `-p:DndBuildNative=false`; that alone does **not** prove GameCube AOT compatibility. SDK/API preview versions are pinned in `global.json` and `Directory.Build.props`. Running in Dolphin or on hardware is a separate verification step.
+
 ## Package-based builds
 
 The repository uses a versioned MSBuild SDK from NuGet and has **no** local source-project references. From its root:
@@ -141,7 +157,7 @@ dotnet build Pong/Pong.sln -c Release
 dotnet build Fox/Fox.sln -c Debug
 ```
 
-The first build restores the SDK/runtime packages, runs the managed C# compiler and builds the GameCube `.dol` with Docker or devkitPPC. The CI workflow builds the managed assemblies only (`-p:DndBuildNative=false`) to avoid requiring an emulator/toolchain for every PR.
+The first build restores the SDK/runtime packages, runs the managed C# compiler and builds the GameCube `.dol` with Docker or devkitPPC. CI compiles each sample using the compiler bundled in the published NuGet SDK and builds complete GameCube DOL/ELF binaries with the Docker-backed toolchain.
 
 To inspect the generated application without building a DOL, use `dotnet build Pong/Pong.sln -p:DndBuildNative=false`. To use a newer preview, update **both** `global.json` and the `DndPackageVersion` in `Directory.Build.props`.
 
