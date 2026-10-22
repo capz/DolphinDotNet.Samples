@@ -1,0 +1,31 @@
+name: Samples (NuGet preview)
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  managed-samples:
+    name: Build all managed samples against NuGet
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Validate standalone sample manifests
+        run: python3 ci/validate_samples.py
+      - name: Restore and compile all sample applications from published packages
+        run: |
+          set -euo pipefail
+          for project in */*.csproj; do
+            echo "::group::${project}"
+            dotnet restore "$project" --force
+            dotnet build "$project" -c Release --no-restore -p:DndBuildNative=false
+            echo "::endgroup::"
+          done

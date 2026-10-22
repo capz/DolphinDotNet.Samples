@@ -1,6 +1,6 @@
-# DolphinDotNet samples
+# DolphinDotNet Samples
 
-Run commands from the repository root. All examples target .NET 8 for compilation;
+Run commands from the repository root. These are independent NuGet consumers of [`DolphinDotNet.Sdk`](https://www.nuget.org/packages/DolphinDotNet.Sdk/) and [`DolphinDotNet.GameCube`](https://www.nuget.org/packages/DolphinDotNet.GameCube/). Both are pinned to preview `0.1.0-preview.15.1` in `global.json` and `Directory.Build.props`; the `DolphinDotNet.Core` dependency is resolved transitively. No checkout of the compiler/runtime repository is required. All examples target .NET 8 for compilation;
 the GameCube runs generated native code, using only the supported AOT API subset.
 
 | Sample | Demonstrates | Setup / result |
@@ -31,7 +31,7 @@ ManagedGameCube starts with statistics visible; the other samples start hidden.
 When a sample's managed Main finishes, the native launcher keeps its result
 screen open: Z still toggles statistics and **Start** exits. Async demos reach
 this screen after their operation completes or fails. Games retain their existing
-controls during play. The shared `samples/Directory.Build.props` enables this
+controls during play. The shared `Directory.Build.props` enables this
 behavior with `DndSampleControls`; set it to `false` to restore immediate exit.
 Applications outside `samples` keep their existing input and exit behavior.
 
@@ -40,7 +40,7 @@ Applications outside `samples` keep their existing input and exit behavior.
 Every sample has a solution named after its directory, such as
 [Snake/Snake.sln](Snake/Snake.sln) or [Pong/Pong.sln](Pong/Pong.sln).
 Install .NET 8, Dolphin, and Docker with Linux containers, or a native
-Linux/macOS devkitPPC/libogc2 toolchain; see [IDE setup](../docs/ide-workflow.md).
+Linux/macOS devkitPPC/libogc2 toolchain; see [IDE setup](https://github.com/capz/DolphinDotNet/blob/main/docs/ide-workflow.md).
 
 - **Visual Studio:** open the sample's `.sln`, select its executable as the
   startup project, choose **Dolphin Play**, and press **Ctrl+F5**.
@@ -51,11 +51,11 @@ Choose any sample directory name from the table for the CLI:
 
 ```sh
 sample=ManagedGameCube
-dotnet build "samples/$sample/$sample.sln" -c Release
-dotnet run --project "samples/$sample" -c Release --no-build
+dotnet build "$sample/$sample.sln" -c Release
+dotnet run --project "$sample" -c Release --no-build
 ```
 
-Build produces `samples/<sample>/bin/Release/net8.0/<sample>.dol` and the
+Build produces `<sample>/bin/Release/net8.0/<sample>.dol` and the
 matching `.elf`. Every real build regenerates and fully rebuilds native code.
 Omit `--no-build` to build and launch in one command. Each sample preserves its
 own Dolphin settings in `obj/dolphin-user/`. Configure controllers, storage and
@@ -72,7 +72,7 @@ those shared defaults instead of forcing optimization in Debug.
 From the repository root, substitute any sample name from the table:
 
 ```powershell
-dotnet build samples/Snake/Snake.sln -c Debug
+dotnet build Snake/Snake.sln -c Debug
 python scripts/validate_sample_build.py samples/Snake
 ```
 
@@ -81,10 +81,10 @@ matching map hashes and verified breakpoint addresses in the sample's own
 `Program.cs`. A successful build must produce these files together:
 
 ```text
-samples/<sample>/bin/Debug/net8.0/<sample>.dol
-samples/<sample>/bin/Debug/net8.0/<sample>.elf
-samples/<sample>/bin/Debug/net8.0/<sample>.dnd-debug.json
-samples/<sample>/bin/Debug/net8.0/<sample>.dnd-addresses.json
+<sample>/bin/Debug/net8.0/<sample>.dol
+<sample>/bin/Debug/net8.0/<sample>.elf
+<sample>/bin/Debug/net8.0/<sample>.dnd-debug.json
+<sample>/bin/Debug/net8.0/<sample>.dnd-addresses.json
 ```
 
 In Rider, open that sample's solution. Its existing **<sample> in Dolphin**
@@ -92,13 +92,13 @@ configuration now launches with GDB enabled and waits for Rider; **<sample> in
 Dolphin (wait for Rider)** is an equivalent alias. To play normally, select
 **<sample> in Dolphin (play without debugger)**. Debug **CLI** / project launches
 also wait on port 2166; Release CLI launches run normally. For debugging, install
-the [Rider attach plugin](../docs/rider-debugging.md),
+the [Rider attach plugin](https://github.com/capz/DolphinDotNet/blob/main/docs/rider-debugging.md),
 run **<sample> in Dolphin**, then choose **Run → Attach to DolphinDotNet…**. That launch creates
 the emulator's GDB settings automatically in a separate profile, prints their
 location, and waits for Rider at **127.0.0.1:2166**. No manual `Dolphin.ini` edit
 is needed. If the configuration is not imported, create a **.NET Launch Settings
 Profile** configuration for that sample's **Dolphin Debug** profile with a Build task.
-Choose `samples/<sample>/bin/Debug/net8.0` as its debug build folder, then save
+Choose `<sample>/bin/Debug/net8.0` as its debug build folder, then save
 and select a TCP target matching Dolphin's host and GDB port. When opening the
 sample's solution directly, the folder is `$PROJECT_DIR$/bin/Debug/net8.0`.
 Click **Attach** in the dialog. C# gutter breakpoints recognize DolphinDotNet SDK
@@ -108,7 +108,7 @@ Existing attach configurations remain supported for multilaunch setups.
 To build and validate every sample in PowerShell:
 
 ```powershell
-Get-ChildItem samples/*/*.sln | ForEach-Object {
+Get-ChildItem */*.sln | ForEach-Object {
     dotnet build $_.FullName -c Debug
     if ($LASTEXITCODE -ne 0) { throw "Build failed: $($_.Name)" }
 }
@@ -122,7 +122,7 @@ evaluated Debug/Release settings; it does not build native DOLs or boot Dolphin.
 The shared build fixes apply to every sample: Windows selects `docker.exe`, native
 cleanup handles read-only Git metadata and retains ownership on failure, emitted
 Bash scripts use LF, and full Windows PDB filenames survive native address mapping.
-See [build troubleshooting](../docs/ide-workflow.md) for restore errors and recovery
+See [build troubleshooting](https://github.com/capz/DolphinDotNet/blob/main/docs/ide-workflow.md) for restore errors and recovery
 from partial directories left by older drivers. Keep `obj/project.assets.json`
 when removing a partial `obj/Debug/net8.0/native` directory. `dotnet build` restores
 packages automatically. `DndDebugSymbols=false` is an explicit opt-out from maps.
@@ -131,28 +131,21 @@ This verifies compilation and debugger artifacts. Each sample still needs the
 controllers, storage, assets or services listed above; interactive Rider and
 physical console acceptance remain separate checks.
 
-## Manual bundle generation
+## Package-based builds
 
-For a standalone bundle, opt out of the integrated native build first:
-
-```sh
-dotnet build "samples/$sample/$sample.csproj" -c Release -p:DndBuildNative=false
-dotnet run --project tools/DolphinDotNet.Compiler -- \
-  --bundle "samples/$sample/bin/Release/net8.0/$sample.dll" "out/$sample" \
-  --platform gamecube
-make -C "out/$sample"
-```
-
-See the [standalone build guide](../docs/standalone-native-builds.md) for SDK
-dependencies. Load `out/<sample>/Game.dol` in Dolphin or on a GameCube.
-`sh scripts/compile-sample.sh` generates HelloGameCube's standalone bundle.
-
-To inspect generated C without the console SDK:
+The repository uses a versioned MSBuild SDK from NuGet and has **no** local source-project references. From its root:
 
 ```sh
-dotnet run --project tools/DolphinDotNet.Compiler -- \
-  --aot "samples/$sample/bin/Release/net8.0/$sample.dll" "out/$sample.c"
+dotnet restore Pong/Pong.sln
+dotnet build Pong/Pong.sln -c Release
+dotnet build Fox/Fox.sln -c Debug
 ```
+
+The first build restores the SDK/runtime packages, runs the managed C# compiler and builds the GameCube `.dol` with Docker or devkitPPC. The CI workflow builds the managed assemblies only (`-p:DndBuildNative=false`) to avoid requiring an emulator/toolchain for every PR.
+
+To inspect the generated application without building a DOL, use `dotnet build Pong/Pong.sln -p:DndBuildNative=false`. To use a newer preview, update **both** `global.json` and the `DndPackageVersion` in `Directory.Build.props`.
+
+For SDK and native toolchain documentation, see [NuGet SDK](https://github.com/capz/DolphinDotNet/blob/main/docs/nuget-sdk.md) and [standalone builds](https://github.com/capz/DolphinDotNet/blob/main/docs/standalone-native-builds.md).
 
 ## Async and platform APIs
 
@@ -161,7 +154,7 @@ use ordinary awaits; no `Scheduler.Pump` or `NetworkRuntime.Pump` calls are need
 Default pending awaits capture the current executor. `Task.Run` uses the background
 executor and `ConfigureAwait(false)` opts out of capturing the application executor.
 Managed execution remains serialized. Keep graphics/input work on the application
-executor; see the [async runtime contract](../docs/async-runtime.md).
+executor; see the [async runtime contract](https://github.com/capz/DolphinDotNet/blob/main/docs/async-runtime.md).
 
 Platform operations still need explicit initialization: networking samples await
 `NetworkRuntime.StartAsync`, and the ARAM sample initializes `Aram`. Resource owners
@@ -169,11 +162,11 @@ use `using` and networking stops in `finally`.
 
 These focused examples do not cover every feature. Models, animation, scene
 transforms, cameras and ARAM residency use the separate
-[model API](../docs/model-assets-runtime.md); the triangle intentionally uses
+[model API](https://github.com/capz/DolphinDotNet/blob/main/docs/model-assets-runtime.md); the triangle intentionally uses
 immediate rendering without an external model asset. ManagedGameCube enables the
-[performance overlay](../docs/debug-overlay.md) and displays
+[performance overlay](https://github.com/capz/DolphinDotNet/blob/main/docs/debug-overlay.md) and displays
 `csharp with dolphin dotnet` above the scene.
-Consult the [API inventory](../docs/dotnet-standard-status.md) before adding desktop
+Consult the [API inventory](https://github.com/capz/DolphinDotNet/blob/main/docs/dotnet-standard-status.md) before adding desktop
 .NET APIs: TLS, `ValueTask` and `System.Text.Json` are not supported.
 
 ## Networking setup and checks

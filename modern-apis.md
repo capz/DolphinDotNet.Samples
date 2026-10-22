@@ -33,4 +33,4 @@ real socket fixtures, and Dolphin boot/render/ISO acceptance. Host download test
 use real loopback HTTP but substitute graphics and ARAM; they do not establish
 physical BBA or DMA behavior. Physical hotplug, rumble/audio quality and two-console
 LAN play remain hardware acceptance. Model generation is reproducible from the
-original glTF source via `scripts/generate_sample_model.py --check`.
+original glTF source via [`generate_sample_model.py`](https://github.com/capz/DolphinDotNet/blob/main/scripts/generate_sample_model.py) (run from the framework repository).
