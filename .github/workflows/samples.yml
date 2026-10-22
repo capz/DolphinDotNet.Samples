@@ -46,9 +46,10 @@ jobs:
           set -euo pipefail
           for project in tests/*/*.csproj; do
             echo "::group::${project}"
-            if [[ "$project" == "tests/KartInputSmoke/KartInputSmoke.csproj" ]]; then
+            if [[ "$project" == "tests/KartInputSmoke/KartInputSmoke.csproj" ||
+                  "$project" == "tests/KartNetworkSmoke/KartNetworkSmoke.csproj" ]]; then
               # This test's Controller.Update() calls the AOT-only native input
-              # intrinsic. Run the host-ABI fixture in DolphinDotNet CI; validate
+              # intrinsics. Run their host-ABI fixtures in DolphinDotNet CI; validate
               # here that its migrated source compiles against the preview API.
               dotnet build "$project" -c Release
             else

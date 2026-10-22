@@ -198,6 +198,12 @@ python3 ci/validate_sample_tests.py
 for project in tests/*/*.csproj; do dotnet run --project "$project" -c Release || exit 1; done
 ```
 
+CI executes nine CLR-compatible host suites and verifies that the two AOT-native
+Kart input/networking harnesses compile against the preview package. The full Kart
+native-input and UDP fixtures must be run through the DolphinDotNet toolchain's
+emulator/host harness, since the published GameCube package rejects native
+intrinsics when executed under the desktop CLR.
+
 CI runs these tests separately from the fifteen managed sample builds.
 Compiler runtime, native GX, PowerPC, and emulator integration tests remain
 in the [DolphinDotNet runtime repository](https://github.com/capz/DolphinDotNet),
