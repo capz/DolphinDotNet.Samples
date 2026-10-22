@@ -57,3 +57,66 @@ jobs:
             fi
             echo "::endgroup::"
           done
+
+  native-aot:
+    name: Packaged AOT + GameCube DOL (${{ matrix.group }})
+    needs: managed-samples
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [basics, games, services]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Locate compiler inside published DolphinDotNet.Sdk NuGet package
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 ci/validate_samples.py
+          version=$(python3 -c 'import json; print(json.load(open("global.json"))["msbuild-sdks"]["DolphinDotNet.Sdk"])')
+          dotnet restore HelloGameCube/HelloGameCube.csproj
+          compiler="$HOME/.nuget/packages/dolphindotnet.sdk/$version/tools/compiler/DolphinDotNet.Compiler.dll"
+          test -s "$compiler"
+          echo "DND_AOT_COMPILER=$compiler" >> "$GITHUB_ENV"
+          echo "Using the compiler from published NuGet package: $compiler"
+          docker info >/dev/null
+      - name: Compile and AOT-link all samples into native GameCube DOLs
+        shell: bash
+        env:
+          SAMPLE_GROUP: ${{ matrix.group }}
+        run: |
+          set -euo pipefail
+          case "$SAMPLE_GROUP" in
+            basics) samples="HelloGameCube ManagedGameCube ShaderDemo Pong GreenMen" ;;
+            games) samples="Fox Kart Snake DiscBrowser StorageIntegrity" ;;
+            services) samples="AsyncNetworking AudioDemo GoogleLogoAram HttpTexture HardwareDiagnostics" ;;
+            *) echo "Unexpected sample group $SAMPLE_GROUP" >&2; exit 1 ;;
+          esac
+          mkdir -p "$RUNNER_TEMP/dnd-aot"
+          for sample in $samples; do
+            echo "::group::$sample: managed build and explicit NuGet SDK compiler --aot"
+            dotnet restore "$sample/$sample.csproj"
+            dotnet build "$sample/$sample.csproj" -c Release --no-restore -p:DndBuildNative=false
+            assembly="$sample/bin/Release/net8.0/$sample.dll"
+            test -s "$assembly"
+            dotnet "$DND_AOT_COMPILER" --aot "$assembly" "$RUNNER_TEMP/dnd-aot/$sample.c"
+            test -s "$RUNNER_TEMP/dnd-aot/$sample.c"
+            echo "::endgroup::"
+            echo "::group::$sample: packaged SDK native devkitPPC/Docker output"
+            dotnet build "$sample/$sample.csproj" -c Release --no-restore -p:DndBuildNative=true -p:DndBuildBackend=Docker
+            python3 ci/verify_aot.py "$sample" --configuration Release --generated-c "$RUNNER_TEMP/dnd-aot/$sample.c"
+            echo "::endgroup::"
+          done
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: dol-and-elf-${{ matrix.group }}
+          path: |
+            */bin/Release/net8.0/*.dol
+            */bin/Release/net8.0/*.elf
+          if-no-files-found: error
+          retention-days: 14
