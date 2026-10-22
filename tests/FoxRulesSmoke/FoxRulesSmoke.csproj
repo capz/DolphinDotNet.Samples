@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0</TargetFramework><Nullable>enable</Nullable><Optimize>true</Optimize></PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="DolphinDotNet.Core" Version="$(DndPackageVersion)" />
+    <Compile Include="../../Fox/FoxGame.cs" Link="FoxGame.cs" />
+    <Compile Include="../../Fox/FoxWaveforms.cs" Link="FoxWaveforms.cs" />
+  </ItemGroup>
+</Project>

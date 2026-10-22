@@ -29,3 +29,31 @@ jobs:
             dotnet build "$project" -c Release --no-restore -p:DndBuildNative=false
             echo "::endgroup::"
           done
+
+  sample-tests:
+    name: Test migrated sample behavior against NuGet
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Validate migrated tests and their sample links
+        run: python3 ci/validate_sample_tests.py
+      - name: Execute source-repository sample regression tests
+        run: |
+          set -euo pipefail
+          for project in tests/*/*.csproj; do
+            echo "::group::${project}"
+            if [[ "$project" == "tests/KartInputSmoke/KartInputSmoke.csproj" ||
+                  "$project" == "tests/KartNetworkSmoke/KartNetworkSmoke.csproj" ]]; then
+              # This test's Controller.Update() calls the AOT-only native input
+              # intrinsics. Run their host-ABI fixtures in DolphinDotNet CI; validate
+              # here that its migrated source compiles against the preview API.
+              dotnet build "$project" -c Release
+            else
+              dotnet run --project "$project" -c Release
+            fi
+            echo "::endgroup::"
+          done

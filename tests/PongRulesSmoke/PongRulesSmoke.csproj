@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Optimize>true</Optimize>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="DolphinDotNet.Core" Version="$(DndPackageVersion)" />
+    <Compile Include="../../Pong/PongGame.cs" Link="PongGame.cs" />
+    <Compile Include="../../Pong/PongWaveforms.cs" Link="PongWaveforms.cs" />
+  </ItemGroup>
+</Project>
