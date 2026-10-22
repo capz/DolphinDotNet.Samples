@@ -73,7 +73,7 @@ From the repository root, substitute any sample name from the table:
 
 ```powershell
 dotnet build Snake/Snake.sln -c Debug
-python scripts/validate_sample_build.py samples/Snake
+python3 ci/verify_aot.py Snake --configuration Debug --generated-c /tmp/Snake.c
 ```
 
 The validator checks the DOL, PowerPC ELF, launcher, LF-only bundled shell script,
@@ -112,12 +112,10 @@ Get-ChildItem */*.sln | ForEach-Object {
     dotnet build $_.FullName -c Debug
     if ($LASTEXITCODE -ne 0) { throw "Build failed: $($_.Name)" }
 }
-python scripts/validate_sample_build.py
+python3 ci/verify_aot.py
 ```
 
-Run this validation locally after native sample builds. Windows/macOS CI builds
-the managed sample solutions and verifies their SDK imports, launch targets and
-evaluated Debug/Release settings; it does not build native DOLs or boot Dolphin.
+Run this validation locally after native sample builds. The independent Ubuntu CI matrix builds native DOLs via the published NuGet SDK for every sample, checks ELF architecture and DOL sections, and stores build artifacts; it does not boot Dolphin or verify physical hardware.
 
 The shared build fixes apply to every sample: Windows selects `docker.exe`, native
 cleanup handles read-only Git metadata and retains ownership on failure, emitted
@@ -131,6 +129,19 @@ This verifies compilation and debugger artifacts. Each sample still needs the
 controllers, storage, assets or services listed above; interactive Rider and
 physical console acceptance remain separate checks.
 
+## Required AOT verification
+
+The [NuGet SDK AOT workflow](.github/workflows/aot-build.yml) builds all 15 samples using **only NuGet packages**. Its two stages are intentional:
+
+1. Compile managed C# with native building disabled, then invoke the **published SDK's bundled `DolphinDotNet.Compiler.dll --aot`** and verify generated C.
+2. Build each project with `DndBuildNative=true` and `DndBuildBackend=Docker`; validate the resulting PowerPC ELF and GameCube DOL.
+
+The SDK and GameCube API versions are pinned centrally in `global.json` and `Directory.Build.props`. No compiler checkout or project references to `DolphinDotNet` are required. Full hardware and emulator runtime behavior is a separate test.
+
+```sh
+dotnet build Pong/Pong.csproj -c Release -p:DndBuildBackend=Docker
+```
+
 ## Package-based builds
 
 The repository uses a versioned MSBuild SDK from NuGet and has **no** local source-project references. From its root:
@@ -141,7 +152,7 @@ dotnet build Pong/Pong.sln -c Release
 dotnet build Fox/Fox.sln -c Debug
 ```
 
-The first build restores the SDK/runtime packages, runs the managed C# compiler and builds the GameCube `.dol` with Docker or devkitPPC. The CI workflow builds the managed assemblies only (`-p:DndBuildNative=false`) to avoid requiring an emulator/toolchain for every PR.
+The first build restores the SDK/runtime packages, runs the managed C# compiler and builds the GameCube `.dol` with Docker or devkitPPC. CI first compiles every example using the compiler DLL from the published SDK package, then performs a complete native Docker-backed GameCube build for **all 15** examples. It verifies the generated C, PowerPC ELF and GameCube DOL and publishes the DOL/ELF binaries as workflow artifacts. No source-tree compiler is used.
 
 To inspect the generated application without building a DOL, use `dotnet build Pong/Pong.sln -p:DndBuildNative=false`. To use a newer preview, update **both** `global.json` and the `DndPackageVersion` in `Directory.Build.props`.
 

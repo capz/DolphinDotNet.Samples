@@ -1,0 +1,88 @@
+name: NuGet SDK AOT GameCube samples
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-projects:
+    name: Verify standalone package consumers
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Assert all examples are independent NuGet SDK consumers
+        run: python3 ci/validate_samples.py
+      - name: Restore published NuGet preview SDK and API packages
+        run: dotnet restore Pong/Pong.csproj
+
+  native-aot:
+    name: AOT DOL builds (${{ matrix.group }})
+    needs: validate-projects
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [basics, games, services]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Verify published SDK/compiler without framework repository checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 ci/validate_samples.py
+          version=$(python3 -c 'import json; print(json.load(open("global.json"))["msbuild-sdks"]["DolphinDotNet.Sdk"])')
+          dotnet restore HelloGameCube/HelloGameCube.csproj
+          compiler="$HOME/.nuget/packages/dolphindotnet.sdk/$version/tools/compiler/DolphinDotNet.Compiler.dll"
+          test -s "$compiler"
+          echo "DND_AOT_COMPILER=$compiler" >> "$GITHUB_ENV"
+          echo "Using the published NuGet SDK compiler at $compiler"
+          docker info >/dev/null
+      - name: Build, AOT-lower, link and validate every sample in this group
+        shell: bash
+        env:
+          SAMPLE_GROUP: ${{ matrix.group }}
+        run: |
+          set -euo pipefail
+          case "$SAMPLE_GROUP" in
+            basics) samples="HelloGameCube ManagedGameCube ShaderDemo Pong GreenMen" ;;
+            games) samples="Fox Kart Snake DiscBrowser StorageIntegrity" ;;
+            services) samples="AsyncNetworking AudioDemo GoogleLogoAram HttpTexture HardwareDiagnostics" ;;
+            *) echo "Unknown matrix group $SAMPLE_GROUP" >&2; exit 1 ;;
+          esac
+          mkdir -p "$RUNNER_TEMP/dnd-aot"
+          for sample in $samples; do
+            echo "::group::$sample - packaged SDK managed build and explicit CIL-to-C AOT"
+            dotnet restore "$sample/$sample.csproj"
+            dotnet build "$sample/$sample.csproj" --no-restore -c Release -p:DndBuildNative=false
+            dll="$sample/bin/Release/net8.0/$sample.dll"
+            test -s "$dll"
+            dotnet "$DND_AOT_COMPILER" --aot "$dll" "$RUNNER_TEMP/dnd-aot/$sample.c"
+            test -s "$RUNNER_TEMP/dnd-aot/$sample.c"
+            echo "::endgroup::"
+            echo "::group::$sample - packaged SDK native GameCube build"
+            dotnet build "$sample/$sample.csproj" --no-restore -c Release -p:DndBuildNative=true -p:DndBuildBackend=Docker
+            python3 ci/verify_aot.py "$sample" --configuration Release --generated-c "$RUNNER_TEMP/dnd-aot/$sample.c"
+            echo "::endgroup::"
+          done
+      - name: Collect successful GameCube DOL binaries
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gamecube-dols-${{ matrix.group }}
+          path: |
+            */bin/Release/net8.0/*.dol
+            */bin/Release/net8.0/*.elf
+          if-no-files-found: error
+          retention-days: 14

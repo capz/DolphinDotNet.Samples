@@ -27,4 +27,13 @@ for path in projects:
     assert "DolphinDotNet.GameCube.csproj" not in source
     assert "DolphinDotNet.Core.csproj" not in source
     assert not re.search(r"\.\.\\\.\.\\src\\", source), str(sln)
-print(f"All {len(projects)} sample projects use NuGet preview {VERSION}.")
+for name in ("HelloGameCube", "ManagedGameCube", "ShaderDemo", "Pong", "GreenMen",
+             "Fox", "Kart", "Snake", "DiscBrowser", "StorageIntegrity",
+             "AsyncNetworking", "AudioDemo", "GoogleLogoAram", "HttpTexture",
+             "HardwareDiagnostics"):
+    assert (ROOT / name / (name + ".csproj")).is_file(), name
+assert "DndBuildNative>false" not in (ROOT / "Directory.Build.props").read_text()
+workflow = (ROOT / ".github/workflows/aot-build.yml").read_text()
+for word in ("DND_AOT_COMPILER", "--aot", "DndBuildNative=true", "DndBuildBackend=Docker", "verify_aot.py"):
+    assert word in workflow, word
+print(f"All {len(projects)} sample projects use NuGet preview {VERSION} and require native AOT CI.")
