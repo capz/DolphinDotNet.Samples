@@ -1,0 +1,11 @@
+**/bin/
+**/obj/
+.vs/
+.idea/
+*.user
+*.suo
+*.dol
+*.elf
+*.dnd-debug.json
+*.dnd-addresses.json
+DolphinDotNet.local.props
