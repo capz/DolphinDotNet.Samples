@@ -53,12 +53,13 @@ Open [Snake.sln](Snake.sln) in Visual Studio or Rider and use the Dolphin
 launch profile, or build and run from the repository root:
 
 ```sh
-dotnet run --project samples/Snake -c Release
+dotnet run --project Snake -c Release
 ```
 
-See [IDE setup](../../docs/ide-workflow.md) for prerequisites and local settings.
+See [IDE setup](https://github.com/capz/DolphinDotNet/blob/main/docs/ide-workflow.md)
+for prerequisites and local settings.
 
-The build produces `samples/Snake/bin/Release/net8.0/Snake.dol`, also suitable
+The build produces `Snake/bin/Release/net8.0/Snake.dol`, also suitable
 for loading on a GameCube, with the project's verified libogc2 EXI override.
 
 Host-side logic and serialization tests:
@@ -93,11 +94,16 @@ One-time setup:
    Channel `1` means memory-card slot B; use `0` for slot A. These settings
    embed the waiting USB GDB stub in the native build. Remove the local settings
    before using the emulator launch profiles again.
-3. Open **Run → Edit Configurations**, select **Snake on GameCube (upload DOL
+3. Build once after adding the local settings:
+   `dotnet build Snake/Snake.sln -c Debug` from the repository root. The plugin
+   validates the ELF and debug maps when checking the configuration, so these
+   artifacts must exist even before its first launch.
+4. Open **Run → Edit Configurations**, select **Snake on GameCube (upload DOL
    and debug)**, and choose your saved **USB Gecko** target using **Manage
    targets**. Select the serial device for your Gecko. The shared configuration
-   intentionally has no machine-specific target ID; save your selection locally.
-4. Boot Swiss on the console and leave it ready to receive a USB Gecko upload.
+   intentionally has no machine-specific target ID. After selecting a target,
+   turn off **Store as project file** to keep your configured copy local.
+5. Boot Swiss on the console and leave it ready to receive a USB Gecko upload.
    Click **Debug** in Rider. The **Build** task must succeed before upload;
    after attachment, use **Resume** to start the game.
 

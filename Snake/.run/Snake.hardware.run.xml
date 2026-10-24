@@ -1,5 +1,8 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Snake on GameCube (upload DOL and debug)" type="DolphinDotNetAttach" factoryName="DolphinDotNetAttach" buildFolder="$PROJECT_DIR$/bin/Debug/net8.0" targetId="" uploadWithSwiss="true" uploadTimeoutSeconds="60" bootDelayMilliseconds="1000">
+  <configuration default="false" name="Snake on GameCube (upload DOL and debug)"
+                 type="DolphinDotNetAttach" factoryName="DolphinDotNetAttach"
+                 buildFolder="$PROJECT_DIR$/bin/Debug/net8.0" targetId=""
+                 uploadWithSwiss="true" uploadTimeoutSeconds="60" bootDelayMilliseconds="1000">
     <method v="2"><option name="Build" /></method>
   </configuration>
 </component>
