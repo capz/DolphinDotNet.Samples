@@ -67,6 +67,44 @@ Host-side logic and serialization tests:
 dotnet run --project tests/SnakeRulesSmoke/SnakeRulesSmoke.csproj -c Release
 ```
 
+## Build, upload and debug on GameCube in Rider
+
+The shared **Snake on GameCube (upload DOL and debug)** configuration builds
+the sample, uploads `bin/Debug/net8.0/Snake.dol` through Swiss over USB Gecko,
+then attaches the DolphinDotNet GDB debugger over the same USB Gecko connection.
+It requires the DolphinDotNet Rider plugin and Swiss waiting for a USB Gecko
+upload. A TCP GDB endpoint alone cannot receive this DOL upload.
+
+One-time setup:
+
+1. Disable **Use ReSharper Build** in Rider so the SDK's native build runs.
+   Select the solution's **Debug** configuration.
+2. Create `Snake/DolphinDotNet.local.props` (ignored by Git) with:
+
+   ```xml
+   <Project>
+     <PropertyGroup>
+       <DndGdbTransport>UsbGecko</DndGdbTransport>
+       <DndGdbChannel>1</DndGdbChannel>
+     </PropertyGroup>
+   </Project>
+   ```
+
+   Channel `1` means memory-card slot B; use `0` for slot A. These settings
+   embed the waiting USB GDB stub in the native build. Remove the local settings
+   before using the emulator launch profiles again.
+3. Open **Run → Edit Configurations**, select **Snake on GameCube (upload DOL
+   and debug)**, and choose your saved **USB Gecko** target using **Manage
+   targets**. Select the serial device for your Gecko. The shared configuration
+   intentionally has no machine-specific target ID; save your selection locally.
+4. Boot Swiss on the console and leave it ready to receive a USB Gecko upload.
+   Click **Debug** in Rider. The **Build** task must succeed before upload;
+   after attachment, use **Resume** to start the game.
+
+The DolphinDotNet ELF launcher is a different deployment receiver and does not
+use this Swiss DOL configuration. Stop any other debugger using the serial
+device before starting an upload.
+
 ## API updates
 
 Input now uses the shared router, suppressing held actions across screen
