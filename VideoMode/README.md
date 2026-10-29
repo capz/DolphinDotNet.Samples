@@ -6,6 +6,20 @@ translucent rounded cube floating on black, thin glossy edges, edge-mounted
 labels, green block-built values, a fading grid and a bottom controller legend.
 The rounded cube is projected 3D geometry, not a screenshot or rotating image.
 
+Glass uses a rounded-box surface with a visible curved edge profile and
+per-vertex interpolated reflection highlights. Front labels sit inside the
+rounded rim. Each face has its own subdued beveled-block icon. List rows have
+rounded frosted backplates, fixed left/right text anchors and 180 ms focus
+scaling (1.00 to 1.14), including shrink-back on the outgoing row.
+
+The native frost is a real backdrop operation: after the cube and icon are
+drawn, GX captures the EFB at half resolution. Nine offset samples of that
+snapshot are averaged inside projected rounded row meshes, then tint and crisp
+text are drawn on top. Texture allocation and geometry uploads happen between
+frames. The host SVG proof approximates the same blur with an SVG filter and
+subdivides the native interpolated glass shading; only a native capture verifies
+the GX result.
+
 ## Controller flow
 
 - At the cube: right opens Video, left Options, up Game Play, down Calendar.

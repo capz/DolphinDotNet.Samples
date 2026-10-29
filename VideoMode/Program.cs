@@ -48,6 +48,7 @@ internal static class Program
                 int y=pad.DPadUp.IsHeld||pad.Stick.Y>.55f?1:pad.DPadDown.IsHeld||pad.Stick.Y<-.55f?-1:0;
                 shell.Direction(x,y,dt);
             }
+            canvas.Prepare();renderer.Prepare(shell);
             device.BeginFrame(Color32.Black);canvas.Begin();renderer.Present(shell);canvas.End();device.EndFrame();
         }
     }

@@ -12,6 +12,8 @@ internal sealed class IplShell
     internal int Row, Part;
     internal float Time, Turn = 1;
     internal bool ReducedMotion;
+    private readonly float[] focus = new float[3];
+    internal float Focus(int row) => focus[row];
     internal int Hour = 12, Minute, Day = 1, Month = 1, Year = 2026, Sound;
     private int hour, minute, day, month, year, sound;
     private int repeatX, repeatY;
@@ -36,12 +38,21 @@ internal sealed class IplShell
     internal void Tick(float dt)
     {
         Time += dt; Turn = Math.Min(1, Turn + dt / .64f);
+        // Advance both the incoming and outgoing item, independent of frame rate.
+        for(int i=0;i<3;i++)
+        {
+            float target=Page==ShellPage.Face&&i==Row?1:0;
+            if(ReducedMotion){focus[i]=target;continue;}
+            float step=dt/.18f;
+            focus[i]=target>focus[i]?Math.Min(target,focus[i]+step):Math.Max(target,focus[i]-step);
+        }
         bool pending = Video.Pending; Video.Tick(dt);
         if (pending && !Video.Pending) Page = ShellPage.Face;
     }
     internal void TurnTo(ShellFace face)
     {
         PreviousFace = Face; Face = face; Row = Part = 0;
+        for(int i=0;i<3;i++)focus[i]=0;
         Page = face == ShellFace.Menu ? ShellPage.Cube : ShellPage.Face;
         Turn = ReducedMotion ? 1 : 0;
     }

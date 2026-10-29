@@ -39,6 +39,13 @@ internal static class IplShellTests
         Check(retry.Video.Pending&&retry.Video.Reverting&&retry.Editing,"A cannot cancel a failed timeout rollback");
         retryOutput.Failure=0;retry.Tick(1);
         Check(!retry.Video.Pending&&!retry.Video.Reverting&&!retry.Editing&&retryOutput.Current.Resolution==1,"Failed rollback retries and returns safely");
+        var focus=new IplShell(new FakeOutput());Face(focus,ShellFace.Video);
+        Check(focus.Focus(0)==1&&focus.Focus(1)==0,"Initial focus grows to full size");
+        Move(focus,0,-1);focus.Tick(.09f);
+        Check(focus.Focus(0)>0&&focus.Focus(0)<1&&focus.Focus(1)>0&&focus.Focus(1)<1,"Outgoing and incoming row animate together");
+        focus.Tick(.09f);Check(focus.Focus(0)==0&&focus.Focus(1)==1,"Outgoing row returns to base size");
+        focus.ReducedMotion=true;Move(focus,0,-1);focus.Tick(.001f);
+        Check(focus.Focus(1)==0&&focus.Focus(2)==1,"Reduced motion changes focus without interpolation");
         Console.WriteLine("IPL shell: face routing, A/B, vertical draft selection, hardware rollback, segmented calendar and reduced motion passed.");
     }
 }

@@ -7,11 +7,38 @@ using System.Text;
 internal sealed class IplProof : IIplCanvas
 {
     private readonly StringBuilder shapes=new StringBuilder();
+    private readonly StringBuilder glass=new StringBuilder(),panels=new StringBuilder();
+    private string backdrop="";
     private int ink;
     private static string N(float f)=>f.ToString("0.###",CultureInfo.InvariantCulture);
     private static string Color(uint c)=>"#"+(c>>8).ToString("x6");
     public void Triangle(float ax,float ay,float bx,float by,float cx,float cy,uint color)
     {shapes.Append("<path d='M"+N(ax)+" "+N(ay)+"L"+N(bx)+" "+N(by)+"L"+N(cx)+" "+N(cy)+"Z' fill='"+Color(color)+"' fill-opacity='"+N((color&255)/255f)+"'/>");}
+    public void BeginGlass()=>glass.Clear();
+    private static IplPoint Mid(IplPoint a,IplPoint b)=>new IplPoint((a.X+b.X)/2,(a.Y+b.Y)/2);
+    private static uint Mix(uint a,uint b)=>(((a>>24)+(b>>24))/2<<24)|((((a>>16)&255)+((b>>16)&255))/2<<16)|((((a>>8)&255)+((b>>8)&255))/2<<8)|(((a&255)+(b&255))/2);
+    private void GlassPiece(IplPoint a,uint ca,IplPoint b,uint cb,IplPoint d,uint cd)
+    {
+        uint color=Mix(Mix(ca,cb),cd);
+        glass.Append("<path d='M"+N(a.X)+" "+N(a.Y)+"L"+N(b.X)+" "+N(b.Y)+"L"+N(d.X)+" "+N(d.Y)+"Z' fill='"+Color(color)+"' fill-opacity='"+N((color&255)/255f)+"'/>");
+    }
+    public void GlassTriangle(IplPoint a,uint ca,IplPoint b,uint cb,IplPoint d,uint cd)
+    {
+        var ab=Mid(a,b);var bd=Mid(b,d);var da=Mid(d,a);uint cab=Mix(ca,cb),cbd=Mix(cb,cd),cda=Mix(cd,ca);
+        GlassPiece(a,ca,ab,cab,da,cda);GlassPiece(ab,cab,b,cb,bd,cbd);GlassPiece(da,cda,bd,cbd,d,cd);GlassPiece(ab,cab,bd,cbd,da,cda);
+    }
+    public void EndGlass() { }
+    public void DrawGlass()=>shapes.Append(glass);
+    public void BeginPanels()=>panels.Clear();
+    public void PanelTriangle(IplPoint a,IplPoint b,IplPoint d)
+    {panels.Append("M"+N(a.X)+" "+N(a.Y)+"L"+N(b.X)+" "+N(b.Y)+"L"+N(d.X)+" "+N(d.Y)+"Z");}
+    public void EndPanels() { }
+    public void CaptureBackdrop()=>backdrop=shapes.ToString();
+    public void DrawFrostedPanels()
+    {
+        string id="backdrop"+(ink++).ToString();
+        shapes.Append("<defs><g id='"+id+"'>"+backdrop+"</g><filter id='"+id+"-blur'><feGaussianBlur stdDeviation='3.3'/></filter><clipPath id='"+id+"-clip'><path d='"+panels+"'/></clipPath></defs><g clip-path='url(#"+id+"-clip)'><use href='#"+id+"' filter='url(#"+id+"-blur)'/></g>");
+    }
     public void Text(string text,float x,float y,float size,uint color,float angle)
     {
         string id="ink"+(ink++).ToString();
@@ -27,7 +54,7 @@ internal sealed class IplProof : IIplCanvas
     }
     private void Save(string path,IplShell state)
     {
-        shapes.Clear();new IplRenderer(this).Present(state);
+        shapes.Clear();var renderer=new IplRenderer(this);renderer.Prepare(state);renderer.Present(state);
         string atlas=Convert.ToBase64String(IplFontData.Png);
         File.WriteAllText(path,"<svg xmlns='http://www.w3.org/2000/svg' width='640' height='480' viewBox='0 0 640 480' style='background:black'><defs><image id='atlas' width='512' height='256' href='data:image/png;base64,"+atlas+"'/></defs>"+shapes+"</svg>");
     }
