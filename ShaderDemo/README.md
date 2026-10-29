@@ -19,7 +19,7 @@ The CPU submits geometry and changes a few registers. TEV computes the ramp and
 comparisons per fragment. This illustrates shading, not physical sphere lighting.
 No GLSL/HLSL, downloaded assets, SD card, network or custom Dolphin build is needed.
 
-Open `ShaderDemo.sln` and choose **ShaderDemo in Dolphin (play without debugger)**,
+Open `ShaderDemo.sln` and choose **Run in emulator**,
 or use the included wait-for-Rider profile. **Start** pauses/resumes animation,
 **B** exits and **Z** toggles statistics. Animation also runs without a controller.
 

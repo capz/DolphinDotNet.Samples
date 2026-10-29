@@ -45,7 +45,7 @@ Linux/macOS devkitPPC/libogc2 toolchain; see [IDE setup](https://github.com/capz
 - **Visual Studio:** open the sample's `.sln`, select its executable as the
   startup project, choose **Dolphin Play**, and press **Ctrl+F5**.
 - **Rider:** open the sample's `.sln`, disable **Use ReSharper Build**, select
-  **<sample> in Dolphin (play without debugger)**, and click **Run**.
+  **Run in emulator**, and click **Run**.
 
 Choose any sample directory name from the table for the CLI:
 
@@ -64,8 +64,7 @@ assets or network services.
 
 ## Debug builds and Rider attach
 
-Every sample includes a GameCube ELF upload/debug configuration as well as its
-emulator configurations. See [Rider upload and debugging](docs/rider-launching.md)
+Every sample includes the same three automatic Rider launch configurations. See [Rider upload and debugging](docs/rider-launching.md)
 for receiver setup, USB Gecko build settings and choosing your local target.
 
 All samples use the shared DolphinDotNet SDK and compiler. Debug builds preserve
@@ -91,23 +90,12 @@ matching map hashes and verified breakpoint addresses in the sample's own
 <sample>/bin/Debug/net8.0/<sample>.dnd-addresses.json
 ```
 
-In Rider, open that sample's solution. Its existing **<sample> in Dolphin**
-configuration now launches with GDB enabled and waits for Rider; **<sample> in
-Dolphin (wait for Rider)** is an equivalent alias. To play normally, select
-**<sample> in Dolphin (play without debugger)**. Debug **CLI** / project launches
-also wait on port 2166; Release CLI launches run normally. For debugging, install
-the [Rider attach plugin](https://github.com/capz/DolphinDotNet/blob/main/docs/rider-debugging.md),
-run **<sample> in Dolphin**, then choose **Run → Attach to DolphinDotNet…**. That launch creates
-the emulator's GDB settings automatically in a separate profile, prints their
-location, and waits for Rider at **127.0.0.1:2166**. No manual `Dolphin.ini` edit
-is needed. If the configuration is not imported, create a **.NET Launch Settings
-Profile** configuration for that sample's **Dolphin Debug** profile with a Build task.
-Choose `<sample>/bin/Debug/net8.0` as its debug build folder, then save
-and select a TCP target matching Dolphin's host and GDB port. When opening the
-sample's solution directly, the folder is `$PROJECT_DIR$/bin/Debug/net8.0`.
-Click **Attach** in the dialog. C# gutter breakpoints recognize DolphinDotNet SDK
-projects automatically; selecting an attach run configuration is unnecessary.
-Existing attach configurations remain supported for multilaunch setups.
+In Rider, install DolphinDotNet plugin **0.4.0 or later** and open the sample's
+solution. Choose **Run in emulator**, **Debug on emulator**, or **Debug on target**.
+The plugin builds the sample, starts or uploads it, and attaches automatically for
+debug actions. Set breakpoints before starting; execution continues after they
+are installed. Emulator debugging always uses local Dolphin. Hardware debugging
+uses the first saved target. See [Rider launch setup](docs/rider-launching.md).
 
 To build and validate every sample in PowerShell:
 

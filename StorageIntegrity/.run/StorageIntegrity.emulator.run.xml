@@ -1,0 +1,5 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Debug on emulator" type="DolphinDotNetLaunch" factoryName="DolphinDotNetLaunch" mode="emulator" projectFile="$PROJECT_DIR$/StorageIntegrity.csproj">
+    <method v="2" />
+  </configuration>
+</component>

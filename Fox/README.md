@@ -33,8 +33,7 @@ Unplugging controller 1 freezes flight and timers. Reconnect to continue without
 an accumulated time jump. Pause also freezes boost, roll and invulnerability
 clocks.
 
-Open [Fox.sln](Fox.sln) in Rider or Visual Studio. Choose **Fox in Dolphin (play
-without debugger)** for normal play, or **Fox in Dolphin (wait for Rider)** to
+Open [Fox.sln](Fox.sln) in Rider or Visual Studio. Choose **Run in emulator** for normal play, or **Debug on emulator** to
 attach the DolphinDotNet debugger. Configure Dolphin's controller mappings first.
 See [IDE setup](../../docs/ide-workflow.md).
 

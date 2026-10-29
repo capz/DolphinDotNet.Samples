@@ -26,7 +26,7 @@ Press **A** after a player reaches seven to reset and serve a new match.
 ## Compile and run
 
 Open **[Pong.sln](Pong.sln)** in Visual Studio or Rider. Select the **Dolphin**
-launch profile in Visual Studio and use **Ctrl+F5**, or **Pong in Dolphin → Run**
+launch profile in Visual Studio and use **Ctrl+F5**, or **Run in emulator → Run**
 in Rider. Build produces `bin/Debug/net8.0/Pong.dol` and `.elf`, and Run launches
 Dolphin. See the [IDE setup guide](../../docs/ide-workflow.md) for the one-time
 toolchain/Dolphin setup, local settings and controller configuration.
