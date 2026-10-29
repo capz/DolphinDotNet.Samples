@@ -6,7 +6,7 @@ import re
 import xml.etree.ElementTree as ET
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-VERSION = "0.1.0-preview.15.1"
+VERSION = "0.1.0-preview.103.1"
 sdk = json.loads((ROOT / "global.json").read_text())["msbuild-sdks"]["DolphinDotNet.Sdk"]
 props = ET.parse(ROOT / "Directory.Build.props").getroot()
 version = props.find(".//DndPackageVersion").text

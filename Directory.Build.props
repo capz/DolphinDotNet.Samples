@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
     <!-- Keep this in sync with global.json (MSBuild SDK version). -->
-    <DndPackageVersion>0.1.0-preview.15.1</DndPackageVersion>
+    <DndPackageVersion>0.1.0-preview.103.1</DndPackageVersion>
     <!-- Shared native sample controls: Z toggles statistics; Start leaves result screens. -->
     <DndSampleControls Condition="'$(DndSampleControls)' == ''">true</DndSampleControls>
   </PropertyGroup>
