@@ -1,0 +1,5 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Run in emulator" type="DolphinDotNetLaunch" factoryName="DolphinDotNetLaunch" mode="play" projectFile="$PROJECT_DIR$/VideoMode.csproj">
+    <method v="2" />
+  </configuration>
+</component>

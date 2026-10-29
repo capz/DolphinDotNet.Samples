@@ -6,13 +6,13 @@ import re
 import xml.etree.ElementTree as ET
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-VERSION = "0.1.0-preview.15.1"
+VERSION = "0.1.0-preview.103.1"
 sdk = json.loads((ROOT / "global.json").read_text())["msbuild-sdks"]["DolphinDotNet.Sdk"]
 props = ET.parse(ROOT / "Directory.Build.props").getroot()
 version = props.find(".//DndPackageVersion").text
 assert sdk == version == VERSION, (sdk, version)
 projects = list(ROOT.glob("*/*.csproj"))
-assert len(projects) == 15, f"Expected 15 migrated projects, got {len(projects)}"
+assert len(projects) == 16, f"Expected 16 projects, got {len(projects)}"
 for path in projects:
     xml = ET.parse(path).getroot()
     assert xml.attrib.get("Sdk") == "DolphinDotNet.Sdk", str(path)

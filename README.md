@@ -7,6 +7,7 @@ the GameCube runs generated native code, using only the supported AOT API subset
 | --- | --- | --- |
 | [HelloGameCube](HelloGameCube/Program.cs) | `int Main`, `DebugOverlay.WriteLine`, integer arithmetic and standard `Int32.ToString` | Prints a greeting and 42, then shows the result screen |
 | [ManagedGameCube](ManagedGameCube/Program.cs) | Cached controller snapshots, debug text and `ImmediateRenderer`; the scene belongs to `DemoScene`, not the framework | Rotating triangle; press Start on controller port 0 to exit |
+| [VideoMode](VideoMode/README.md) | Live standard video modes, interlaced/progressive scan, and 4:3/16:9 rendering | D-pad edits, A applies/confirms, B or a 12-second timeout reverts, X restores 640x480i 4:3 |
 | [ShaderDemo](ShaderDemo/README.md) | GPU TEV color ramp and two-stage toon shading, with a smooth reference | No assets or network; Start pauses, B exits, Z statistics |
 | [HttpTexture](HttpTexture/README.md) | Download a PNG with `HttpClient`, decode in memory into tiled RGBA8 and display it | Internet-capable BBA; DHCP/DNS defaults, B exits |
 | [AsyncNetworking](AsyncNetworking/Program.cs) | Standard `async Task<int> Main`, `HttpClient`, `Task.Run` and `ConfigureAwait(false)`; bounded Dolphin JSON parsing | Local DNS/HTTP fixture defaults; returns 0 when JSON `value` is 42, otherwise 1 |
@@ -125,7 +126,7 @@ physical console acceptance remain separate checks.
 
 ## Required native AOT builds
 
-The [CI workflow](.github/workflows/samples.yml) validates all **15 sample projects** in independent NuGet-only builds. The native matrix additionally:
+The [CI workflow](.github/workflows/samples.yml) validates all **16 sample projects** in independent NuGet-only builds. The native matrix additionally:
 
 1. Builds the managed .NET assembly and invokes the **published SDK's own `tools/compiler/DolphinDotNet.Compiler.dll --aot`** to emit and check native C.
 2. Uses the NuGet SDK's native build target (`DndBuildNative=true`, `DndBuildBackend=Docker`) to produce a linked GameCube `.dol` and PowerPC `.elf`.
@@ -206,13 +207,13 @@ python3 ci/validate_sample_tests.py
 for project in tests/*/*.csproj; do dotnet run --project "$project" -c Release || exit 1; done
 ```
 
-CI executes nine CLR-compatible host suites and verifies that the two AOT-native
+CI executes ten CLR-compatible host suites and verifies that the two AOT-native
 Kart input/networking harnesses compile against the preview package. The full Kart
 native-input and UDP fixtures must be run through the DolphinDotNet toolchain's
 emulator/host harness, since the published GameCube package rejects native
 intrinsics when executed under the desktop CLR.
 
-CI runs these tests separately from the fifteen managed sample builds.
+CI runs these tests separately from the sixteen managed sample builds.
 Compiler runtime, native GX, PowerPC, and emulator integration tests remain
 in the [DolphinDotNet runtime repository](https://github.com/capz/DolphinDotNet),
 where their internal native sources and fixtures are maintained.

@@ -3,6 +3,6 @@
        it includes Common/*.cs in every game, while host tests compile only
        targeted sample sources and sometimes supply fake platform dependencies. -->
   <PropertyGroup>
-    <DndPackageVersion>0.1.0-preview.15.1</DndPackageVersion>
+    <DndPackageVersion>0.1.0-preview.103.1</DndPackageVersion>
   </PropertyGroup>
 </Project>
