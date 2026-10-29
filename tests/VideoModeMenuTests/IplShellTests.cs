@@ -33,6 +33,12 @@ internal static class IplShellTests
         Check(output.Changes==5,"Calendar never changes the hardware display");
         Face(s,ShellFace.Options);s.Row=1;s.Confirm();Check(s.ReducedMotion,"Reduced motion can disable idle movement");
         s.Row=2;s.Confirm();Check(s.Face==ShellFace.Memory,"Memory has its own face");s.Tick(.7f);s.Back();Check(s.Face==ShellFace.Options,"Memory B returns to its parent");
+        var retryOutput=new FakeOutput();var retry=new IplShell(retryOutput);
+        Face(retry,ShellFace.Video);retry.Confirm();Move(retry,0,1);retry.Confirm();
+        retryOutput.Failure=2;retry.Tick(13);retry.Confirm();
+        Check(retry.Video.Pending&&retry.Video.Reverting&&retry.Editing,"A cannot cancel a failed timeout rollback");
+        retryOutput.Failure=0;retry.Tick(1);
+        Check(!retry.Video.Pending&&!retry.Video.Reverting&&!retry.Editing&&retryOutput.Current.Resolution==1,"Failed rollback retries and returns safely");
         Console.WriteLine("IPL shell: face routing, A/B, vertical draft selection, hardware rollback, segmented calendar and reduced motion passed.");
     }
 }

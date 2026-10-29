@@ -25,6 +25,7 @@ internal sealed class VideoModeMenu
     internal VideoModeSettings Applied { get; private set; }
     internal int Row { get; private set; }
     internal bool Pending { get; private set; }
+    internal bool Reverting { get; private set; }
     internal float Remaining { get; private set; }
     internal string Status { get; private set; }="CHOOSE SETTINGS THEN PRESS A";
 
@@ -35,7 +36,7 @@ internal sealed class VideoModeMenu
     { if(!Pending) Row=(Row+direction+3)%3; }
 
     internal void SelectRow(int row) { if(!Pending) Row=row%3; }
-    internal void CancelSelection() { if(!Pending) Selected=Applied; }
+    internal void CancelSelection() { if(!Pending) { Selected=Applied; Status="CHOOSE SETTINGS THEN PRESS A"; } }
 
     internal void Edit(int direction)
     {
@@ -53,27 +54,28 @@ internal sealed class VideoModeMenu
         if(Pending) return;
         var before=Applied;
         if(!TryConfigure(Selected)) return;
-        previous=before; Pending=true; Remaining=PreviewSeconds;
+        previous=before; Pending=true; Reverting=false; Remaining=PreviewSeconds;
         Status="A KEEP - B REVERT";
     }
 
     internal void Keep()
     {
-        if(!Pending) return;
+        if(!Pending || Reverting) return;
         Pending=false; Remaining=0; Status="MODE KEPT";
     }
 
     internal void Revert()
     {
         if(!Pending) return;
+        Reverting=true;
         if(!TryConfigure(previous)) { Remaining=1; return; }
-        Selected=Applied; Pending=false; Remaining=0; Status="PREVIOUS MODE RESTORED";
+        Selected=Applied; Pending=false; Reverting=false; Remaining=0; Status="PREVIOUS MODE RESTORED";
     }
 
     internal void SafeMode()
     {
         if(!TryConfigure(new VideoModeSettings(1,1,false))) return;
-        Selected=Applied; Pending=false; Remaining=0; Status="SAFE MODE - 640X480I 4:3";
+        Selected=Applied; Pending=false; Reverting=false; Remaining=0; Status="SAFE MODE - 640X480I 4:3";
     }
 
     internal void Tick(float seconds)

@@ -29,7 +29,7 @@ internal sealed class IplProof : IIplCanvas
     {
         shapes.Clear();new IplRenderer(this).Present(state);
         string atlas=Convert.ToBase64String(IplFontData.Png);
-        File.WriteAllText(path,"<svg xmlns='http://www.w3.org/2000/svg' width='640' height='480' viewBox='0 0 640 480'><defs><image id='atlas' width='512' height='256' href='data:image/png;base64,"+atlas+"'/></defs>"+shapes+"</svg>");
+        File.WriteAllText(path,"<svg xmlns='http://www.w3.org/2000/svg' width='640' height='480' viewBox='0 0 640 480' style='background:black'><defs><image id='atlas' width='512' height='256' href='data:image/png;base64,"+atlas+"'/></defs>"+shapes+"</svg>");
     }
     internal static void Write(string dir)
     {

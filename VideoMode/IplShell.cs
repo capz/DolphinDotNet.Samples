@@ -80,7 +80,7 @@ internal sealed class IplShell
     internal void Confirm()
     {
         if (Turn < 1) return;
-        if (Video.Pending) { Video.Keep(); Page = ShellPage.Face; return; }
+        if (Video.Pending) { Video.Keep(); if(!Video.Pending) Page = ShellPage.Face; return; }
         if (Page == ShellPage.Cube) return;
         if (Page == ShellPage.Face)
         {
@@ -101,6 +101,7 @@ internal sealed class IplShell
     }
     internal void Back()
     {
+        if(Turn<1)return;
         if (Video.Pending) { Video.Revert(); if (!Video.Pending) Page = ShellPage.Face; return; }
         if (Page == ShellPage.Detail) { Video.CancelSelection(); Page = ShellPage.Face; return; }
         if (Face == ShellFace.Memory) TurnTo(ShellFace.Options); else TurnTo(ShellFace.Menu);

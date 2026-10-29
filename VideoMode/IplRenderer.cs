@@ -93,7 +93,7 @@ internal sealed class IplRenderer
         pitch=PosePitch(shell.PreviousFace)+(PosePitch(shell.Face)-PosePitch(shell.PreviousFace))*ease;
         if(!shell.ReducedMotion){yaw+=(float)Math.Sin(shell.Time/5.3f*6.2831853f)*.075f;pitch+=.035f+(float)Math.Sin(shell.Time/7.1f*6.2831853f)*.055f;}
         cosYaw=(float)Math.Cos(yaw);sinYaw=(float)Math.Sin(yaw);cosPitch=(float)Math.Cos(pitch);sinPitch=(float)Math.Sin(pitch);
-        cy=211+(shell.ReducedMotion?0:(float)Math.Sin(shell.Time*.7f)*3);scale=109;
+        cy=211+(shell.ReducedMotion?0:(float)Math.Sin(shell.Time*.7f)*3);scale=116;
         Cube();
         if(t>.85f)
         {
@@ -148,27 +148,27 @@ internal sealed class IplRenderer
     }
     private void MenuLabels(IplShell s)
     {
-        FaceText(s,"Game Play",0,.79f,24,White);
+        FaceText(s,"Game Play",0,.92f,24,White);
         FaceText(s,"Video",.81f,.05f,24,White,90);
-        FaceText(s,"Calendar",0,-.78f,24,White);
-        FaceText(s,"Options",-.81f,-.02f,24,White,-90);
+        FaceText(s,"Calendar",0,-.62f,24,White);
+        FaceText(s,"Options",-.81f,.05f,24,White,-90);
     }
     private void FaceMenu(IplShell s)
     {
         FaceText(s,s.Title,0,.77f,26,White);
         if(s.Face==ShellFace.Memory||s.Face==ShellFace.Play)
         {
-            FaceText(s,s.Face==ShellFace.Play?"No disc inserted.":"No card mounted.",0,.1f,16,White);
-            FaceText(s,"Demonstration",0,-.16f,12,0xb5b9c9ff);return;
+            FaceText(s,s.Face==ShellFace.Play?"No disc selected.":"No card selected.",0,.1f,16,White);
+            FaceText(s,"Preview only.",0,-.16f,12,0xb5b9c9ff);return;
         }
         for(int i=0;i<s.Rows;i++)
         {
-            float y=.38f-i*.36f;
+            float y=.30f-i*.36f;
             uint color=i==s.Row?White:0xb5b9c9ff;
             float size=i==s.Row?20:17;
-            FaceText(s,s.Label(i),-.27f,y,size,color);
-            string value=s.Value(i); if(s.Face==ShellFace.Video&&i==0)value+=" lines";
-            FaceText(s,value,.30f,y-.16f,size-1,color);
+            FaceText(s,s.Label(i),-.38f,y,size,color);
+            string value=s.Value(i);
+            FaceText(s,value,.43f,y,size-1,color);
         }
     }
     private void Grid()
@@ -186,8 +186,8 @@ internal sealed class IplRenderer
         Center("Choose a system setting.",320,28,20,White);
         if(s.Video.Pending)
         {
-            Banner("Keep these video settings?",false);
-            Center(((int)Math.Ceiling(s.Video.Remaining)).ToString()+" seconds to confirm",320,357,18,White);
+            Banner(s.Video.Reverting?"Restoring previous settings.":"Keep these video settings?",s.Video.Reverting);
+            Center(s.Video.Reverting?"Unable to restore. Retrying.":((int)Math.Ceiling(s.Video.Remaining)).ToString()+" seconds to confirm",320,357,18,White);
         }
         Center(s.Label(s.Row),320,104,23,Green);
         if(s.Face==ShellFace.Calendar)
@@ -248,13 +248,15 @@ internal sealed class IplRenderer
     }
     private void Footer(IplShell s)
     {
-        const float y=437;
-        for(int r=15;r>3;r-=3)Circle(91,y,r,Rgba(210,214,217,130),false);
-        Circle(91,y,3,0xd7d9dfff,true);
-        Text("... "+(s.Page==ShellPage.Cube?"Menu Selection":s.Face==ShellFace.Calendar&&s.Editing?"Part / Value":"Select"),115,y-13,17,White);
+        const float y=444;
+        float stick=s.Page==ShellPage.Cube?214:91;
+        for(int r=15;r>3;r-=3)Circle(stick,y,r,Rgba(210,214,217,130),false);
+        Circle(stick,y,3,0xd7d9dfff,true);
+        Text("... "+(s.Page==ShellPage.Cube?"Menu Selection":s.Face==ShellFace.Calendar&&s.Editing?"Part / Value":"Select"),stick+24,y-13,s.Page==ShellPage.Cube?20:17,White);
         if(s.Page==ShellPage.Cube)return;
         for(int r=22;r>10;r-=3)Circle(339,y,r,Rgba(255,35,107,10),true);
         Circle(339,y,11,0xa42351ff,true);Center("B",339,y-14,20,White);Text("... "+(s.Editing?"Cancel":"Back"),359,y-13,17,White);
+        if(s.Video.Reverting)return;
         for(int r=23;r>12;r-=3)Circle(510,y,r,Rgba(15,245,196,10),true);
         Circle(510,y,13,0x168a73ff,true);Center("A",510,y-14,20,White);Text("... "+(s.Editing?"Confirm":"Open"),532,y-13,17,White);
     }
