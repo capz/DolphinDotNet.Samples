@@ -1,0 +1,9 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Fox on GameCube (ELF launcher and debug)"
+                 type="DolphinDotNetAttach" factoryName="DolphinDotNetAttach"
+                 buildFolder="$PROJECT_DIR$/bin/Debug/net8.0" targetId=""
+                 useDolphinDotNetLauncher="true" launcherPort="4299" readyTimeoutSeconds="30"
+                 uploadTimeoutSeconds="60" bootDelayMilliseconds="1000">
+    <method v="2"><option name="Build" /></method>
+  </configuration>
+</component>

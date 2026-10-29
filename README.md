@@ -64,6 +64,10 @@ assets or network services.
 
 ## Debug builds and Rider attach
 
+Every sample includes a GameCube ELF upload/debug configuration as well as its
+emulator configurations. See [Rider upload and debugging](docs/rider-launching.md)
+for receiver setup, USB Gecko build settings and choosing your local target.
+
 All samples use the shared DolphinDotNet SDK and compiler. Debug builds preserve
 Portable PDB locals and publish the source/address maps Rider needs by default;
 Release builds retain their normal optimization policy. Sample projects follow

@@ -19,7 +19,9 @@ jobs:
         with:
           dotnet-version: '8.0.x'
       - name: Validate standalone sample manifests
-        run: python3 ci/validate_samples.py
+        run: |
+          python3 ci/validate_samples.py
+          python3 ci/validate_run_configs.py
       - name: Restore and compile all sample applications from published packages
         run: |
           set -euo pipefail
