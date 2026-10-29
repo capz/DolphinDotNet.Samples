@@ -1,0 +1,5 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Debug on target" type="DolphinDotNetLaunch" factoryName="DolphinDotNetLaunch" mode="target" projectFile="$PROJECT_DIR$/GreenMen.csproj">
+    <method v="2" />
+  </configuration>
+</component>

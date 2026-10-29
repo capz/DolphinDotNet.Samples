@@ -68,73 +68,19 @@ Host-side logic and serialization tests:
 dotnet run --project tests/SnakeRulesSmoke/SnakeRulesSmoke.csproj -c Release
 ```
 
-## Build, upload and debug on GameCube in Rider
+## Run and debug in Rider
 
-The shared **Snake on GameCube (ELF launcher and debug)** configuration builds
-the sample's DOL, ELF and debug maps, checks the DolphinDotNet receiver, uploads
-`bin/Debug/net8.0/Snake.elf`, starts it, then attaches the GDB debugger.
-Boot `DolphinDotNet.Launcher.dol` on the console once and leave it running.
-The receiver accepts ELF files; the sample's DOL is also built but is not the
-uploaded file in this workflow.
+Install DolphinDotNet plugin **0.4.0 or later**, then open `Snake.sln`. Choose
+**Run in emulator** for normal play, **Debug on emulator** to launch and attach
+to local Dolphin automatically, or **Debug on target** to build, upload, attach
+and continue using the first saved hardware target. Set breakpoints before starting.
 
-Install a DolphinDotNet Rider plugin that offers **DolphinDotNet ELF launcher
-(BBA / USB Gecko)**. Older plugins with only Swiss upload do not support this
-configuration. Launcher support is available on the debugger repository's
-[feature/dnd-launcher-readiness branch](https://github.com/capz/DolphinDotNet.Debuggers/tree/feature/dnd-launcher-readiness).
-
-One-time setup:
-
-1. Disable **Use ReSharper Build** in Rider so the SDK's native build runs.
-   Select the solution's **Debug** configuration.
-2. Create `Snake/DolphinDotNet.local.props` (ignored by Git) with the waiting
-   GDB stub settings for your target. For USB Gecko:
-
-   ```xml
-   <Project>
-     <PropertyGroup>
-       <DndGdbTransport>UsbGecko</DndGdbTransport>
-       <DndGdbChannel>1</DndGdbChannel>
-     </PropertyGroup>
-   </Project>
-   ```
-
-   Channel `1` means memory-card slot B; use `0` for slot A. For BBA / TCP,
-   use the following instead, replacing the example console address, netmask
-   and gateway with your network settings:
-
-   ```xml
-   <Project>
-     <PropertyGroup>
-       <DndGdbTransport>Tcp</DndGdbTransport>
-       <DndGdbIp>192.168.1.80</DndGdbIp>
-       <DndGdbNetmask>255.255.255.0</DndGdbNetmask>
-       <DndGdbGateway>192.168.1.1</DndGdbGateway>
-       <DndGdbPort>2828</DndGdbPort>
-     </PropertyGroup>
-   </Project>
-   ```
-
-   The application owns these GDB settings after handoff; the receiver does
-   not configure its stub. Remove the local settings before using the emulator
-   launch profiles again.
-3. Build once after adding the local settings:
-   `dotnet build Snake/Snake.sln -c Debug` from the repository root. The plugin
-   validates the ELF and debug maps when checking the configuration, so these
-   artifacts must exist even before its first launch.
-4. Open **Run → Edit Configurations**, select **Snake on GameCube (ELF launcher
-   and debug)**, and choose your saved target using **Manage targets**. For
-   USB Gecko, select its serial device and matching slot. For BBA / TCP,
-   select the console's address and the application's GDB port (`2828` in the
-   example). The receiver upload port is separate (`4299` by default); change
-   **Launcher port** if your receiver uses a different port. The shared configuration
-   intentionally has no machine-specific target ID. After selecting a target,
-   turn off **Store as project file** to keep your configured copy local.
-5. With the ELF launcher running on the console, use **Check receiver readiness**
-   to verify the connection, then click **Debug** in Rider. The **Build** task
-   must succeed before upload. Launch checks receiver readiness again, uploads
-   the ELF, starts the application and attaches GDB; use **Resume** to continue.
-
-Stop any other debugger using the connection before starting an upload.
+For hardware, boot the bundled `DolphinDotNet.Launcher.dol` and configure your
+USB Gecko port/slot or console TCP address in **Attach to Nintendo GameCube… →
+Manage targets**. The plugin applies matching build settings; USB settings do
+not need to be removed when switching to emulator debugging. No initial build or
+manual Resume is required. See [shared launch setup](../docs/rider-launching.md)
+for Dolphin, native toolchain and TCP network settings.
 
 ## API updates
 

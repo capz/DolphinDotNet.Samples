@@ -25,8 +25,8 @@ Unplugging controller 1 freezes the game. Reconnect to continue; no elapsed time
 is accumulated while disconnected or paused.
 
 Open [GreenMen.sln](GreenMen.sln) in Rider or Visual Studio. In Rider choose
-**GreenMen in Dolphin (play without debugger)** for normal play or
-**GreenMen in Dolphin (wait for Rider)** to attach the DolphinDotNet debugger.
+**Run in emulator** for normal play or
+**Debug on emulator** to attach the DolphinDotNet debugger.
 Configure Dolphin's controller 1 first; keyboard controls use its pad mappings.
 See [IDE setup](../../docs/ide-workflow.md).
 

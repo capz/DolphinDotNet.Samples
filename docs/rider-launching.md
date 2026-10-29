@@ -1,37 +1,41 @@
-# Rider upload and debugging
+# Run and debug in Rider
 
-Every sample includes **<sample> on GameCube (ELF launcher and debug)** alongside
-its emulator play and wait-for-debugger configurations. Install DolphinDotNet's
-Rider plugin 0.3.2 or later, and boot the launcher DOL bundled with that plugin on
-the console before uploading.
+Install **DolphinDotNet Rider plugin 0.4.0 or later**, then open a sample's solution.
+Every sample includes exactly these three shared configurations:
 
-Configure the sample's Debug build for the same GDB connection as the saved Rider
-target. For example, add the ignored `DolphinDotNet.local.props` beside the sample's
-project for a USB Gecko in slot B:
+| Configuration | Action |
+| --- | --- |
+| **Run in emulator** | Build the sample and launch Dolphin for normal play. Use **Run**. |
+| **Debug on emulator** | Build, launch a waiting local Dolphin instance, attach automatically, install breakpoints and continue. Use **Debug**. |
+| **Debug on target** | Build for the first saved target, upload the ELF through the DolphinDotNet launcher, attach, install breakpoints and continue. Use **Debug**. |
 
-```xml
-<Project>
-  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
-    <DndGdbTransport>UsbGecko</DndGdbTransport>
-    <DndGdbChannel>1</DndGdbChannel>
-  </PropertyGroup>
-</Project>
-```
+The plugin runs the native build itself; do not add a separate Build before-run
+task. It discovers the project's output folder after building, so no initial
+build or machine-specific output path is required. Build failures stop the launch.
+Docker or devkitPPC must be set up as described in the repository README.
 
-Channel 0 selects slot A; channel 1 selects slot B. Remove these console-specific
-settings before running the emulator profiles. TCP targets instead need the
-console's `DndGdbTransport=Tcp`, IP/netmask/gateway and application GDB port.
-The receiver upload port defaults to 4299 and must differ from its GDB port.
+For emulator actions, set `DOLPHIN_PATH` or `DolphinPath` in the ignored
+`DolphinDotNet.local.props`, or set the optional Dolphin executable field in a
+local copy of the configuration. Emulator debugging always uses local Dolphin;
+it does not use the saved hardware target. It disables the console GDB stub even
+if local properties enable USB Gecko. Stopping emulator debugging closes only
+the Dolphin instance started by that launch.
 
-Build the sample in Debug once so its ELF and matching debug maps exist. In
-**Run → Edit Configurations**, select the GameCube configuration and choose a
-saved target through **Manage targets**. USB targets require the correct COM /
-serial port and expected console slot. The shared configuration intentionally
-contains no machine-specific target ID; keep your configured copy local by
-turning off **Store as project file** after choosing the target.
+For hardware, open **Run → Attach to Nintendo GameCube… → Manage targets** and
+configure the target you want to use first. USB Gecko needs its COM / serial port
+and console slot. The plugin builds channel 0 for slot A or channel 1 for slot B.
+For BBA / TCP, set the console's IPv4 address and application GDB port; configure
+`DndGdbNetmask` and `DndGdbGateway` in local properties if your network needs them.
+The ELF receiver uses upload port 4299, separate from the application GDB port.
 
-Keep **Start on device → DolphinDotNet ELF launcher (BBA / USB Gecko)** selected.
-Check receiver readiness, then **Debug** the configuration. Its build runs before
-the plugin uploads the ELF, starts the application and attaches the debugger.
-Press **Resume** if it stops at entry. Stopping the debugger leaves the application
-running; exit the sample back to the resident receiver before another upload.
+Boot the `DolphinDotNet.Launcher.dol` bundled with the plugin on the console before
+using **Debug on target**. Stopping the hardware debugger leaves the game running;
+exit the game back to the resident receiver before another upload.
+
+The status bar shows **Target GameCube available** when the first saved target's
+ELF launcher answers a readiness check, or **Target GameCube not available** when
+it does not. Polling pauses during connections and debug sessions. The indicator
+appears only in projects referencing DolphinDotNet.
+
+The SDK's `launchSettings.json` profiles remain available for Visual Studio and
+command-line workflows. The three `.run` files are the Rider launch menu.

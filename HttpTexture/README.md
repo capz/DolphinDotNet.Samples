@@ -5,8 +5,7 @@ decodes the PNG entirely in memory with `Texture2D.FromPng`, and displays it wit
 `Draw2D`. No preconverted texture or SD card is required. The complete logo is
 centered and scaled to fit without changing its aspect ratio; alpha is preserved.
 
-Open `HttpTexture.sln` in Rider and choose **HttpTexture in Dolphin (play without
-debugger)**. Configure Dolphin's GameCube Serial Port 1 as a Broadband Adapter
+Open `HttpTexture.sln` in Rider and choose **Run in emulator**. Configure Dolphin's GameCube Serial Port 1 as a Broadband Adapter
 with an Internet-capable backend (for example HLE); a working BBA network is
 required. The runtime uses DHCP and DNS 8.8.8.8 by default. Configure
 `NetworkRuntime.StartAsync(new NetworkOptions { ... }, default)` for static
