@@ -1,4 +1,5 @@
 using Dolphin.Graphics;
+using Dolphin.Diagnostics;
 using Dolphin.Input;
 using Dolphin.Timing;
 
@@ -26,6 +27,7 @@ internal static class Program
     private static int Main()
     {
         var device=GraphicsDevice.Default;
+        DebugOverlay.TextVisible=false;
         var shell=new IplShell(new VideoModeOutput(device));
         using var canvas=new GameCubeCanvas(device);
         var renderer=new IplRenderer(canvas);

@@ -9,6 +9,8 @@ internal sealed class IplProof : IIplCanvas
     private readonly StringBuilder shapes=new StringBuilder();
     private readonly StringBuilder glass=new StringBuilder(),panels=new StringBuilder();
     private string backdrop="";
+    private readonly IplPoint[] facePoints=new IplPoint[625];
+    private readonly uint[] faceColors=new uint[625];
     private int ink;
     private static string N(float f)=>f.ToString("0.###",CultureInfo.InvariantCulture);
     private static string Color(uint c)=>"#"+(c>>8).ToString("x6");
@@ -22,7 +24,17 @@ internal sealed class IplProof : IIplCanvas
         uint color=Mix(Mix(ca,cb),cd);
         glass.Append("<path d='M"+N(a.X)+" "+N(a.Y)+"L"+N(b.X)+" "+N(b.Y)+"L"+N(d.X)+" "+N(d.Y)+"Z' fill='"+Color(color)+"' fill-opacity='"+N((color&255)/255f)+"'/>");
     }
-    public void GlassTriangle(IplPoint a,uint ca,IplPoint b,uint cb,IplPoint d,uint cd)
+    public void GlassVertex(int index,IplPoint point,uint color){facePoints[index]=point;faceColors[index]=color;}
+    public void EndGlassFace()
+    {
+        for(int y=0;y<24;y++)for(int x=0;x<24;x++)
+        {
+            int a=y*25+x;
+            GlassTriangle(facePoints[a],faceColors[a],facePoints[a+1],faceColors[a+1],facePoints[a+25],faceColors[a+25]);
+            GlassTriangle(facePoints[a+1],faceColors[a+1],facePoints[a+26],faceColors[a+26],facePoints[a+25],faceColors[a+25]);
+        }
+    }
+    private void GlassTriangle(IplPoint a,uint ca,IplPoint b,uint cb,IplPoint d,uint cd)
     {
         var ab=Mid(a,b);var bd=Mid(b,d);var da=Mid(d,a);uint cab=Mix(ca,cb),cbd=Mix(cb,cd),cda=Mix(cd,ca);
         GlassPiece(a,ca,ab,cab,da,cda);GlassPiece(ab,cab,b,cb,bd,cbd);GlassPiece(da,cda,bd,cbd,d,cd);GlassPiece(ab,cab,bd,cbd,da,cda);

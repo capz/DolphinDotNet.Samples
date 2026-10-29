@@ -3,7 +3,7 @@ using Dolphin.Graphics;
 
 internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
 {
-    private const int GlassVertices=6*24*24*6, PanelVertices=3*36*3;
+    private const int GlassVertices=25*25, PanelVertices=3*36*3;
     private readonly GraphicsDevice device;
     private readonly Draw2D draw;
     private readonly Texture2D atlas=Texture2D.FromPng(IplFontData.Png,true);
@@ -13,7 +13,7 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
     private readonly Material glassMaterial=new Material {Blend=BlendMode.Alpha,Cull=CullMode.None,DepthTest=false,DepthWrite=false};
     private readonly Material frostMaterial=new Material {Blend=BlendMode.Alpha,Cull=CullMode.None,DepthTest=false,DepthWrite=false};
     private readonly VertexPositionColor[] glass=new VertexPositionColor[GlassVertices];
-    private readonly DynamicMesh glassMesh;
+    private readonly DynamicMesh[] glassMeshes=new DynamicMesh[6];
     private readonly IplPoint[] panelPoints=new IplPoint[PanelVertices];
     private readonly VertexPositionColorTexture[] panelVertices=new VertexPositionColorTexture[PanelVertices];
     private readonly DynamicMesh[] panelMeshes=new DynamicMesh[9];
@@ -24,7 +24,15 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
     {
         this.device=device;renderer=new Renderer(device);
         draw=new Draw2D(device,new Draw2DOptions {VertexCapacity=32760});
-        glassMesh=DynamicMesh.Create(glass);
+        // One shared 10 KiB managed vertex grid, not a 324 KiB triangle list:
+        // the published SDK reserves only 256 KiB for the entire managed heap.
+        var indices=new ushort[24*24*6];int at=0;
+        for(int y=0;y<24;y++)for(int x=0;x<24;x++)
+        {
+            int a=y*25+x;indices[at++]=(ushort)a;indices[at++]=(ushort)(a+1);indices[at++]=(ushort)(a+25);
+            indices[at++]=(ushort)(a+1);indices[at++]=(ushort)(a+26);indices[at++]=(ushort)(a+25);
+        }
+        for(int i=0;i<6;i++)glassMeshes[i]=DynamicMesh.Create(glass,indices);
         for(int i=0;i<9;i++)panelMeshes[i]=DynamicMesh.Create(panelVertices);
         camera.LookAt(new Vector3(0,0,1),new Vector3(0,0,0),new Vector3(0,1,0));
     }
@@ -47,20 +55,18 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
     private static Color32 Color(uint c)=>new Color32((byte)(c>>24),(byte)(c>>16),(byte)(c>>8),(byte)c);
     private Vector3 World(IplPoint p)=>new Vector3((p.X-320)*scale,(240-p.Y)*scale,0);
     public void BeginGlass(){glassCount=0;}
-    public void GlassTriangle(IplPoint a,uint ca,IplPoint b,uint cb,IplPoint d,uint cd)
-    {
-        glass[glassCount++]=new VertexPositionColor(World(a),Color(ca));
-        glass[glassCount++]=new VertexPositionColor(World(b),Color(cb));
-        glass[glassCount++]=new VertexPositionColor(World(d),Color(cd));
-    }
+    public void GlassVertex(int index,IplPoint point,uint color)
+    {glass[index]=new VertexPositionColor(World(point),Color(color));}
+    public void EndGlassFace()=>glassMeshes[glassCount++].SetVertices(glass);
     public void EndGlass()
     {
-        if(glassCount!=GlassVertices)throw new InvalidOperationException("Incomplete glass geometry.");
-        glassMesh.SetVertices(glass);
+        if(glassCount!=6)throw new InvalidOperationException("Incomplete glass geometry.");
     }
     public void DrawGlass()
     {
-        draw.End();renderer.Begin3D(camera);renderer.DrawMesh(glassMesh,glassMaterial,identity);renderer.End3D();draw.Begin();
+        draw.End();renderer.Begin3D(camera);
+        for(int i=0;i<6;i++)renderer.DrawMesh(glassMeshes[i],glassMaterial,identity);
+        renderer.End3D();draw.Begin();
     }
     public void BeginPanels(){panelCount=0;}
     public void PanelTriangle(IplPoint a,IplPoint b,IplPoint d)
@@ -115,6 +121,6 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
     public void Dispose()
     {
         capture?.Dispose();for(int i=0;i<panelMeshes.Length;i++)panelMeshes[i].Dispose();
-        glassMesh.Dispose();draw.Dispose();atlas.Dispose();
+        for(int i=0;i<glassMeshes.Length;i++)glassMeshes[i].Dispose();draw.Dispose();atlas.Dispose();
     }
 }

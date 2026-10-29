@@ -6,7 +6,8 @@ internal interface IIplCanvas
     void Triangle(float ax,float ay,float bx,float by,float cx,float cy,uint color);
     void Text(string value,float x,float y,float size,uint color,float angle);
     void BeginGlass();
-    void GlassTriangle(IplPoint a,uint ca,IplPoint b,uint cb,IplPoint d,uint cd);
+    void GlassVertex(int index,IplPoint point,uint color);
+    void EndGlassFace();
     void EndGlass();
     void DrawGlass();
     void BeginPanels();
@@ -140,12 +141,8 @@ internal sealed class IplRenderer
         for(int n=0;n<6;n++)
         {
             int face=faceOrder[n];
-            for(int y=0;y<24;y++)for(int x=0;x<24;x++)
-            {
-                int at=face*625+y*25+x;
-                c.GlassTriangle(projected[at],glassColors[at],projected[at+1],glassColors[at+1],projected[at+25],glassColors[at+25]);
-                c.GlassTriangle(projected[at+1],glassColors[at+1],projected[at+26],glassColors[at+26],projected[at+25],glassColors[at+25]);
-            }
+            for(int i=0;i<625;i++)c.GlassVertex(i,projected[face*625+i],glassColors[face*625+i]);
+            c.EndGlassFace();
         }
         c.EndGlass();
     }
