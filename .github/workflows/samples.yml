@@ -93,7 +93,7 @@ jobs:
         run: |
           set -euo pipefail
           case "$SAMPLE_GROUP" in
-            basics) samples="HelloGameCube ManagedGameCube ShaderDemo Pong GreenMen" ;;
+            basics) samples="HelloGameCube ManagedGameCube ShaderDemo VideoMode Pong GreenMen" ;;
             games) samples="Fox Kart Snake DiscBrowser StorageIntegrity" ;;
             services) samples="AsyncNetworking AudioDemo GoogleLogoAram HttpTexture HardwareDiagnostics" ;;
             *) echo "Unexpected sample group $SAMPLE_GROUP" >&2; exit 1 ;;

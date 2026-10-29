@@ -9,7 +9,7 @@ expected = {
     'DiscBrowserNavigationTests', 'FoxRulesSmoke', 'GreenMenRulesSmoke',
     'KartInputSmoke', 'KartItemSmoke', 'KartNetworkSmoke', 'KartRulesSmoke',
     'PongRulesSmoke', 'SampleDownloadTests', 'SampleRecordsTests',
-    'SnakeRulesSmoke',
+    'SnakeRulesSmoke', 'VideoModeMenuTests',
 }
 projects = list((root / 'tests').glob('*/*.csproj'))
 names = {project.parent.name for project in projects}

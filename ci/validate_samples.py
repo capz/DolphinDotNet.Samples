@@ -12,7 +12,7 @@ props = ET.parse(ROOT / "Directory.Build.props").getroot()
 version = props.find(".//DndPackageVersion").text
 assert sdk == version == VERSION, (sdk, version)
 projects = list(ROOT.glob("*/*.csproj"))
-assert len(projects) == 15, f"Expected 15 migrated projects, got {len(projects)}"
+assert len(projects) == 16, f"Expected 16 projects, got {len(projects)}"
 for path in projects:
     xml = ET.parse(path).getroot()
     assert xml.attrib.get("Sdk") == "DolphinDotNet.Sdk", str(path)
