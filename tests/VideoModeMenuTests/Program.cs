@@ -22,7 +22,7 @@ internal static class Program
     { if(!value) throw new Exception(message); }
     private static void Wide(VideoModeMenu menu) { while(menu.Row!=2) menu.Move(1); menu.Edit(1); }
 
-    private static void Main()
+    private static void Main(string[] args)
     {
         var output=new FakeOutput(); var menu=new VideoModeMenu(output);
         Check(output.Changes==0 && !menu.Pending,"Opening the menu must retain the boot mode");
@@ -59,5 +59,7 @@ internal static class Program
         menu.Revert();
         Check(output.Current.Scan==1,"Rollback restores resolved scan mode");
         Console.WriteLine("Video mode menu: navigation, apply/keep/revert, timeout, invalid modes, allocation rollback and safe mode passed.");
+        IplShellTests.Run();
+        if(args.Length==2&&args[0]=="--proof") IplProof.Write(args[1]);
     }
 }
