@@ -44,7 +44,7 @@ Linux/macOS devkitPPC/libogc2 toolchain; see [IDE setup](https://github.com/capz
 
 - **Visual Studio:** open the sample's `.sln`, select its executable as the
   startup project, choose **Dolphin Play**, and press **Ctrl+F5**.
-- **Rider:** open the sample's `.sln`, disable **Use ReSharper Build**, select
+- **Rider:** install DolphinDotNet plugin **0.4.0 or later**, open the sample's `.sln`, select
   **Run in emulator**, and click **Run**.
 
 Choose any sample directory name from the table for the CLI:

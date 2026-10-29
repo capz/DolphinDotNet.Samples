@@ -15,8 +15,11 @@ def validate(root):
             raise ValueError(f'{project.stem}: expected exactly three configurations')
         modes = set()
         for path in configs:
-            config = ET.parse(path).getroot().find('configuration')
-            if config is None:
+            root_element = ET.parse(path).getroot()
+            if root_element.tag != 'component' or root_element.get('name') != 'ProjectRunConfigurationManager' or len(root_element) != 1:
+                raise ValueError(f'{path}: expected one shared run configuration')
+            config = root_element[0]
+            if config.tag != 'configuration':
                 raise ValueError(f'{path}: missing configuration')
             mode = config.get('mode')
             if mode not in expected or mode in modes or config.get('name') != expected[mode]:
@@ -29,7 +32,7 @@ def validate(root):
             if set(config.attrib) - {'default', 'name', *required, 'mode'}:
                 raise ValueError(f'{path}: unexpected machine-specific configuration settings')
             method = config.find('method')
-            if method is None or method.get('v') != '2' or list(method):
+            if method is None or method.get('v') != '2' or list(method) or len(config) != 1:
                 raise ValueError(f'{path}: the plugin owns the build; remove extra before-run tasks')
         if modes != set(expected):
             raise ValueError(f'{project.stem}: missing action')
