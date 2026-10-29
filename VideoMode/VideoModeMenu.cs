@@ -34,6 +34,9 @@ internal sealed class VideoModeMenu
     internal void Move(int direction)
     { if(!Pending) Row=(Row+direction+3)%3; }
 
+    internal void SelectRow(int row) { if(!Pending) Row=row%3; }
+    internal void CancelSelection() { if(!Pending) Selected=Applied; }
+
     internal void Edit(int direction)
     {
         if(Pending) return;

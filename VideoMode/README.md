@@ -1,48 +1,59 @@
-# VideoMode
+# VideoMode: IPL-style native shell
 
-A small, asset-free video configuration menu. Changes run between device frames,
-using the SDK's `GraphicsDevice.ConfigureDisplay`.
+A native, controller-first system-menu demonstration using the published
+DolphinDotNet SDK. The visual target is the Nintendo GameCube IPL: a dark,
+translucent rounded cube floating on black, thin glossy edges, edge-mounted
+labels, green block-built values, a fading grid and a bottom controller legend.
+The rounded cube is projected 3D geometry, not a screenshot or rotating image.
 
-- D-pad up/down: select resolution, scan mode or widescreen.
-- D-pad left/right: change the selected value.
-- A: apply; press A again within 12 seconds to keep the mode.
-- B during preview: restore the previous confirmed mode.
-- X at any time: use 640x480 interlaced, 4:3.
-- Start: exit (revert an unconfirmed preview first).
-- Z: toggle the shared statistics overlay.
+## Controller flow
 
-Modes are 320x240, 640x480 and 640x576 with Auto, Interlaced or Progressive scan.
-Unsupported combinations and insufficient framebuffer memory leave the current
-mode active and show an error. 240p double-strike works on analog cables; 240i is
-unsupported. 480p/576p require the component/DTV signal and a compatible display.
-Auto scan is resolved by the SDK; rollback remembers the resolved mode.
+- At the cube: right opens Video, left Options, up Game Play, down Calendar.
+- On a face: up/down selects a row; A opens its flat configuration screen.
+- In a configuration screen: up/down changes the draft value; A confirms;
+  B discards and returns to the same face and row.
+- In Time/Date: left/right selects an independent segment; up/down changes
+  only that segment. Day counts follow the selected month and leap year.
+- B from a face returns to the cube. Memory Card returns to Options first.
+- Both the analog stick and D-pad work, with delayed directional repeat.
+- X requests 640x480 interlaced, 4:3. Start exits after safely reverting a preview.
+- Options > Motion disables idle floating and turning overshoot.
 
-The screen starts in the boot video mode with the SDK's default 4:3 rendering.
-Widescreen must be selected explicitly. It changes rendering only; output size
-and timing stay the same when only the widescreen row changes. Set the TV to the
-matching 4:3 or 16:9 aspect. The square and circle should retain their proportions;
-the right edge marker follows the expanded logical canvas automatically.
+Video settings use real `GraphicsDevice.ConfigureDisplay` calls between frames.
+A starts a 12-second hardware preview; A again keeps it, B or the timeout reverts
+it. Unsupported modes/cables and allocation failures leave the current mode
+active. Rollback allocation failures remain pending and retry once per second.
+Widescreen-only changes preserve timing and buffers. The UI uses display-correct
+logical coordinates and centers its 4:3 composition inside a widescreen canvas.
 
-The menu uses the default display-correct `Draw2D` canvas and scales its layout
-for 240-line rendering. The active output and render dimensions are displayed
-separately; PAL 576 modes use a 640x480 EFB scaled to a 640x576 output buffer.
-On an unusual boot mode outside the three standard presets, revert uses the
-corresponding standard mode (or 640x480) rather than preserving custom VI timings.
+Time, date and sound are explicitly session-only interaction demonstrations.
+They do not write the console RTC or system SRAM. Game Play and Memory Card are
+honest empty demonstration faces, not a disc launcher or card manager. The sample
+does not include Nintendo firmware, fonts, logos or game-save artwork.
 
-This sample requires the display APIs introduced by
-[SDK PR #134](https://github.com/capz/DolphinDotNet/pull/134). Published preview
-`0.1.0-preview.15.1` predates them. Before the normal package-based build, publish
-an updated SDK preview and update `global.json` and `DndPackageVersion` in both
-root and test `Directory.Build.props`, plus the pinned validator version.
-
-Build and launch from the repository root after that dependency update:
+## Build and validation
 
 ```sh
 dotnet build VideoMode/VideoMode.sln -c Release
-dotnet run --project VideoMode -c Release --no-build
+dotnet run --project tests/VideoModeMenuTests -c Release
 ```
 
-No storage, network services, downloaded fonts or external assets are needed.
-The 12-second revert runs even with a disconnected controller. If reverting cannot
-allocate replacement buffers, it retries once per second; X can request the safe
-mode. The sample does not save settings across launches.
+The repository's native CI also AOT-compiles and links this sample into DOL/ELF
+using the compiler and native support in NuGet preview `0.1.0-preview.103.1`.
+Hardware/TV acceptance and visual comparison inside Dolphin remain separate
+from successful compilation; do not treat host visual proofs as emulator captures.
+
+To inspect deterministic visual proofs from the exact shared C# scene renderer:
+
+```sh
+dotnet run --project tests/VideoModeMenuTests -c Release -- --proof /path/to/proofs
+```
+
+Open the generated `index.html`. It exports the cube, Video face, flat aspect
+selector and independent date segments. SVG is only the host inspection adapter;
+the application uses native Draw2D triangles and a bundled glyph atlas.
+
+Typography is an original atlas generated from Nunito weight 800, licensed under
+SIL OFL in `Assets/OFL-Nunito.txt`. It is a close substitute, not the IPL font.
+A pixel-identical reproduction and complete platform input/hardware acceptance
+must not be claimed without a captured native run against the reference images.
