@@ -9,7 +9,7 @@ using Dolphin.Timing;
 // measured frame. Clock timestamps are unclamped microseconds, unlike shell dt.
 internal static class IplFrameProfiler
 {
-    internal const string Variant="shared-blur-mesh";
+    internal const string Variant="cached-lighting";
     internal const int Frames=96, Columns=17;
     internal static readonly int[] Samples=new int[Frames*Columns];
     private static readonly byte[] line=new byte[256];

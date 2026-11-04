@@ -31,6 +31,8 @@ internal sealed class IplRenderer
     private readonly IplPoint[] points=new IplPoint[6*25*25];
     private readonly int[] faceOrder=new int[6];
     private readonly float[] depth=new float[6];
+    private readonly uint[] wallTints=new uint[16];
+    private readonly IplPoint[] wallDirections=new IplPoint[4*13];
     // A broad corner arc must remain visible at native resolution. The optical
     // wall uses the same radius family as the underlying rounded solid.
     private const float Round=.24f,Core=1-Round,WallCorner=.28f;
@@ -39,6 +41,21 @@ internal sealed class IplRenderer
         c=canvas;
         for(int f=0;f<6;f++) for(int y=0;y<=24;y++) for(int x=0;x<=24;x++)
             points[f*625+y*25+x]=Rounded(Surface(f,Coordinate(x),Coordinate(y)));
+        for(int corner=0;corner<4;corner++)for(int j=0;j<=12;j++)
+        {
+            float a=(180-corner*90-j*90f/12)*.017453293f;
+            wallDirections[corner*13+j]=new IplPoint((float)Math.Cos(a),(float)Math.Sin(a));
+        }
+        for(int band=0;band<16;band++)
+        {
+            float t=(band+.5f)/16;
+            float polish=(float)Math.Exp(-Math.Pow((t-.10f)/.035f,2));
+            float exit=(float)Math.Exp(-Math.Pow((t-.90f)/.035f,2));
+            float secondary=(float)Math.Exp(-Math.Pow((t-.42f)/.035f,2));
+            float spectrum=(float)Math.Sin(t*12.56637f),envelope=(float)Math.Sin(t*3.1415926f);
+            int alpha=(int)((4+polish*205+secondary*110+exit*130)*Math.Sqrt(envelope));
+            wallTints[band]=Rgba((int)(35+polish*150+secondary*90+exit*70+spectrum*20),(int)(52+polish*160+secondary*80+exit*70),(int)(72+polish*170+secondary*120+exit*85-spectrum*20),alpha);
+        }
     }
     private static float Coordinate(int i) => i<6 ? -1+Round*(1-(float)Math.Cos(i/6f*1.5707963f)) : i>18 ? -Coordinate(24-i) : -Core+(i-6)*2*Core/12;
     private static float Clamp(float a,float lo,float hi)=>Math.Max(lo,Math.Min(hi,a));
@@ -197,7 +214,7 @@ internal sealed class IplRenderer
         int blue=(int)(18+teal*140+amber*9+violet*133+fresnel*27);
         return Rgba(r,g,blue,(int)(205-normal.Z*22));
     }
-    private static float Light(float x,float y,float spread)=>(float)Math.Exp(-(x*x+y*y)/(spread*spread));
+    private static float Light(float x,float y,float spread)=>IplLighting.ExpNegative((x*x+y*y)/(spread*spread));
 
     // A shaded optical cross-section follows the rotating wall without strokes.
     private void GlassRims()
@@ -213,16 +230,8 @@ internal sealed class IplRenderer
             // Broad transmission and two soft polish lobes have no hard seam.
             for(int band=0;band<16;band++)
             {
-                float t=(band+.5f)/16;
-                float polish=(float)Math.Exp(-Math.Pow((t-.10f)/.035f,2));
-                float exit=(float)Math.Exp(-Math.Pow((t-.90f)/.035f,2));
-                float secondary=(float)Math.Exp(-Math.Pow((t-.42f)/.035f,2));
-                float spectrum=(float)Math.Sin(t*12.56637f);
-                float envelope=(float)Math.Sin(t*3.1415926f);
-                int alpha=(int)((4+polish*205+secondary*110+exit*130)*Math.Sqrt(envelope));
-                uint tint=Rgba((int)(35+polish*150+secondary*90+exit*70+spectrum*20),(int)(52+polish*160+secondary*80+exit*70),(int)(72+polish*170+secondary*120+exit*85-spectrum*20),alpha);
                 float outside=band/16f,inside=(band+1)/16f;
-                GlassWall(face,.997f-outside*.147f,.997f-inside*.147f,1-outside*.050f,1-inside*.050f,tint);
+                GlassWall(face,.997f-outside*.147f,.997f-inside*.147f,1-outside*.050f,1-inside*.050f,wallTints[band]);
             }
         }
     }
@@ -233,23 +242,23 @@ internal sealed class IplRenderer
         IplPoint previousOuter=default,previousInner=default,firstOuter=default,firstInner=default;
         for(int corner=0;corner<4;corner++)for(int j=0;j<=12;j++)
         {
-            float a=(180-corner*90-j*90f/12)*.017453293f;
-            var o=WallPoint(face,corner,a,outer,WallCorner+(outer-.997f)/.147f*.015f,front);
-            var n=WallPoint(face,corner,a,inner,WallCorner+(inner-.997f)/.147f*.015f,back);
+            var direction=wallDirections[corner*13+j];
+            var o=WallPoint(face,corner,direction,outer,WallCorner+(outer-.997f)/.147f*.015f,front);
+            var n=WallPoint(face,corner,direction,inner,WallCorner+(inner-.997f)/.147f*.015f,back);
             if(corner==0&&j==0){firstOuter=o;firstInner=n;}
             else WallSegment(previousOuter,o,previousInner,n,color);
             previousOuter=o;previousInner=n;
         }
         WallSegment(previousOuter,firstOuter,previousInner,firstInner,color);
     }
-    private static IplPoint WallPoint(int face,int corner,float angle,float extent,float radius,float depth)
+    private static IplPoint WallPoint(int face,int corner,IplPoint direction,float extent,float radius,float depth)
     {
         float x=corner==0||corner==3?-extent+radius:extent-radius;
         float y=corner<2?extent-radius:-extent+radius;
         // Offset the transmitted inner boundary inside the glass: the mockup
         // shows more optical depth on the left than on the right.
         float refraction=(1-depth)/.050f*.105f;
-        var p=Surface(face,x+(float)Math.Cos(angle)*radius+refraction,y+(float)Math.Sin(angle)*radius);
+        var p=Surface(face,x+direction.X*radius+refraction,y+direction.Y*radius);
         return new IplPoint(p.X*depth,p.Y*depth,p.Z*depth);
     }
     private static IplPoint Lerp(IplPoint a,IplPoint b,float t)=>new IplPoint(a.X+(b.X-a.X)*t,a.Y+(b.Y-a.Y)*t,a.Z+(b.Z-a.Z)*t);
