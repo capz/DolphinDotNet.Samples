@@ -52,10 +52,10 @@ internal sealed class IplProof : IIplCanvas
         string id="backdrop"+(ink++).ToString();
         shapes.Append("<defs><g id='"+id+"'>"+backdrop+"</g><filter id='"+id+"-blur'><feGaussianBlur stdDeviation='3.3'/></filter><clipPath id='"+id+"-clip'><path d='"+panels+"'/></clipPath></defs><g clip-path='url(#"+id+"-clip)'><use href='#"+id+"' filter='url(#"+id+"-blur)'/></g>");
     }
-    public void Text(string text,float x,float y,float size,uint color,float angle)
+    public void Text(string text,float x,float y,float size,uint color,float angle,float stretch=1)
     {
         string id="ink"+(ink++).ToString();
-        shapes.Append("<filter id='"+id+"'><feFlood flood-color='"+Color(color)+"'/><feComposite in2='SourceAlpha' operator='in'/></filter><g filter='url(#"+id+")' transform='translate("+N(x)+" "+N(y)+") rotate("+N(angle)+") scale("+N(size/28)+")' opacity='"+N((color&255)/255f)+"'>");
+        shapes.Append("<filter id='"+id+"'><feFlood flood-color='"+Color(color)+"'/><feComposite in2='SourceAlpha' operator='in'/></filter><g filter='url(#"+id+")' transform='translate("+N(x)+" "+N(y)+") rotate("+N(angle)+") scale("+N(size/28*stretch)+" "+N(size/28)+")' opacity='"+N((color&255)/255f)+"'>");
         float advance=0;
         for(int i=0;i<text.Length;i++)
         {

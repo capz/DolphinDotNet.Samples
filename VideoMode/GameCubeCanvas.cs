@@ -3,7 +3,7 @@ using Dolphin.Graphics;
 
 internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
 {
-    private const int GlassVertices=25*25, PanelVertices=3*36*3;
+    private const int GlassVertices=25*25, PanelVertices=3*36*3,BlurAxis=9,BlurTaps=BlurAxis*BlurAxis;
     private readonly GraphicsDevice device;
     private readonly Draw2D draw;
     private readonly Texture2D atlas=Texture2D.FromPng(IplFontData.Png,true);
@@ -21,7 +21,7 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
     private readonly Color32[] glossColors=new Color32[GlassVertices];
     private readonly IplPoint[] panelPoints=new IplPoint[PanelVertices];
     private readonly VertexPositionColorTexture[] panelVertices=new VertexPositionColorTexture[PanelVertices];
-    private readonly DynamicMesh[] panelMeshes=new DynamicMesh[25];
+    private readonly DynamicMesh[] panelMeshes=new DynamicMesh[BlurTaps];
     private SceneCapture? capture;
     private int glassCount,panelCount,captureWidth,captureHeight;
     private float scale=1,offset,logicalWidth=640,logicalHeight=480;
@@ -39,7 +39,7 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
             indices[at++]=(ushort)(a+1);indices[at++]=(ushort)(a+26);indices[at++]=(ushort)(a+25);
         }
         for(int i=0;i<6;i++){glassMeshes[i]=DynamicMesh.Create(glass,indices);glossMeshes[i]=DynamicMesh.Create(glass,indices);}
-        for(int i=0;i<25;i++)panelMeshes[i]=DynamicMesh.Create(panelVertices);
+        for(int i=0;i<BlurTaps;i++)panelMeshes[i]=DynamicMesh.Create(panelVertices);
         camera.LookAt(new Vector3(0,0,1),new Vector3(0,0,0),new Vector3(0,1,0));
     }
     internal void Prepare()
@@ -96,11 +96,12 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
     {panelPoints[panelCount++]=a;panelPoints[panelCount++]=b;panelPoints[panelCount++]=d;}
     public void EndPanels()
     {
-        // All twenty-five meshes sample one immutable snapshot. Offsetting only UVs
+        if(panelCount==0)return;
+        // All blur meshes sample one immutable snapshot. Offsetting only UVs
         // keeps the rounded silhouette fixed while averaging the backdrop.
-        for(int tap=0;tap<25;tap++)
+        for(int tap=0;tap<BlurTaps;tap++)
         {
-            float dx=(tap%5-2)*6,dy=(tap/5-2)*6;
+            float dx=(tap%BlurAxis-BlurAxis/2)*3,dy=(tap/BlurAxis-BlurAxis/2)*3;
             for(int i=0;i<PanelVertices;i++)
             {
                 if(i>=panelCount){panelVertices[i]=default;continue;}
@@ -120,12 +121,12 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
         if(panelCount==0)return;
         draw.End();renderer.Begin3D(camera);
         float accumulated=0;
-        for(int tap=0;tap<25;tap++)
+        for(int tap=0;tap<BlurTaps;tap++)
         {
             // Incremental Gaussian average of the immutable captured backdrop.
             // Pass zero replaces the row; later taps normalize by running weight.
-            float x=tap%5-2,y=tap/5-2;
-            float weight=(float)Math.Exp(-(x*x+y*y)*.28125f);accumulated+=weight;
+            float x=tap%BlurAxis-BlurAxis/2,y=tap/BlurAxis-BlurAxis/2;
+            float weight=(float)Math.Exp(-(x*x+y*y)*.0555556f);accumulated+=weight;
             frostMaterial.Color=new Color32(255,255,255,(byte)(255*weight/accumulated+.5f));
             renderer.DrawMesh(panelMeshes[tap],frostMaterial,identity);
         }
@@ -133,15 +134,15 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
     }
     public void Triangle(float ax,float ay,float bx,float by,float cx,float cy,uint color)
     {draw.FillTriangle(new Vector2(offset+ax*scale,ay*scale),new Vector2(offset+bx*scale,by*scale),new Vector2(offset+cx*scale,cy*scale),Color(color));}
-    public void Text(string value,float x,float y,float size,uint color,float angle)
+    public void Text(string value,float x,float y,float size,uint color,float angle,float stretch=1)
     {
         float factor=size/28,co=(float)Math.Cos(angle*.017453293f),si=(float)Math.Sin(angle*.017453293f),advance=0;
         for(int i=0;i<value.Length;i++)
         {
             int ch=value[i]-32;if(ch<0||ch>=96)continue;
             draw.DrawTexture(atlas,new RectF(ch%16*32,ch/16*40,32,40),
-                new RectF(offset+(x+advance*co)*scale,(y+advance*si)*scale,32*factor*scale,40*factor*scale),Color(color),angle,new Vector2(0,0));
-            advance+=IplFontData.Widths[ch]*factor;
+                new RectF(offset+(x+advance*co)*scale,(y+advance*si)*scale,32*factor*stretch*scale,40*factor*scale),Color(color),angle,new Vector2(0,0));
+            advance+=IplFontData.Widths[ch]*factor*stretch;
         }
     }
     public void Dispose()
