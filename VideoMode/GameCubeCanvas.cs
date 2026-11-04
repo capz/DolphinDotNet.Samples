@@ -100,7 +100,7 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
         // keeps the rounded silhouette fixed while averaging the backdrop.
         for(int tap=0;tap<25;tap++)
         {
-            float dx=(tap%5-2)*3,dy=(tap/5-2)*3;
+            float dx=(tap%5-2)*6,dy=(tap/5-2)*6;
             for(int i=0;i<PanelVertices;i++)
             {
                 if(i>=panelCount){panelVertices[i]=default;continue;}
@@ -119,11 +119,14 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
     {
         if(panelCount==0)return;
         draw.End();renderer.Begin3D(camera);
+        float accumulated=0;
         for(int tap=0;tap<25;tap++)
         {
-            // Incremental normalized average: each pass contributes 1/(tap+1).
-            // Pass zero replaces the unblurred row; later taps blend into it.
-            frostMaterial.Color=new Color32(255,255,255,(byte)(255/(tap+1)));
+            // Incremental Gaussian average of the immutable captured backdrop.
+            // Pass zero replaces the row; later taps normalize by running weight.
+            float x=tap%5-2,y=tap/5-2;
+            float weight=(float)Math.Exp(-(x*x+y*y)*.28125f);accumulated+=weight;
+            frostMaterial.Color=new Color32(255,255,255,(byte)(255*weight/accumulated+.5f));
             renderer.DrawMesh(panelMeshes[tap],frostMaterial,identity);
         }
         renderer.End3D();draw.Begin();

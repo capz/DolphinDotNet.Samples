@@ -41,3 +41,13 @@ the upper-right reflected studio light. At fixed corresponding unblurred patches
 upper-right native RGB is `(60,118,110)` versus target `(63,119,111)`; left amber
 is `(95,52,17)` versus `(95,55,21)`. These local samples do not imply a global
 image match. Row frost is still too pale/grid-like and the gear is too low.
+
+## Pass 5/6 — native pass 34
+
+![Pass 34](pass-34-native.png)
+
+Raised/reshaped the gear, warmed its purple tone, moved the title down and
+introduced a wider weighted blur with less opaque row tint. Title/gear placement
+is closer, but the sparse 25-tap wide kernel exposes a repeated sampling grid.
+The final pass must address this regression rather than treating it as accepted
+frost quality.

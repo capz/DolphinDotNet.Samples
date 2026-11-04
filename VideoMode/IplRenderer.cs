@@ -309,7 +309,7 @@ internal sealed class IplRenderer
         c.Text(text,x,y,size,color,angle);
     }
     private void FacePanel(IplShell s,int row)=>PanelShape(s,row,0);
-    private void PanelTint(IplShell s,int row)=>PanelShape(s,row,row==s.Row?0xc5c8d45c:0xb9bdbd4d);
+    private void PanelTint(IplShell s,int row)=>PanelShape(s,row,row==s.Row?0xc5c8d443:0xb9bdbd3f);
     private void PanelShape(IplShell s,int row,uint tint)
     {
         const float left=-.78f,right=.78f,height=.33f,radius=.075f;
@@ -336,24 +336,24 @@ internal sealed class IplRenderer
     private void FaceIcon(IplShell s)
     {
         var bitmap=s.Face==ShellFace.Video?monitor:s.Face==ShellFace.Calendar?calendar:s.Face==ShellFace.Options?options:s.Face==ShellFace.Play?play:s.Face==ShellFace.Memory?memory:home;
-        uint color=s.Face==ShellFace.Video?0x3f6ed54bu:s.Face==ShellFace.Calendar?0x39a88148u:s.Face==ShellFace.Options?0x986bd44au:s.Face==ShellFace.Play?0xe0a34d48u:s.Face==ShellFace.Memory?0x6788d54bu:0x708fc535u;
-        const float cell=.12f;float left=-bitmap[0].Length*cell/2,top=bitmap.Length*cell/2;
+        uint color=s.Face==ShellFace.Video?0x3f6ed54bu:s.Face==ShellFace.Calendar?0x39a88148u:s.Face==ShellFace.Options?0xd878dc55u:s.Face==ShellFace.Play?0xe0a34d48u:s.Face==ShellFace.Memory?0x6788d54bu:0x708fc535u;
+        const float cell=.122f,rowStep=.114f;float left=-bitmap[0].Length*cell/2,top=bitmap.Length*rowStep/2+.075f;
         for(int y=0;y<bitmap.Length;y++)for(int x=0;x<bitmap[y].Length;x++)if(bitmap[y][x]=='1')
         {
-            float u=left+x*cell,v=top-y*cell;
-            FaceBlock(s,u,v,cell-.012f,color);
+            float u=left+x*cell,v=top-y*rowStep;
+            FaceBlock(s,u,v,cell-.012f,rowStep-.012f,color);
             FaceQuad(s,u+.006f,v-.006f,cell-.024f,.010f,0xc2d4ff28);
-            FaceQuad(s,u+cell-.022f,v-.017f,.010f,cell-.032f,0x080d1a40);
+            FaceQuad(s,u+cell-.022f,v-.017f,.010f,rowStep-.032f,0x080d1a40);
         }
     }
-    private void FaceBlock(IplShell s,float u,float v,float size,uint color)
+    private void FaceBlock(IplShell s,float u,float v,float width,float height,uint color)
     {
         const float radius=.012f;
-        var center=FacePoint(s,u+size/2,v-size/2);IplPoint first=default,previous=default;
+        var center=FacePoint(s,u+width/2,v-height/2);IplPoint first=default,previous=default;
         for(int corner=0;corner<4;corner++)for(int j=0;j<=3;j++)
         {
-            float x=corner==0||corner==3?u+radius:u+size-radius;
-            float y=corner<2?v-radius:v-size+radius;
+            float x=corner==0||corner==3?u+radius:u+width-radius;
+            float y=corner<2?v-radius:v-height+radius;
             float angle=(180-corner*90-j*30)*.017453293f;
             var p=FacePoint(s,x+(float)Math.Cos(angle)*radius,y+(float)Math.Sin(angle)*radius);
             if(corner==0&&j==0)first=p;else Tri(center,previous,p,color);
@@ -368,7 +368,7 @@ internal sealed class IplRenderer
     }
     private void FaceMenu(IplShell s)
     {
-        FaceText(s,s.Title,0,.82f,26,White);
+        FaceText(s,s.Title,0,.79f,26,White);
         if(s.Face==ShellFace.Memory||s.Face==ShellFace.Play)
         {
             FaceText(s,s.Face==ShellFace.Play?"No disc selected.":"No card selected.",0,.1f,16,White);
