@@ -14,3 +14,11 @@ Each refinement is committed with its native capture before the next change.
 Adjusted projected width/center, panel width, label/value anchors and selected
 text growth. These bring layout and focus hierarchy closer to the mockup. The
 material still reads as a thin frame, with insufficient optical wall depth.
+
+## Pass 2/6 — native pass 31
+
+![Pass 31](pass-31-native.png)
+
+Deepened the optical cross-section and offset its transmitted inner boundary.
+The wall reads thicker and less symmetric. The inner boundary is still too
+uniformly blue, and corner highlights remain weaker than the mockup.

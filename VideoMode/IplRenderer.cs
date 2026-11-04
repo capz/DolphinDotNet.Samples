@@ -219,7 +219,7 @@ internal sealed class IplRenderer
                 int alpha=(int)((2+polish*170+exit*95)*Math.Sqrt(envelope));
                 uint tint=Rgba((int)(65+polish*62+exit*28),(int)(91+polish*67+exit*25),(int)(117+polish*70+exit*32),alpha);
                 float outside=band/16f,inside=(band+1)/16f;
-                GlassWall(face,.997f-outside*.087f,.997f-inside*.087f,1-outside*.045f,1-inside*.045f,tint);
+                GlassWall(face,.997f-outside*.117f,.997f-inside*.117f,1-outside*.050f,1-inside*.050f,tint);
             }
         }
     }
@@ -231,8 +231,8 @@ internal sealed class IplRenderer
         for(int corner=0;corner<4;corner++)for(int j=0;j<=12;j++)
         {
             float a=(180-corner*90-j*90f/12)*.017453293f;
-            var o=WallPoint(face,corner,a,outer,.075f+(outer-.997f)/.087f*.010f,front);
-            var n=WallPoint(face,corner,a,inner,.075f+(inner-.997f)/.087f*.010f,back);
+            var o=WallPoint(face,corner,a,outer,.075f+(outer-.997f)/.117f*.010f,front);
+            var n=WallPoint(face,corner,a,inner,.075f+(inner-.997f)/.117f*.010f,back);
             if(corner==0&&j==0){firstOuter=o;firstInner=n;}
             else WallSegment(previousOuter,o,previousInner,n,color);
             previousOuter=o;previousInner=n;
@@ -243,7 +243,10 @@ internal sealed class IplRenderer
     {
         float x=corner==0||corner==3?-extent+radius:extent-radius;
         float y=corner<2?extent-radius:-extent+radius;
-        var p=Surface(face,x+(float)Math.Cos(angle)*radius,y+(float)Math.Sin(angle)*radius);
+        // Offset the transmitted inner boundary inside the glass: the mockup
+        // shows more optical depth on the left than on the right.
+        float refraction=(1-depth)/.050f*.070f;
+        var p=Surface(face,x+(float)Math.Cos(angle)*radius+refraction,y+(float)Math.Sin(angle)*radius);
         return new IplPoint(p.X*depth,p.Y*depth,p.Z*depth);
     }
     private static IplPoint Lerp(IplPoint a,IplPoint b,float t)=>new IplPoint(a.X+(b.X-a.X)*t,a.Y+(b.Y-a.Y)*t,a.Z+(b.Z-a.Z)*t);
