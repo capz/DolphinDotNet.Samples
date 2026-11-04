@@ -15,7 +15,8 @@ for y in range(size):
         white+=box(u,v,.17,.54,.045,.48,.006)*.72
         white+=box(u,v,.53,.70,.64,.008,.004)*.60
         white+=box(u,v,.13,.54,.008,.43,.004)*.38
-        white+=box(u,v,.81,.72,.05,.09,.008)
+        white+=box(u,v,.81,.72,.13,.10,.006)
+        white+=box(u,v,.80,.83,.18,.015,.004)*.9
         teal=box(u,v,.78,.47,.014,.50,.012)*.45
         violet=box(u,v,.48,.20,.55,.01,.008)*.48
         # A weak, crisp panel reflected in the flat front pane.

@@ -213,11 +213,13 @@ internal sealed class IplRenderer
             for(int band=0;band<16;band++)
             {
                 float t=(band+.5f)/16;
-                float polish=(float)Math.Exp(-Math.Pow((t-.12f)/.045f,2));
-                float exit=(float)Math.Exp(-Math.Pow((t-.80f)/.060f,2));
+                float polish=(float)Math.Exp(-Math.Pow((t-.10f)/.035f,2));
+                float exit=(float)Math.Exp(-Math.Pow((t-.90f)/.035f,2));
+                float secondary=(float)Math.Exp(-Math.Pow((t-.42f)/.035f,2));
+                float spectrum=(float)Math.Sin(t*12.56637f);
                 float envelope=(float)Math.Sin(t*3.1415926f);
-                int alpha=(int)((2+polish*170+exit*95)*Math.Sqrt(envelope));
-                uint tint=Rgba((int)(65+polish*62+exit*28),(int)(91+polish*67+exit*25),(int)(117+polish*70+exit*32),alpha);
+                int alpha=(int)((4+polish*205+secondary*110+exit*130)*Math.Sqrt(envelope));
+                uint tint=Rgba((int)(35+polish*150+secondary*90+exit*70+spectrum*20),(int)(52+polish*160+secondary*80+exit*70),(int)(72+polish*170+secondary*120+exit*85-spectrum*20),alpha);
                 float outside=band/16f,inside=(band+1)/16f;
                 GlassWall(face,.997f-outside*.117f,.997f-inside*.117f,1-outside*.050f,1-inside*.050f,tint);
             }
@@ -276,7 +278,7 @@ internal sealed class IplRenderer
         int r=(int)((color>>24)*.55f+glint*190+warm*100+lower*40);
         int g=(int)(((color>>16)&255)*.65f+glint*185+warm*58+lower*28);
         int b=(int)(((color>>8)&255)*.80f+glint*170+lower*120);
-        return Rgba(r,g,b,(int)(Math.Min(255,(color&255)*(1+glint*3))*rimVisibility));
+        return Rgba(r,g,b,(int)(Math.Min(255,(color&255)*(.06f+glint*4+warm*.6f+lower*1.4f))*rimVisibility));
     }
     private static uint Rgba(int r,int g,int b,int a)=>(uint)((Math.Min(255,r)<<24)|(Math.Min(255,g)<<16)|(Math.Min(255,b)<<8)|a);
     private static int SurfaceIndex(ShellFace face)=>face==ShellFace.Calendar?4:face==ShellFace.Options?2:face==ShellFace.Play?3:(int)face;

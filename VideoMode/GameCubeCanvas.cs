@@ -66,7 +66,7 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
         glass[index]=new VertexPositionColorTexture(World(point),Color(color),new Vector2(u,v));
         // Store the complete struct: preview.103.1 mislowers direct float-to-byte
         // array stores to an eight-byte store, corrupting adjacent managed data.
-        byte strength=(byte)((color&255)*reflection);
+        byte strength=(byte)Math.Min(255,(color&255)*reflection*1.35f);
         glossColors[index]=new Color32(strength,strength,strength,255);
     }
     public void EndGlassFace()
