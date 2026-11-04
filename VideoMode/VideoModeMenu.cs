@@ -20,6 +20,7 @@ internal sealed class VideoModeMenu
 {
     internal const float PreviewSeconds=12;
     private readonly IVideoModeOutput output;
+    private readonly bool allowUnvalidated576Progressive;
     private VideoModeSettings previous;
     internal VideoModeSettings Selected { get; private set; }
     internal VideoModeSettings Applied { get; private set; }
@@ -29,8 +30,8 @@ internal sealed class VideoModeMenu
     internal float Remaining { get; private set; }
     internal string Status { get; private set; }="CHOOSE SETTINGS THEN PRESS A";
 
-    internal VideoModeMenu(IVideoModeOutput output)
-    { this.output=output; Applied=Selected=output.Read(); }
+    internal VideoModeMenu(IVideoModeOutput output,bool allowUnvalidated576Progressive=false)
+    { this.output=output;this.allowUnvalidated576Progressive=allowUnvalidated576Progressive; Applied=Selected=output.Read(); }
 
     internal void Move(int direction)
     { if(!Pending) Row=(Row+direction+3)%3; }
@@ -87,6 +88,14 @@ internal sealed class VideoModeMenu
 
     private bool TryConfigure(VideoModeSettings settings)
     {
+        // Repeated 576i/p switching stalls with the pinned native runtime in
+        // Dolphin. Keep release builds on qualified timings; Auto must not
+        // silently resolve to the same unqualified progressive mode.
+        if(settings.Resolution==2&&!allowUnvalidated576Progressive)
+        {
+            if(settings.Scan==2){Status="576P NOT QUALIFIED";return false;}
+            if(settings.Scan==0)settings=new VideoModeSettings(2,1,settings.Widescreen);
+        }
         try { output.Configure(settings); Applied=output.Read(); return true; }
         catch(InvalidOperationException)
         { Status="UNSUPPORTED MODE OR CABLE"; return false; }

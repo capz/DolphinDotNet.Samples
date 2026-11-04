@@ -44,6 +44,20 @@ active. Rollback allocation failures remain pending and retry once per second.
 Widescreen-only changes preserve timing and buffers. The UI uses display-correct
 logical coordinates and centers its 4:3 composition inside a widescreen canvas.
 
+To switch **480i / 480p**, open Video with right, select **Scan**, press A,
+and use up/down to choose **Interlaced** or **Progressive**. A starts the preview;
+A again keeps it, or B reverts. Progressive requires a compatible cable/display.
+In Dolphin, enable its progressive/component-cable setting (`SYSCONF.IPL.PGS=True`);
+without that capability the native API rejects progressive and preserves the
+current mode. X always requests 480i, 4:3.
+
+Repeated 576i/576p switching stalled in the pinned native runtime with cloud
+Dolphin 2503. Normal builds therefore reject 576p before changing output, and
+resolve 576 Auto to interlaced. This is a sample qualification guard, not a claim
+that the console cannot produce 576p. [Native scan-mode evidence, commands and
+limitations](Design/scan-mode-review.md) document the passing 480 sequence and
+the incomplete 576 sequence. Physical console/cable/display testing remains open.
+
 Time, date and sound are explicitly session-only interaction demonstrations.
 They do not write the console RTC or system SRAM. Game Play and Memory Card are
 honest empty demonstration faces, not a disc launcher or card manager. The sample

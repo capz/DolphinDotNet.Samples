@@ -3,6 +3,8 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
+    <DefineConstants Condition="'$(IplVideoModeReview)' == 'true' and '$(IplVideoModeReviewResolution)' == '576'">$(DefineConstants);IPL_VIDEO_MODE_REVIEW_PAL</DefineConstants>
+    <DefineConstants Condition="'$(IplVideoModeReview)' == 'true'">$(DefineConstants);IPL_VIDEO_MODE_REVIEW</DefineConstants>
     <DefineConstants Condition="'$(IplVisualReview)' == 'true'">$(DefineConstants);IPL_VISUAL_REVIEW</DefineConstants>
     <DefineConstants Condition="'$(IplVisualReview)' == 'true' and '$(IplVisualReviewAngle)' == 'true'">$(DefineConstants);IPL_VISUAL_REVIEW_ANGLE</DefineConstants>
   </PropertyGroup>
@@ -10,5 +12,11 @@
     <DndEffect Include="gloss.dndfx.json" GeneratedSource="IplGlossEffect.g.cs" ClassName="IplGlossEffect" />
     <PackageReference Include="DolphinDotNet.GameCube" Version="$(DndPackageVersion)" />
   </ItemGroup>
+  <Target Name="ValidateIplReviewModes" BeforeTargets="CoreCompile">
+    <Error Condition="'$(IplVideoModeReview)' == 'true' and '$(IplVisualReview)' == 'true'"
+           Text="Choose either IplVideoModeReview or IplVisualReview for a deterministic native review." />
+    <Error Condition="'$(IplVideoModeReview)' == 'true' and '$(IplVideoModeReviewResolution)' != '' and '$(IplVideoModeReviewResolution)' != '480' and '$(IplVideoModeReviewResolution)' != '576'"
+           Text="IplVideoModeReviewResolution must be 480 or 576." />
+  </Target>
   <Import Project="DolphinGraphics.targets" />
 </Project>

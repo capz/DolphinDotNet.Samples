@@ -1,0 +1,50 @@
+{
+  "resolution": 576,
+  "success": false,
+  "error": "Native frame production stalled at frame 95",
+  "dol_sha256": "ceeadbed727a1e13c3895f419b6351832bd1b07357c9f7c832930e8ad3a33dd0",
+  "phases": [
+    {
+      "caption": "SCAN 01 BASELINE | ACTUAL 5761",
+      "resolved_mode": "576I",
+      "frame": 4,
+      "native_png": "scan-01-576i-native.png",
+      "sha256": "63814806bc52c950cd17c25573cbf33cdc98997e16c8eae5368ac15cdef48a66"
+    },
+    {
+      "caption": "SCAN 02 PREVIEW P ACTUAL 576P",
+      "resolved_mode": "576P",
+      "frame": 20,
+      "native_png": "scan-02-576p-native.png",
+      "sha256": "aa6127836f8578b4b871047a78107c105de1f21b837591814f42e89e08f154dc"
+    },
+    {
+      "caption": "SCAN 03 KEEP P ACTUAL 576P",
+      "resolved_mode": "576P",
+      "frame": 36,
+      "native_png": "scan-03-576p-native.png",
+      "sha256": "01e326d5893872533132a6c46ec2154d0405fad14ade71e6b43a6a1db1b0448a"
+    },
+    {
+      "caption": "SCAN 04 PREVIEW | ACTUAL 5761",
+      "resolved_mode": "576I",
+      "frame": 52,
+      "native_png": "scan-04-576i-native.png",
+      "sha256": "3f77d74a9a340109d2f1929b9694bcf2c94c4fe9dbc2554df7ecd19a40f50124"
+    },
+    {
+      "caption": "SCAN 05 KEEP | ACTUAL 5761",
+      "resolved_mode": "576I",
+      "frame": 68,
+      "native_png": "scan-05-576i-native.png",
+      "sha256": "dfe5f87adeb10e12cbf4fbef1e8b5832e83f1705825d819257545ae9ce916c5f"
+    },
+    {
+      "caption": "SCAN 06 PREVIEW P ACTUAL 576P",
+      "resolved_mode": "576P",
+      "frame": 84,
+      "native_png": "scan-06-576p-native.png",
+      "sha256": "07ce5011d0a4384a25d668aa28484519134a33ca47dbbf70ee525d84e999508e"
+    }
+  ]
+}

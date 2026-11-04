@@ -6,6 +6,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="../../VideoMode/VideoModeMenu.cs" Link="VideoModeMenu.cs" />
+    <Compile Include="../../VideoMode/VideoModeScanReview.cs" Link="VideoModeScanReview.cs" />
     <Compile Include="../../VideoMode/IplShell.cs" Link="IplShell.cs" />
     <Compile Include="../../VideoMode/IplRenderer.cs" Link="IplRenderer.cs" />
     <Compile Include="../../VideoMode/Assets/IplFontData.g.cs" Link="IplFontData.g.cs" />
