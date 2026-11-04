@@ -35,7 +35,7 @@ internal sealed class IplRenderer
     private readonly uint[] glassColors=new uint[6*25*25];
     // A broad corner arc must remain visible at native resolution. The optical
     // wall uses the same radius family as the underlying rounded solid.
-    private const float Round=.12f,Core=1-Round,WallCorner=.16f;
+    private const float Round=.24f,Core=1-Round,WallCorner=.28f;
     internal IplRenderer(IIplCanvas canvas)
     {
         c=canvas;
