@@ -9,4 +9,5 @@
   <ItemGroup>
     <PackageReference Include="DolphinDotNet.GameCube" Version="$(DndPackageVersion)" />
   </ItemGroup>
+  <Import Project="DolphinGraphics.targets" />
 </Project>

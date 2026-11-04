@@ -71,3 +71,16 @@ Typography is an original atlas generated from Nunito weight 800, licensed under
 SIL OFL in `Assets/OFL-Nunito.txt`. It is a close substitute, not the IPL font.
 A pixel-identical reproduction and complete platform input/hardware acceptance
 must not be claimed without a captured native run against the reference images.
+
+## Dolphin antialiasing
+
+Native builds configure this sample's isolated Dolphin play and debug profiles
+with **4× MSAA** (`GFX.ini`: `[Settings] MSAA = 4`, `SSAA = False`). Use a Dolphin
+hardware backend supporting MSAA, such as OpenGL or Vulkan. Other graphics and
+controller preferences are preserved. Build with
+`-p:IplEmulatorAntialiasing=false` to stop enforcing these keys and manage AA in
+Dolphin yourself; this does not erase settings already written to the profile.
+
+This is emulator antialiasing, not a hardware-AA mode in the DOL. The pinned SDK
+has no public hardware-AA display option. Its display, preview/revert and
+safe-mode behavior remain unchanged. [Captured comparison](Design/antialiasing-review.md).
