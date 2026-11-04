@@ -66,7 +66,7 @@ internal sealed class IplRenderer
     private IplPoint Project(IplPoint p)
     {
         p=Rotate(p);float f=3.8f/(3.8f-p.Z);
-        return new IplPoint(320+p.X*scale*f,cy-p.Y*scale*f,p.Z);
+        return new IplPoint(322+p.X*scale*.975f*f,cy-p.Y*scale*f,p.Z);
     }
     private void Tri(IplPoint a,IplPoint b,IplPoint d,uint color)=>c.Triangle(a.X,a.Y,b.X,b.Y,d.X,d.Y,color);
     private void Rect(float x,float y,float w,float h,uint color)
@@ -307,7 +307,7 @@ internal sealed class IplRenderer
     private void PanelTint(IplShell s,int row)=>PanelShape(s,row,row==s.Row?0xc5c8d45c:0xb9bdbd4d);
     private void PanelShape(IplShell s,int row,uint tint)
     {
-        const float left=-.76f,right=.76f,height=.33f,radius=.075f;
+        const float left=-.78f,right=.78f,height=.33f,radius=.075f;
         float top=.46f-row*.43f,bottom=top-height;
         var center=FacePoint(s,0,top-height/2);IplPoint first=default,previous=default;
         for(int corner=0;corner<4;corner++)for(int j=0;j<=8;j++)
@@ -374,13 +374,13 @@ internal sealed class IplRenderer
             float y=.35f-i*.43f;
             uint color=i==s.Row?White:0xd5d6dcff;
             float focus=s.Focus(i);focus=focus*focus*(3-2*focus);
-            float size=16.5f*(1+.14f*focus);
+            float size=16.5f*(1+.30f*focus);
             string value=s.Value(i);
             // Keep both edge anchors fixed as the type grows/shrinks.
             float maximum=TextWidth(s.Label(i),size)+TextWidth(value,size);
             if(maximum>193)size*=193/maximum;
-            FaceAlignedText(s,s.Label(i),-.68f,y,size,color,false);
-            FaceAlignedText(s,value,.68f,y,size,color,true);
+            FaceAlignedText(s,s.Label(i),-.695f,y,size,color,false);
+            FaceAlignedText(s,value,.72f,y,size,color,true);
         }
     }
     private void Grid()
