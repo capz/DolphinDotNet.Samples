@@ -3,6 +3,7 @@
 import argparse
 from pathlib import Path
 import struct
+import re
 
 def check(name: str, configuration: str, generated_c: Path) -> None:
     root = Path(__file__).resolve().parents[1]
@@ -10,6 +11,12 @@ def check(name: str, configuration: str, generated_c: Path) -> None:
     c = generated_c.read_text()
     if "dnd_aot_entry" not in c:
         raise RuntimeError(f"{name}: AOT C is missing the managed entry point")
+    if name == "VideoMode":
+        # preview.103.1 can mislower float-to-byte array writes to 8-byte stores.
+        # The reflection uploader deliberately stores complete Color32 structs.
+        uploader = re.search(r"intptr_t dnd_value_VideoMode_GameCubeCanvas_GlassVertex_[^(]+\([^;]+?\) \{(.*?)\n\}", c, re.S)
+        if uploader is None or "dnd_array_store_r8_fast" in uploader.group(1):
+            raise RuntimeError("VideoMode: missing reflection uploader or unsafe 8-byte strength store")
     dol = output / (name + ".dol")
     elf = output / (name + ".elf")
     program = dol.read_bytes()

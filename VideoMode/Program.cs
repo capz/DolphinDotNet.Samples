@@ -28,7 +28,30 @@ internal static class Program
     {
         var device=GraphicsDevice.Default;
         DebugOverlay.TextVisible=false;
-        var shell=new IplShell(new VideoModeOutput(device));
+#if IPL_VIDEO_MODE_REVIEW
+#if IPL_VIDEO_MODE_REVIEW_PAL
+        const int reviewResolution=2;
+        const GraphicsResolution reviewDisplay=GraphicsResolution.R640x576;
+#else
+        const int reviewResolution=1;
+        const GraphicsResolution reviewDisplay=GraphicsResolution.R640x480;
+#endif
+        device.ConfigureDisplay(new DisplayOptions {Resolution=reviewDisplay,Scan=ScanMode.Interlaced,Widescreen=false});
+#endif
+        var output=new VideoModeOutput(device);
+#if IPL_VIDEO_MODE_REVIEW
+        // The 576 review deliberately bypasses release qualification to reproduce
+        // the known runtime stall; it is never enabled in interactive builds.
+        var shell=new IplShell(output,reviewResolution==2);
+        var scanReview=new VideoModeScanReview(shell,output,reviewResolution);
+#else
+        var shell=new IplShell(output);
+#endif
+#if IPL_VISUAL_REVIEW
+        device.ConfigureDisplay(new DisplayOptions {Resolution=GraphicsResolution.R640x480,Scan=ScanMode.Interlaced,Widescreen=false});
+        // Repeatable native review pose; normal builds retain the interactive IPL.
+        shell.TurnTo(ShellFace.Options);shell.Row=1;shell.Tick(1);shell.Time=0;
+#endif
         using var canvas=new GameCubeCanvas(device);
         var renderer=new IplRenderer(canvas);
         var clock=new FrameClock {MaximumDeltaSeconds=.05f};
@@ -36,6 +59,12 @@ internal static class Program
         {
             Controller.Update();var pad=Controller.GetState(0);float dt=clock.Tick();
             shell.Tick(dt);
+#if IPL_VISUAL_REVIEW
+            shell.Time=0;
+#endif
+#if IPL_VIDEO_MODE_REVIEW
+            scanReview.Tick();
+#else
             if(pad.Start.WasPressed) {shell.Video.Revert();if(!shell.Video.Pending)return 0;}
             if(pad.X.WasPressed)
             {
@@ -50,8 +79,13 @@ internal static class Program
                 int y=pad.DPadUp.IsHeld||pad.Stick.Y>.55f?1:pad.DPadDown.IsHeld||pad.Stick.Y<-.55f?-1:0;
                 shell.Direction(x,y,dt);
             }
+#endif
             canvas.Prepare();renderer.Prepare(shell);
-            device.BeginFrame(Color32.Black);canvas.Begin();renderer.Present(shell);canvas.End();device.EndFrame();
+            device.BeginFrame(Color32.Black);canvas.Begin();renderer.Present(shell);
+#if IPL_VIDEO_MODE_REVIEW
+            canvas.Text(scanReview.Caption,12,6,16,scanReview.Failed?0xff4545ffu:0x7bffb0ffu,0);
+#endif
+            canvas.End();device.EndFrame();
         }
     }
 }

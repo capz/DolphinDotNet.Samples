@@ -1,0 +1,50 @@
+<Project>
+  <PropertyGroup>
+    <IplEmulatorAntialiasing Condition="'$(IplEmulatorAntialiasing)' == ''">true</IplEmulatorAntialiasing>
+  </PropertyGroup>
+  <UsingTask TaskName="IplSetDolphinAntialiasing" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)/Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <UserDirectory ParameterType="System.String" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Using Namespace="System.IO" />
+      <Using Namespace="System.Collections.Generic" />
+      <Code Type="Fragment" Language="cs"><![CDATA[
+        // Touch only AA keys; retain controller, renderer and other user settings.
+        foreach (string profile in new[] { UserDirectory, Path.Combine(UserDirectory, "rider-debug") })
+        {
+            string directory = Path.Combine(profile, "Config");
+            Directory.CreateDirectory(directory);
+            string path = Path.Combine(directory, "GFX.ini");
+            var lines = new List<string>(File.Exists(path) ? File.ReadAllLines(path) : new string[0]);
+            foreach (string key in new[] { "MSAA", "SSAA" })
+            {
+                string value = key == "MSAA" ? "4" : "False";
+                int section = -1, end = lines.Count;
+                for (int i = 0; i < lines.Count; i++)
+                {
+                    string line = lines[i].Trim();
+                    if (line.Equals("[Settings]", System.StringComparison.OrdinalIgnoreCase)) section = i;
+                    else if (section >= 0 && line.StartsWith("[")) { end = i; break; }
+                }
+                if (section < 0) { lines.Add("[Settings]"); section = lines.Count - 1; end = lines.Count; }
+                // Remove duplicate definitions as well as replacing an existing key.
+                for (int i = end - 1; i > section; i--)
+                {
+                    string line = lines[i].Trim();
+                    int equals = line.IndexOf('=');
+                    if (equals >= 0 && line.Substring(0, equals).Trim().Equals(key, System.StringComparison.OrdinalIgnoreCase))
+                    { lines.RemoveAt(i); end--; }
+                }
+                lines.Insert(end, key + " = " + value);
+            }
+            File.WriteAllLines(path, lines);
+        }
+      ]]></Code>
+    </Task>
+  </UsingTask>
+  <Target Name="ConfigureIplDolphinGraphics" AfterTargets="BuildDol"
+          Condition="'$(IplEmulatorAntialiasing)' == 'true' and '$(DesignTimeBuild)' != 'true'">
+    <IplSetDolphinAntialiasing UserDirectory="$(DolphinUserDirectory)" />
+  </Target>
+</Project>

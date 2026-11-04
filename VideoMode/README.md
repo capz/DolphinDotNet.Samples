@@ -1,24 +1,29 @@
 # VideoMode: IPL-style native shell
 
 A native, controller-first system-menu demonstration using the published
-DolphinDotNet SDK. The visual target is the Nintendo GameCube IPL: a dark,
-translucent rounded cube floating on black, thin glossy edges, edge-mounted
-labels, green block-built values, a fading grid and a bottom controller legend.
+DolphinDotNet SDK. The visual target is the [committed optical-glass mockup](Design/optical-glass-target.png),
+inspired by the Nintendo GameCube IPL: a dark translucent cube floating on black,
+layered optical walls, face menus and a bottom controller legend. Flat configuration
+screens use green block-built values and a fading grid.
 The rounded cube is projected 3D geometry, not a screenshot or rotating image.
 
 Glass uses a rounded-box surface with a visible curved edge profile and
-per-vertex interpolated reflection highlights. Front labels sit inside the
+a sampled, view-dependent reflection layer. Front labels sit inside the
 rounded rim. Each face has its own subdued beveled-block icon. List rows have
 rounded frosted backplates, fixed left/right text anchors and 180 ms focus
-scaling (1.00 to 1.14), including shrink-back on the outgoing row.
+scaling (1.00 to 1.30), including shrink-back on the outgoing row.
 
 The native frost is a real backdrop operation: after the cube and icon are
-drawn, GX captures the EFB at half resolution. Nine offset samples of that
-snapshot are averaged inside projected rounded row meshes, then tint and crisp
+drawn, GX captures the EFB at half resolution. A dense 9×9 Gaussian-weighted kernel samples that
+snapshot inside projected rounded row meshes, then tint and crisp
 text are drawn on top. Texture allocation and geometry uploads happen between
-frames. The host SVG proof approximates the same blur with an SVG filter and
-subdivides the native interpolated glass shading; only a native capture verifies
-the GX result.
+frames. The host SVG proof approximates blur with an SVG filter and omits native reflection
+textures; only a native capture verifies the GX result. The 81 frost draws reuse
+one managed vertex buffer and snapshot, with separate native meshes. Hardware
+performance has not been measured.
+
+[Six-pass native review and mockup comparisons](Design/six-pass-review.md).
+[Rounded-corner correction, front and angle captures](Design/corner-review.md).
 
 ## Controller flow
 
@@ -39,6 +44,20 @@ it. Unsupported modes/cables and allocation failures leave the current mode
 active. Rollback allocation failures remain pending and retry once per second.
 Widescreen-only changes preserve timing and buffers. The UI uses display-correct
 logical coordinates and centers its 4:3 composition inside a widescreen canvas.
+
+To switch **480i / 480p**, open Video with right, select **Scan**, press A,
+and use up/down to choose **Interlaced** or **Progressive**. A starts the preview;
+A again keeps it, or B reverts. Progressive requires a compatible cable/display.
+In Dolphin, enable its progressive/component-cable setting (`SYSCONF.IPL.PGS=True`);
+without that capability the native API rejects progressive and preserves the
+current mode. X always requests 480i, 4:3.
+
+Repeated 576i/576p switching stalled in the pinned native runtime with cloud
+Dolphin 2503. Normal builds therefore reject 576p before changing output, and
+resolve 576 Auto to interlaced. This is a sample qualification guard, not a claim
+that the console cannot produce 576p. [Native scan-mode evidence, commands and
+limitations](Design/scan-mode-review.md) document the passing 480 sequence and
+the incomplete 576 sequence. Physical console/cable/display testing remains open.
 
 Time, date and sound are explicitly session-only interaction demonstrations.
 They do not write the console RTC or system SRAM. Game Play and Memory Card are
@@ -71,3 +90,16 @@ Typography is an original atlas generated from Nunito weight 800, licensed under
 SIL OFL in `Assets/OFL-Nunito.txt`. It is a close substitute, not the IPL font.
 A pixel-identical reproduction and complete platform input/hardware acceptance
 must not be claimed without a captured native run against the reference images.
+
+## Dolphin antialiasing
+
+Native builds configure this sample's isolated Dolphin play and debug profiles
+with **4× MSAA** (`GFX.ini`: `[Settings] MSAA = 4`, `SSAA = False`). Use a Dolphin
+hardware backend supporting MSAA, such as OpenGL or Vulkan. Other graphics and
+controller preferences are preserved. Build with
+`-p:IplEmulatorAntialiasing=false` to stop enforcing these keys and manage AA in
+Dolphin yourself; this does not erase settings already written to the profile.
+
+This is emulator antialiasing, not a hardware-AA mode in the DOL. The pinned SDK
+has no public hardware-AA display option. Its display, preview/revert and
+safe-mode behavior remain unchanged. [Captured comparison](Design/antialiasing-review.md).

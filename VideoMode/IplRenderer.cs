@@ -4,12 +4,13 @@ using System;
 internal interface IIplCanvas
 {
     void Triangle(float ax,float ay,float bx,float by,float cx,float cy,uint color);
-    void Text(string value,float x,float y,float size,uint color,float angle);
+    void Text(string value,float x,float y,float size,uint color,float angle,float stretch=1);
     void BeginGlass();
-    void GlassVertex(int index,IplPoint point,uint color);
+    void GlassVertex(int index,IplPoint point,uint color,float u,float v,float reflection);
     void EndGlassFace();
     void EndGlass();
     void DrawGlass();
+    void DrawReflections();
     void BeginPanels();
     void PanelTriangle(IplPoint a,IplPoint b,IplPoint d);
     void EndPanels();
@@ -24,7 +25,7 @@ internal struct IplPoint
 internal sealed class IplRenderer
 {
     private readonly IIplCanvas c;
-    private float yaw,pitch,cy,scale;
+    private float yaw,pitch,cy,scale,rimVisibility;
     private float cosYaw,sinYaw,cosPitch,sinPitch;
     private const uint White=0xf3f4faff, Green=0x15f88cff, Block=0x60db18ff;
     private readonly IplPoint[] points=new IplPoint[6*25*25];
@@ -32,7 +33,9 @@ internal sealed class IplRenderer
     private readonly float[] depth=new float[6];
     private readonly IplPoint[] projected=new IplPoint[6*25*25];
     private readonly uint[] glassColors=new uint[6*25*25];
-    private const float Core=.82f,Round=.18f;
+    // A broad corner arc must remain visible at native resolution. The optical
+    // wall uses the same radius family as the underlying rounded solid.
+    private const float Round=.24f,Core=1-Round,WallCorner=.28f;
     internal IplRenderer(IIplCanvas canvas)
     {
         c=canvas;
@@ -65,7 +68,7 @@ internal sealed class IplRenderer
     private IplPoint Project(IplPoint p)
     {
         p=Rotate(p);float f=3.8f/(3.8f-p.Z);
-        return new IplPoint(320+p.X*scale*f,cy-p.Y*scale*f,p.Z);
+        return new IplPoint(322+p.X*scale*.975f*f,cy-p.Y*scale*f,p.Z);
     }
     private void Tri(IplPoint a,IplPoint b,IplPoint d,uint color)=>c.Triangle(a.X,a.Y,b.X,b.Y,d.X,d.Y,color);
     private void Rect(float x,float y,float w,float h,uint color)
@@ -106,8 +109,12 @@ internal sealed class IplRenderer
         yaw=PoseYaw(shell.PreviousFace)+(PoseYaw(shell.Face)-PoseYaw(shell.PreviousFace))*ease;
         pitch=PosePitch(shell.PreviousFace)+(PosePitch(shell.Face)-PosePitch(shell.PreviousFace))*ease;
         if(!shell.ReducedMotion){yaw+=(float)Math.Sin(shell.Time/5.3f*6.2831853f)*.075f;pitch+=.035f+(float)Math.Sin(shell.Time/7.1f*6.2831853f)*.055f;}
+#if IPL_VISUAL_REVIEW_ANGLE
+        // Reproducible oblique pose exposes walls and face seams for native review.
+        yaw+=.30f;pitch-=.16f;
+#endif
         cosYaw=(float)Math.Cos(yaw);sinYaw=(float)Math.Sin(yaw);cosPitch=(float)Math.Cos(pitch);sinPitch=(float)Math.Sin(pitch);
-        cy=211+(shell.ReducedMotion?0:(float)Math.Sin(shell.Time*.7f)*3);scale=116;
+        cy=202+(shell.ReducedMotion?0:(float)Math.Sin(shell.Time*.7f)*3);scale=106;
         Cube();
         c.BeginPanels();
         if(shell.Page==ShellPage.Face&&shell.Face!=ShellFace.Play&&shell.Face!=ShellFace.Memory)
@@ -119,6 +126,7 @@ internal sealed class IplRenderer
         Rect(0,0,640,480,0x000000ff);
         if(shell.Editing) { Detail(shell); Footer(shell); return; }
         c.DrawGlass();
+        GlassRims();c.DrawReflections();
         if(shell.Turn>.85f)
         {
             FaceIcon(shell);
@@ -135,48 +143,163 @@ internal sealed class IplRenderer
     private void Cube()
     {
         c.BeginGlass();
-        for(int i=0;i<points.Length;i++){projected[i]=Project(points[i]);glassColors[i]=GlassColor(points[i]);}
+        for(int i=0;i<points.Length;i++)
+        {
+            projected[i]=Project(points[i]);
+            float facing=Clamp((Rotate(Surface(i/625,0,0)).Z-.08f)/.20f,0,1);
+            facing=facing*facing*(3-2*facing);
+            uint color=GlassColor(points[i]);
+            glassColors[i]=(color&0xffffff00)|(uint)((color&255)*facing);
+        }
         for(int f=0;f<6;f++){faceOrder[f]=f;depth[f]=Rotate(Surface(f,0,0)).Z;}
         for(int i=1;i<6;i++){int j=i;while(j>0&&depth[faceOrder[j]]<depth[faceOrder[j-1]]){int v=faceOrder[j];faceOrder[j]=faceOrder[j-1];faceOrder[j-1]=v;j--;}}
         for(int n=0;n<6;n++)
         {
             int face=faceOrder[n];
-            for(int i=0;i<625;i++)c.GlassVertex(i,projected[face*625+i],glassColors[face*625+i]);
+            for(int i=0;i<625;i++)
+            {
+                int at=face*625+i;var uv=ReflectionUv(points[at]);
+                c.GlassVertex(i,projected[at],glassColors[at],uv.X,uv.Y,uv.Z);
+            }
             c.EndGlassFace();
         }
         c.EndGlass();
     }
+    private IplPoint ReflectionUv(IplPoint point)
+    {
+        var p=Rotate(point);
+        var local=new IplPoint(point.X-Clamp(point.X,-Core,Core),point.Y-Clamp(point.Y,-Core,Core),point.Z-Clamp(point.Z,-Core,Core));
+        float length=(float)Math.Sqrt(local.X*local.X+local.Y*local.Y+local.Z*local.Z);
+        float curvature=Clamp((1-Math.Max(Math.Max(Math.Abs(local.X),Math.Abs(local.Y)),Math.Abs(local.Z))/length)*3,0,1);
+        var n=Rotate(local);
+        n=new IplPoint(n.X/length,n.Y/length,n.Z/length);
+        var eye=new IplPoint(-p.X,-p.Y,3.8f-p.Z);
+        length=(float)Math.Sqrt(eye.X*eye.X+eye.Y*eye.Y+eye.Z*eye.Z);
+        eye=new IplPoint(eye.X/length,eye.Y/length,eye.Z/length);
+        float dot=n.X*eye.X+n.Y*eye.Y+n.Z*eye.Z;
+        float grazing=Clamp(1-dot,0,1);
+        return new IplPoint(Clamp(.5f+(2*dot*n.X-eye.X)*.5f,.002f,.998f),Clamp(.5f+(2*dot*n.Y-eye.Y)*.5f,.002f,.998f),Clamp(.04f+1.8f*grazing,0,1)*(.12f+.88f*curvature));
+    }
     private uint GlassColor(IplPoint point)
     {
-                float nx=point.X-Clamp(point.X,-Core,Core),ny=point.Y-Clamp(point.Y,-Core,Core),nz=point.Z-Clamp(point.Z,-Core,Core);
-                float len=(float)Math.Sqrt(nx*nx+ny*ny+nz*nz);var normal=Rotate(new IplPoint(nx/len,ny/len,nz/len));
-                var p=Rotate(point);
-                float lit=Clamp(normal.X*-.35f+normal.Y*.6f+normal.Z*.65f,0,1);
-                float spec=Clamp(normal.X*-.25f+normal.Y*.48f+normal.Z*.84f,0,1);
-                spec*=spec;spec*=spec;spec*=spec;spec*=spec;
-                // Broad environmental reflection, a tight hot spot and the thin
-                // rounded rim give the IPL's dark glass, rather than opaque plastic.
-                float edge=1-(float)Math.Abs(normal.Z);
-                float streak=(p.Y-.72f+p.X*.14f)*24;streak*=streak;
-                streak=.32f/(1+streak*streak);
-                float sweep=p.X*.22f+p.Y-.52f+(float)Math.Sin(yaw*2)*.16f;
-                sweep=1/(1+sweep*sweep*95);
-                int r=(int)(17+lit*20+spec*195+streak*135+edge*58+sweep*21);
-                int g=(int)(22+lit*25+spec*205+streak*143+edge*65+sweep*25);
-                int blue=(int)(37+lit*32+spec*220+streak*158+edge*88+sweep*38);
-                if(p.X>.25f){g+=9;r+=3;} if(p.X<-.5f)blue+=12;
-                return Rgba(r,g,blue,normal.Z>0?155:48);
+        float nx=point.X-Clamp(point.X,-Core,Core),ny=point.Y-Clamp(point.Y,-Core,Core),nz=point.Z-Clamp(point.Z,-Core,Core);
+        float len=(float)Math.Sqrt(nx*nx+ny*ny+nz*nz);
+        var normal=Rotate(new IplPoint(nx/len,ny/len,nz/len));
+        if(normal.Z<=0)return 0;
+        var p=Rotate(point);
+        // Soft environment lobes, anchored in world space, move across the glass
+        // during the idle float. These are light, not an opaque blue coating.
+        float teal=Light(p.X-.70f,p.Y-.65f,.68f);
+        float amber=Light(p.X+.86f,p.Y+.22f,.70f);
+        float violet=Light(p.X-.05f,p.Y+.92f,.55f);
+        float fresnel=1-normal.Z;
+        // Transmission carries colored light; the separate low-roughness
+        // reflection pass supplies white polish without a diffuse bevel haze.
+        int r=(int)(8+teal*82+amber*127+violet*51+fresnel*12);
+        int g=(int)(15+teal*155+amber*63+violet*24+fresnel*18);
+        int blue=(int)(18+teal*140+amber*9+violet*133+fresnel*27);
+        return Rgba(r,g,blue,(int)(205-normal.Z*22));
+    }
+    private static float Light(float x,float y,float spread)=>(float)Math.Exp(-(x*x+y*y)/(spread*spread));
+
+    // A shaded optical cross-section follows the rotating wall without strokes.
+    private void GlassRims()
+    {
+        for(int face=0;face<6;face++)
+        {
+            float facing=Rotate(Surface(face,0,0)).Z;
+            if(facing<=0)continue;
+            rimVisibility=Clamp((facing-.08f)/.20f,0,1);
+            if(rimVisibility<=0)continue;
+            rimVisibility=rimVisibility*rimVisibility*(3-2*rimVisibility);
+            // A continuous optical cross-section replaces nested stroked rings.
+            // Broad transmission and two soft polish lobes have no hard seam.
+            for(int band=0;band<16;band++)
+            {
+                float t=(band+.5f)/16;
+                float polish=(float)Math.Exp(-Math.Pow((t-.10f)/.035f,2));
+                float exit=(float)Math.Exp(-Math.Pow((t-.90f)/.035f,2));
+                float secondary=(float)Math.Exp(-Math.Pow((t-.42f)/.035f,2));
+                float spectrum=(float)Math.Sin(t*12.56637f);
+                float envelope=(float)Math.Sin(t*3.1415926f);
+                int alpha=(int)((4+polish*205+secondary*110+exit*130)*Math.Sqrt(envelope));
+                uint tint=Rgba((int)(35+polish*150+secondary*90+exit*70+spectrum*20),(int)(52+polish*160+secondary*80+exit*70),(int)(72+polish*170+secondary*120+exit*85-spectrum*20),alpha);
+                float outside=band/16f,inside=(band+1)/16f;
+                GlassWall(face,.997f-outside*.147f,.997f-inside*.147f,1-outside*.050f,1-inside*.050f,tint);
+            }
+        }
+    }
+    // Translucent ribbons give the optical wall a body between its polished
+    // boundaries. All points share the rotating cube projection.
+    private void GlassWall(int face,float outer,float inner,float front,float back,uint color)
+    {
+        IplPoint previousOuter=default,previousInner=default,firstOuter=default,firstInner=default;
+        for(int corner=0;corner<4;corner++)for(int j=0;j<=12;j++)
+        {
+            float a=(180-corner*90-j*90f/12)*.017453293f;
+            var o=WallPoint(face,corner,a,outer,WallCorner+(outer-.997f)/.147f*.015f,front);
+            var n=WallPoint(face,corner,a,inner,WallCorner+(inner-.997f)/.147f*.015f,back);
+            if(corner==0&&j==0){firstOuter=o;firstInner=n;}
+            else WallSegment(previousOuter,o,previousInner,n,color);
+            previousOuter=o;previousInner=n;
+        }
+        WallSegment(previousOuter,firstOuter,previousInner,firstInner,color);
+    }
+    private static IplPoint WallPoint(int face,int corner,float angle,float extent,float radius,float depth)
+    {
+        float x=corner==0||corner==3?-extent+radius:extent-radius;
+        float y=corner<2?extent-radius:-extent+radius;
+        // Offset the transmitted inner boundary inside the glass: the mockup
+        // shows more optical depth on the left than on the right.
+        float refraction=(1-depth)/.050f*.105f;
+        var p=Surface(face,x+(float)Math.Cos(angle)*radius+refraction,y+(float)Math.Sin(angle)*radius);
+        return new IplPoint(p.X*depth,p.Y*depth,p.Z*depth);
+    }
+    private static IplPoint Lerp(IplPoint a,IplPoint b,float t)=>new IplPoint(a.X+(b.X-a.X)*t,a.Y+(b.Y-a.Y)*t,a.Z+(b.Z-a.Z)*t);
+    private void WallSegment(IplPoint a,IplPoint b,IplPoint innerA,IplPoint innerB,uint color)
+    {
+        var start=Project(a);var end=Project(b);
+        float dx=end.X-start.X,dy=end.Y-start.Y;
+        int steps=Math.Max(1,(int)Math.Ceiling(Math.Sqrt(dx*dx+dy*dy)/5));
+        var previousOuter=start;var previousInner=Project(innerA);
+        for(int i=1;i<=steps;i++)
+        {
+            var p=Lerp(a,b,i/(float)steps);var outer=Project(p);
+            var inner=Project(Lerp(innerA,innerB,i/(float)steps));
+            uint shade=RimColor(p,color);
+            Tri(previousOuter,outer,previousInner,shade);Tri(outer,inner,previousInner,shade);
+            previousOuter=outer;previousInner=inner;
+        }
+    }
+    private uint RimColor(IplPoint point,uint color)
+    {
+        var p=Rotate(point);
+        float top=Light(p.X-.55f,(p.Y-1)*2,.28f);
+        float corner=Light(p.X+.91f,(p.Y-.92f)*1.4f,.17f);
+        // Localized reflected lights reveal each curved return. Avoid a uniform
+        // contour, which would make the optical wall look like a stroked frame.
+        float rightCorner=Light(p.X-.92f,(p.Y-.92f)*1.25f,.18f);
+        float bottomCorners=Light(p.X+.92f,(p.Y+.92f)*1.25f,.20f)
+                           +Light(p.X-.92f,(p.Y+.92f)*1.25f,.20f);
+        float lower=Light(p.X-.08f,(p.Y+1)*2,.42f);
+        lower+=bottomCorners*.35f;
+        float warm=Light(p.X+1,p.Y+.50f,.45f);
+        float glint=top+corner*.85f+rightCorner*.70f+bottomCorners*.30f;
+        int r=(int)((color>>24)*.55f+glint*190+warm*100+lower*40);
+        int g=(int)(((color>>16)&255)*.65f+glint*185+warm*58+lower*28);
+        int b=(int)(((color>>8)&255)*.80f+glint*170+lower*120);
+        return Rgba(r,g,b,(int)(Math.Min(255,(color&255)*(.06f+glint*4+warm*.6f+lower*1.4f))*rimVisibility));
     }
     private static uint Rgba(int r,int g,int b,int a)=>(uint)((Math.Min(255,r)<<24)|(Math.Min(255,g)<<16)|(Math.Min(255,b)<<8)|a);
     private static int SurfaceIndex(ShellFace face)=>face==ShellFace.Calendar?4:face==ShellFace.Options?2:face==ShellFace.Play?3:(int)face;
     private IplPoint FacePoint(IplShell s,float u,float v)=>Project(Surface(SurfaceIndex(s.Face),u,v));
-    private void FaceText(IplShell s,string text,float u,float v,float size,uint color,float extraAngle=0)
+    private void FaceText(IplShell s,string text,float u,float v,float size,uint color,float extraAngle=0,float stretch=1)
     {
         var p=FacePoint(s,u,v);var right=FacePoint(s,u+.1f,v);
         float angle=(float)Math.Atan2(right.Y-p.Y,right.X-p.X)*57.29578f+extraAngle;
         float f=3.8f/(3.8f-p.Z);size*=f/1.357f;
-        float width=TextWidth(text,size),rad=angle*.017453293f;
-        c.Text(text,p.X-width*.5f*(float)Math.Cos(rad),p.Y-width*.5f*(float)Math.Sin(rad),size,color,angle);
+        float width=TextWidth(text,size)*stretch,rad=angle*.017453293f;
+        c.Text(text,p.X-width*.5f*(float)Math.Cos(rad),p.Y-width*.5f*(float)Math.Sin(rad),size,color,angle,stretch);
     }
     private void MenuLabels(IplShell s)
     {
@@ -196,11 +319,11 @@ internal sealed class IplRenderer
         c.Text(text,x,y,size,color,angle);
     }
     private void FacePanel(IplShell s,int row)=>PanelShape(s,row,0);
-    private void PanelTint(IplShell s,int row)=>PanelShape(s,row,row==s.Row?0xcbd7ff30:0xcbd7ff23);
+    private void PanelTint(IplShell s,int row)=>PanelShape(s,row,row==s.Row?0xc5c8d436:0xb9bdbd32);
     private void PanelShape(IplShell s,int row,uint tint)
     {
-        const float left=-.76f,right=.76f,height=.30f,radius=.065f;
-        float top=.39f-row*.40f,bottom=top-height;
+        const float left=-.78f,right=.78f,height=.33f,radius=.075f;
+        float top=.46f-row*.43f,bottom=top-height;
         var center=FacePoint(s,0,top-height/2);IplPoint first=default,previous=default;
         for(int corner=0;corner<4;corner++)for(int j=0;j<=8;j++)
         {
@@ -223,15 +346,30 @@ internal sealed class IplRenderer
     private void FaceIcon(IplShell s)
     {
         var bitmap=s.Face==ShellFace.Video?monitor:s.Face==ShellFace.Calendar?calendar:s.Face==ShellFace.Options?options:s.Face==ShellFace.Play?play:s.Face==ShellFace.Memory?memory:home;
-        uint color=s.Face==ShellFace.Video?0x3f6ed54bu:s.Face==ShellFace.Calendar?0x39a88148u:s.Face==ShellFace.Options?0x986bd44au:s.Face==ShellFace.Play?0xe0a34d48u:s.Face==ShellFace.Memory?0x6788d54bu:0x708fc535u;
-        const float cell=.12f;float left=-bitmap[0].Length*cell/2,top=bitmap.Length*cell/2;
+        uint color=s.Face==ShellFace.Video?0x3f6ed54bu:s.Face==ShellFace.Calendar?0x39a88148u:s.Face==ShellFace.Options?0xd878dc55u:s.Face==ShellFace.Play?0xe0a34d48u:s.Face==ShellFace.Memory?0x6788d54bu:0x708fc535u;
+        const float cell=.122f,rowStep=.114f;float left=-bitmap[0].Length*cell/2,top=bitmap.Length*rowStep/2+.075f;
         for(int y=0;y<bitmap.Length;y++)for(int x=0;x<bitmap[y].Length;x++)if(bitmap[y][x]=='1')
         {
-            float u=left+x*cell,v=top-y*cell;
-            FaceQuad(s,u,v,cell-.012f,cell-.012f,color);
+            float u=left+x*cell,v=top-y*rowStep;
+            FaceBlock(s,u,v,cell-.012f,rowStep-.012f,color);
             FaceQuad(s,u+.006f,v-.006f,cell-.024f,.010f,0xc2d4ff28);
-            FaceQuad(s,u+cell-.022f,v-.017f,.010f,cell-.032f,0x080d1a40);
+            FaceQuad(s,u+cell-.022f,v-.017f,.010f,rowStep-.032f,0x080d1a40);
         }
+    }
+    private void FaceBlock(IplShell s,float u,float v,float width,float height,uint color)
+    {
+        const float radius=.012f;
+        var center=FacePoint(s,u+width/2,v-height/2);IplPoint first=default,previous=default;
+        for(int corner=0;corner<4;corner++)for(int j=0;j<=3;j++)
+        {
+            float x=corner==0||corner==3?u+radius:u+width-radius;
+            float y=corner<2?v-radius:v-height+radius;
+            float angle=(180-corner*90-j*30)*.017453293f;
+            var p=FacePoint(s,x+(float)Math.Cos(angle)*radius,y+(float)Math.Sin(angle)*radius);
+            if(corner==0&&j==0)first=p;else Tri(center,previous,p,color);
+            previous=p;
+        }
+        Tri(center,previous,first,color);
     }
     private void FaceQuad(IplShell s,float u,float v,float w,float h,uint color)
     {
@@ -240,7 +378,7 @@ internal sealed class IplRenderer
     }
     private void FaceMenu(IplShell s)
     {
-        FaceText(s,s.Title,0,.68f,26,White);
+        FaceText(s,s.Title,.045f,.79f,26,White,0,.95f);
         if(s.Face==ShellFace.Memory||s.Face==ShellFace.Play)
         {
             FaceText(s,s.Face==ShellFace.Play?"No disc selected.":"No card selected.",0,.1f,16,White);
@@ -248,16 +386,16 @@ internal sealed class IplRenderer
         }
         for(int i=0;i<s.Rows;i++)
         {
-            float y=.30f-i*.40f;
-            uint color=i==s.Row?White:0xb5b9c9ff;
+            float y=.35f-i*.43f;
+            uint color=i==s.Row?White:0xd5d6dcff;
             float focus=s.Focus(i);focus=focus*focus*(3-2*focus);
-            float size=16.5f*(1+.14f*focus);
+            float size=16.5f*(1+.30f*focus);
             string value=s.Value(i);
             // Keep both edge anchors fixed as the type grows/shrinks.
             float maximum=TextWidth(s.Label(i),size)+TextWidth(value,size);
             if(maximum>193)size*=193/maximum;
-            FaceAlignedText(s,s.Label(i),-.68f,y,size,color,false);
-            FaceAlignedText(s,value,.68f,y,size,color,true);
+            FaceAlignedText(s,s.Label(i),-.695f,y,size,color,false);
+            FaceAlignedText(s,value,.735f,y,size,color,true);
         }
     }
     private void Grid()
@@ -302,7 +440,8 @@ internal sealed class IplRenderer
             if(s.Face==ShellFace.Video&&!s.Video.Pending)
             {
                 string status=s.Video.Status;
-                if(status=="UNSUPPORTED MODE OR CABLE"||status=="NOT ENOUGH MEMORY FOR MODE")Banner(status=="UNSUPPORTED MODE OR CABLE"?"Unsupported mode or cable.":"Not enough memory for this mode.",true);
+                if(status=="576P NOT QUALIFIED")Banner("576p is unavailable in this build.",true);
+                else if(status=="UNSUPPORTED MODE OR CABLE"||status=="NOT ENOUGH MEMORY FOR MODE")Banner(status=="UNSUPPORTED MODE OR CABLE"?"Unsupported mode or cable.":"Not enough memory for this mode.",true);
                 else Center("A previews the mode. B discards changes.",320,350,16,White);
             }
             else if(s.Face==ShellFace.Options)Center("Sound demonstration. Changes last for this session.",320,351,14,0xc4c9deff);
@@ -337,16 +476,16 @@ internal sealed class IplRenderer
     }
     private void Footer(IplShell s)
     {
-        const float y=444;
-        float stick=s.Page==ShellPage.Cube?214:91;
+        const float y=428;
+        float stick=s.Page==ShellPage.Cube?214:111;
         for(int r=15;r>3;r-=3)Circle(stick,y,r,Rgba(210,214,217,130),false);
         Circle(stick,y,3,0xd7d9dfff,true);
         Text("... "+(s.Page==ShellPage.Cube?"Menu Selection":s.Face==ShellFace.Calendar&&s.Editing?"Part / Value":"Select"),stick+24,y-13,s.Page==ShellPage.Cube?20:17,White);
         if(s.Page==ShellPage.Cube)return;
-        for(int r=22;r>10;r-=3)Circle(339,y,r,Rgba(255,35,107,10),true);
-        Circle(339,y,11,0xa42351ff,true);Center("B",339,y-14,20,White);Text("... "+(s.Editing?"Cancel":"Back"),359,y-13,17,White);
+        for(int r=22;r>10;r-=3)Circle(320,y,r,Rgba(255,35,107,10),true);
+        Circle(320,y,11,0xa42351ff,true);Center("B",320,y-14,20,White);Text("... "+(s.Editing?"Cancel":"Back"),340,y-13,17,White);
         if(s.Video.Reverting)return;
-        for(int r=23;r>12;r-=3)Circle(510,y,r,Rgba(15,245,196,10),true);
-        Circle(510,y,13,0x168a73ff,true);Center("A",510,y-14,20,White);Text("... "+(s.Editing?"Confirm":"Open"),532,y-13,17,White);
+        for(int r=23;r>12;r-=3)Circle(470,y,r,Rgba(15,245,196,10),true);
+        Circle(470,y,13,0x168a73ff,true);Center("A",470,y-14,20,White);Text("... "+(s.Editing?"Confirm":"Open"),492,y-13,17,White);
     }
 }
