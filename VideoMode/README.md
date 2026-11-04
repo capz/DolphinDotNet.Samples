@@ -23,6 +23,7 @@ one managed vertex buffer and snapshot, with separate native meshes. Hardware
 performance has not been measured.
 
 [Six-pass native review and mockup comparisons](Design/six-pass-review.md).
+[Rounded-corner correction, front and angle captures](Design/corner-review.md).
 
 ## Controller flow
 
