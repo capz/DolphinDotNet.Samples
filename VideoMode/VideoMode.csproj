@@ -3,6 +3,9 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
+    <IplHardwareAntialiasing Condition="'$(IplHardwareAntialiasing)' == ''">false</IplHardwareAntialiasing>
+    <DefineConstants Condition="'$(IplHardwareAntialiasing)' == 'true'">$(DefineConstants);IPL_HARDWARE_AA</DefineConstants>
+    <DefineConstants Condition="'$(IplAntialiasingBenchmark)' == 'true'">$(DefineConstants);IPL_AA_BENCHMARK</DefineConstants>
     <DefineConstants Condition="'$(IplVideoModeReview)' == 'true' and '$(IplVideoModeReviewResolution)' == '576'">$(DefineConstants);IPL_VIDEO_MODE_REVIEW_PAL</DefineConstants>
     <DefineConstants Condition="'$(IplVideoModeReview)' == 'true'">$(DefineConstants);IPL_VIDEO_MODE_REVIEW</DefineConstants>
     <DefineConstants Condition="'$(IplVisualReview)' == 'true'">$(DefineConstants);IPL_VISUAL_REVIEW</DefineConstants>
@@ -13,6 +16,10 @@
     <PackageReference Include="DolphinDotNet.GameCube" Version="$(DndPackageVersion)" />
   </ItemGroup>
   <Target Name="ValidateIplReviewModes" BeforeTargets="CoreCompile">
+    <Error Condition="'$(IplHardwareAntialiasing)' == 'true' and '$(IplVisualReview)' != 'true' and '$(IplVideoModeReview)' != 'true'"
+           Text="Hardware AA remains experimental after a native transition stall. Use an explicit visual/scan review build; normal builds use the measured Dolphin edge-AA profile." />
+    <Error Condition="'$(IplAntialiasingBenchmark)' == 'true' and '$(IplVisualReview)' != 'true'"
+           Text="IplAntialiasingBenchmark requires the deterministic IplVisualReview scene." />
     <Error Condition="'$(IplVideoModeReview)' == 'true' and '$(IplVisualReview)' == 'true'"
            Text="Choose either IplVideoModeReview or IplVisualReview for a deterministic native review." />
     <Error Condition="'$(IplVideoModeReview)' == 'true' and '$(IplVideoModeReviewResolution)' != '' and '$(IplVideoModeReviewResolution)' != '480' and '$(IplVideoModeReviewResolution)' != '576'"

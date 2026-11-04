@@ -1,0 +1,115 @@
+{
+  "resolution": 576,
+  "native_fields": false,
+  "success": false,
+  "error": "Native frame production stalled at frame 255",
+  "sdk_version": "0.1.0-preview.217.1",
+  "dol_sha256": "3681f0602f14671691b41d9f8658abec97e250565cb7ae8656831240b84bb8bd",
+  "phases": [
+    {
+      "caption": "SCAN 01 BASELINE | ACTUAL 5761",
+      "resolved_mode": "576I",
+      "frame": 4,
+      "native_png": "scan-01-576i-native.png",
+      "sha256": "3852bc8958d8fc6ce82722320a538c98e7b9a2d64d58ef325c2946c96b53b2b7"
+    },
+    {
+      "caption": "SCAN 02 PREVIEW P ACTUAL 576P",
+      "resolved_mode": "576P",
+      "frame": 20,
+      "native_png": "scan-02-576p-native.png",
+      "sha256": "aa6127836f8578b4b871047a78107c105de1f21b837591814f42e89e08f154dc"
+    },
+    {
+      "caption": "SCAN 03 KEEP P ACTUAL 576P",
+      "resolved_mode": "576P",
+      "frame": 36,
+      "native_png": "scan-03-576p-native.png",
+      "sha256": "a3e5d1e6710d10ab5c28d23034b93b729b937ca89218ee133ca1acb05bff5a14"
+    },
+    {
+      "caption": "SCAN 04 PREVIEW | ACTUAL 5761",
+      "resolved_mode": "576I",
+      "frame": 52,
+      "native_png": "scan-04-576i-native.png",
+      "sha256": "3f77d74a9a340109d2f1929b9694bcf2c94c4fe9dbc2554df7ecd19a40f50124"
+    },
+    {
+      "caption": "SCAN 05 KEEP | ACTUAL 576I",
+      "resolved_mode": "576I",
+      "frame": 68,
+      "native_png": "scan-05-576i-native.png",
+      "sha256": "30b4c86ccf9e81ee3e15d4d43d6c3f7bdb812717f3ca5ecc338634de3b4b4580"
+    },
+    {
+      "caption": "SCAN 06 PREVIEW P ACTUAL 576P",
+      "resolved_mode": "576P",
+      "frame": 84,
+      "native_png": "scan-06-576p-native.png",
+      "sha256": "07ce5011d0a4384a25d668aa28484519134a33ca47dbbf70ee525d84e999508e"
+    },
+    {
+      "caption": "SCAN 07 BACK TO | ACTUAL 5761",
+      "resolved_mode": "576I",
+      "frame": 100,
+      "native_png": "scan-07-576i-native.png",
+      "sha256": "0b12fe0ab037d410c06be69080264967e18efe541fe2fd2ea227b0d2779a2afc"
+    },
+    {
+      "caption": "SCAN 08 PREVIEW P ACTUAL 576P",
+      "resolved_mode": "576P",
+      "frame": 116,
+      "native_png": "scan-08-576p-native.png",
+      "sha256": "d1e54fc8838a8b3df0a3708ae79a05231407c5c37cc5909a708c6b76b4308357"
+    },
+    {
+      "caption": "SCAN 09 KEEP P ACTUAL 576P",
+      "resolved_mode": "576P",
+      "frame": 132,
+      "native_png": "scan-09-576p-native.png",
+      "sha256": "fd8167518ba8461033766a451514e08b3112ca281e55822ec10a736579dc4403"
+    },
+    {
+      "caption": "SCAN 10 PREVIEW | ACTUAL 5761",
+      "resolved_mode": "576I",
+      "frame": 148,
+      "native_png": "scan-10-576i-native.png",
+      "sha256": "6bebc838a1644eeb37ab872441fe9d7aeb15708ac3a9d5a90243650cde72abdd"
+    },
+    {
+      "caption": "SCAN 11 BACK TO P ACTUAL 576P",
+      "resolved_mode": "576P",
+      "frame": 164,
+      "native_png": "scan-11-576p-native.png",
+      "sha256": "5dba6e63c2b9b8b1f5a54e411ab486455b90e3312f07f220d497931efb005726"
+    },
+    {
+      "caption": "SCAN 12 PREVIEW | ACTUAL 5761",
+      "resolved_mode": "576I",
+      "frame": 180,
+      "native_png": "scan-12-576i-native.png",
+      "sha256": "eab005a55da1e704d75f7452fd47978cccf08ccca5f580d66f2c7b0cbfc1b8ee"
+    },
+    {
+      "caption": "SCAN 13 TIMEOUT TO P ACTUAL 576P",
+      "resolved_mode": "576P",
+      "frame": 196,
+      "native_png": "scan-13-576p-native.png",
+      "sha256": "81c9f36430956f06ea975bbe33a17db714d5df4447c407d0817506a2f3720c5a"
+    },
+    {
+      "caption": "SCAN 14 PREVIEW OTHER P ACTUAL 480P",
+      "resolved_mode": "480P",
+      "frame": 212,
+      "native_png": "scan-14-480p-native.png",
+      "sha256": "2b7a628a07bf9a9eb0e394f0a63fa6668b8702304f8430543a88f34480a4ee71"
+    },
+    {
+      "caption": "SCAN 15 KEEP OTHER P ACTUAL 480P",
+      "resolved_mode": "480P",
+      "frame": 228,
+      "native_png": "scan-15-480p-native.png",
+      "sha256": "5bf108db59c3cf57e5d95c0307ca8fbe52272e4f5436fddc4f209440dada7130"
+    }
+  ]
+}

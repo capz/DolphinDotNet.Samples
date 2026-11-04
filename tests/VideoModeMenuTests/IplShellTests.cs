@@ -9,25 +9,23 @@ internal static class IplShellTests
     {
         for(int resolution=1;resolution<=2;resolution++)
         {
-            var output=new FakeOutput {Current=new VideoModeSettings(resolution,1,false)};var shell=new IplShell(output,resolution==2);
+            var output=new FakeOutput {Current=new VideoModeSettings(resolution,1,false)};var shell=new IplShell(output);
             var review=new VideoModeScanReview(shell,output,resolution);
             while(!review.Complete&&!review.Failed)review.Step();
-            Check(review.Complete&&!review.Failed&&review.Phase==14,"480/576 i/p previews, keeps, both B rollbacks, timeout to p and safe i");
-            Check(output.Current.Resolution==1&&output.Current.Scan==1&&output.Changes==10,"Scan sequence performs the expected output changes");
+            Check(review.Complete&&!review.Failed&&review.Phase==18,"480/576 i/p previews, keeps, both B rollbacks, timeout to p, progressive resolution changes and safe i");
+            Check(output.Current.Resolution==1&&output.Current.Scan==1&&output.Changes==13,"Scan sequence performs the expected output changes");
         }
-        var palOutput=new FakeOutput {Current=new VideoModeSettings(2,1,false)};
-        var pal=new IplShell(palOutput);Face(pal,ShellFace.Video);pal.Row=1;
-        pal.Confirm();Move(pal,0,1);pal.Confirm();
-        Check(pal.Editing&&!pal.Video.Pending&&palOutput.Changes==0&&pal.Video.Status=="576P NOT QUALIFIED","Release policy rejects 576p before changing hardware");
-        pal.Back();pal.Confirm();Move(pal,0,-1);pal.Confirm();
-        Check(pal.Video.Pending&&palOutput.Current.Scan==1,"576 Auto resolves to qualified interlaced timing");
-        pal.Confirm();pal.Video.SafeMode();
-        Check(palOutput.Current.Resolution==1&&palOutput.Current.Scan==1,"Safe mode leaves 576i for 480i");
+        var automaticOutput=new FakeOutput {Current=new VideoModeSettings(2,2,false)};
+        var automatic=new VideoModeMenu(automaticOutput);automatic.SelectRow(1);automatic.Edit(1);automatic.Apply();
+        Check(automatic.Pending&&automaticOutput.LastRequested.Scan==0&&automatic.Applied.Scan==automaticOutput.Read().Scan,
+            "576 Auto reaches the SDK unchanged and the menu uses its resolved scan mode");
+        automatic.Revert();
+        Check(!automatic.Pending&&automaticOutput.Current.Resolution==2&&automaticOutput.Current.Scan==2,"576 Auto rollback restores progressive");
         var rejectedOutput=new FakeOutput();var rejectedShell=new IplShell(rejectedOutput);
         var rejected=new VideoModeScanReview(rejectedShell,rejectedOutput);
         rejected.Step();rejectedOutput.Failure=1;rejected.Step();
         Check(rejected.Failed&&!rejectedShell.Video.Pending&&rejectedOutput.Current.Scan==1&&rejectedShell.Video.Status=="UNSUPPORTED MODE OR CABLE","Unsupported progressive output preserves interlaced mode");
-        Console.WriteLine("Scan modes: i/p round trip, keep, both B rollbacks, timeout, safe mode and rejected output passed.");
+        Console.WriteLine("Scan modes: i/p and resolution round trips, keep, both B rollbacks, timeout, SDK Auto, safe mode and rejected output passed.");
     }
     internal static void Run()
     {

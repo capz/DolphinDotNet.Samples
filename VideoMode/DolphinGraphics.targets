@@ -1,10 +1,17 @@
 <Project>
   <PropertyGroup>
     <IplEmulatorAntialiasing Condition="'$(IplEmulatorAntialiasing)' == ''">true</IplEmulatorAntialiasing>
+    <IplEmulatorSamples Condition="'$(IplEmulatorSamples)' == ''">1</IplEmulatorSamples>
+    <IplEmulatorSupersampling Condition="'$(IplEmulatorSupersampling)' == ''">false</IplEmulatorSupersampling>
+    <IplEmulatorPostProcessing Condition="'$(IplEmulatorPostProcessing)' == ''">IplEdgeAA</IplEmulatorPostProcessing>
   </PropertyGroup>
   <UsingTask TaskName="IplSetDolphinAntialiasing" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)/Microsoft.Build.Tasks.Core.dll">
     <ParameterGroup>
       <UserDirectory ParameterType="System.String" Required="true" />
+      <ShaderPath ParameterType="System.String" Required="true" />
+      <Samples ParameterType="System.String" Required="true" />
+      <Supersampling ParameterType="System.Boolean" />
+      <PostProcessing ParameterType="System.String" />
     </ParameterGroup>
     <Task>
       <Using Namespace="System.IO" />
@@ -17,17 +24,19 @@
             Directory.CreateDirectory(directory);
             string path = Path.Combine(directory, "GFX.ini");
             var lines = new List<string>(File.Exists(path) ? File.ReadAllLines(path) : new string[0]);
-            foreach (string key in new[] { "MSAA", "SSAA" })
+            string shader = PostProcessing == "None" ? "" : PostProcessing;
+            foreach (string setting in new[] { "Settings|MSAA|" + Samples, "Settings|SSAA|" + (Supersampling ? "True" : "False"), "Enhancements|PostProcessingShader|" + shader })
             {
-                string value = key == "MSAA" ? "4" : "False";
+                string[] parts = setting.Split('|');
+                string sectionName = "[" + parts[0] + "]", key = parts[1], value = parts[2];
                 int section = -1, end = lines.Count;
                 for (int i = 0; i < lines.Count; i++)
                 {
                     string line = lines[i].Trim();
-                    if (line.Equals("[Settings]", System.StringComparison.OrdinalIgnoreCase)) section = i;
+                    if (line.Equals(sectionName, System.StringComparison.OrdinalIgnoreCase)) section = i;
                     else if (section >= 0 && line.StartsWith("[")) { end = i; break; }
                 }
-                if (section < 0) { lines.Add("[Settings]"); section = lines.Count - 1; end = lines.Count; }
+                if (section < 0) { lines.Add(sectionName); section = lines.Count - 1; end = lines.Count; }
                 // Remove duplicate definitions as well as replacing an existing key.
                 for (int i = end - 1; i > section; i--)
                 {
@@ -39,12 +48,19 @@
                 lines.Insert(end, key + " = " + value);
             }
             File.WriteAllLines(path, lines);
+            if (shader == "IplEdgeAA")
+            {
+                string shaderDirectory = Path.Combine(profile, "Shaders");
+                Directory.CreateDirectory(shaderDirectory);
+                File.Copy(ShaderPath, Path.Combine(shaderDirectory, "IplEdgeAA.glsl"), true);
+            }
         }
       ]]></Code>
     </Task>
   </UsingTask>
   <Target Name="ConfigureIplDolphinGraphics" AfterTargets="BuildDol"
           Condition="'$(IplEmulatorAntialiasing)' == 'true' and '$(DesignTimeBuild)' != 'true'">
-    <IplSetDolphinAntialiasing UserDirectory="$(DolphinUserDirectory)" />
+    <IplSetDolphinAntialiasing UserDirectory="$(DolphinUserDirectory)" ShaderPath="$(MSBuildProjectDirectory)/Assets/IplEdgeAA.glsl"
+                             Samples="$(IplEmulatorSamples)" Supersampling="$(IplEmulatorSupersampling)" PostProcessing="$(IplEmulatorPostProcessing)" />
   </Target>
 </Project>

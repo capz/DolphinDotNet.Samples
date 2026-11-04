@@ -23,7 +23,7 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
     private readonly VertexPositionColorTexture[] panelVertices=new VertexPositionColorTexture[PanelVertices];
     private readonly DynamicMesh[] panelMeshes=new DynamicMesh[BlurTaps];
     private SceneCapture? capture;
-    private int glassCount,panelCount,captureWidth,captureHeight;
+    private int glassCount,panelCount,captureWidth,captureHeight,copyWidth,copyHeight;
     private float scale=1,offset,logicalWidth=640,logicalHeight=480;
     internal GameCubeCanvas(GraphicsDevice device)
     {
@@ -49,9 +49,10 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
         camera.SetOrthographic(size.X,size.Y,.1f,10);
         if(captureWidth!=device.Width||captureHeight!=device.Height)
         {
-            // Standard VI modes all permit an aligned GX half-size copy.
-            // Allocate between frames; a display change may resize the EFB.
-            var replacement=new SceneCapture(device,device.Width/2,device.Height/2,true);
+            // Hardware AA uses a 242-line EFB at 480 output. Crop its last two
+            // lines so the half-size texture and source remain GX-aligned.
+            copyWidth=device.Width/8*8;copyHeight=device.Height/8*8;
+            var replacement=new SceneCapture(device,copyWidth/2,copyHeight/2,true);
             capture?.Dispose();capture=replacement;
             captureWidth=device.Width;captureHeight=device.Height;frostMaterial.Texture=capture.Texture;
         }
@@ -106,7 +107,7 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
             {
                 if(i>=panelCount){panelVertices[i]=default;continue;}
                 var p=panelPoints[i];
-                var uv=new Vector2((offset+(p.X+dx)*scale)/logicalWidth,(p.Y+dy)*scale/logicalHeight);
+                var uv=new Vector2((offset+(p.X+dx)*scale)/logicalWidth*device.Width/copyWidth,(p.Y+dy)*scale/logicalHeight*device.Height/copyHeight);
                 panelVertices[i]=new VertexPositionColorTexture(World(p),Color32.White,uv);
             }
             panelMeshes[tap].SetVertices(panelVertices);
@@ -114,7 +115,7 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
     }
     public void CaptureBackdrop()
     {
-        draw.End();capture!.Capture(new Viewport(0,0,device.Width,device.Height));draw.Begin();
+        draw.End();capture!.Capture(new Viewport(0,0,copyWidth,copyHeight));draw.Begin();
     }
     public void DrawFrostedPanels()
     {

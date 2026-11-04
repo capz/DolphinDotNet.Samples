@@ -45,19 +45,20 @@ active. Rollback allocation failures remain pending and retry once per second.
 Widescreen-only changes preserve timing and buffers. The UI uses display-correct
 logical coordinates and centers its 4:3 composition inside a widescreen canvas.
 
-To switch **480i / 480p**, open Video with right, select **Scan**, press A,
+To switch **480i / 480p** or **576i / 576p**, open Video with right, choose the
+desired **Output** resolution, then select **Scan**, press A,
 and use up/down to choose **Interlaced** or **Progressive**. A starts the preview;
 A again keeps it, or B reverts. Progressive requires a compatible cable/display.
 In Dolphin, enable its progressive/component-cable setting (`SYSCONF.IPL.PGS=True`);
 without that capability the native API rejects progressive and preserves the
 current mode. X always requests 480i, 4:3.
 
-Repeated 576i/576p switching stalled in the pinned native runtime with cloud
-Dolphin 2503. Normal builds therefore reject 576p before changing output, and
-resolve 576 Auto to interlaced. This is a sample qualification guard, not a claim
-that the console cannot produce 576p. [Native scan-mode evidence, commands and
-limitations](Design/scan-mode-review.md) document the passing 480 sequence and
-the incomplete 576 sequence. Physical console/cable/display testing remains open.
+The SDK's corrected VIDEO library fixes the 576p blanking overflow that previously
+froze switching. The app no longer blocks 576p or forces 576 Auto to interlaced;
+Auto follows the SDK's normal resolution/cable rules. A native rebuild is required
+to include the fix in the DOL. [Native scan-mode evidence, package provenance and
+limitations](Design/scan-mode-review.md) cover both resolution sequences and retain
+the earlier failure for comparison. Physical console/cable/display testing remains open.
 
 Time, date and sound are explicitly session-only interaction demonstrations.
 They do not write the console RTC or system SRAM. Game Play and Memory Card are
@@ -72,7 +73,7 @@ dotnet run --project tests/VideoModeMenuTests -c Release
 ```
 
 The repository's native CI also AOT-compiles and links this sample into DOL/ELF
-using the compiler and native support in NuGet preview `0.1.0-preview.103.1`.
+using the compiler and native support in the SDK version pinned in `global.json`.
 Hardware/TV acceptance and visual comparison inside Dolphin remain separate
 from successful compilation; do not treat host visual proofs as emulator captures.
 
@@ -91,15 +92,34 @@ SIL OFL in `Assets/OFL-Nunito.txt`. It is a close substitute, not the IPL font.
 A pixel-identical reproduction and complete platform input/hardware acceptance
 must not be claimed without a captured native run against the reference images.
 
-## Dolphin antialiasing
+## Antialiasing and performance
 
-Native builds configure this sample's isolated Dolphin play and debug profiles
-with **4× MSAA** (`GFX.ini`: `[Settings] MSAA = 4`, `SSAA = False`). Use a Dolphin
-hardware backend supporting MSAA, such as OpenGL or Vulkan. Other graphics and
-controller preferences are preserved. Build with
+Native builds install the bundled **IplEdgeAA** postprocessing shader in the
+isolated Dolphin play/debug profiles. It smooths staircase edges while preserving
+bright text/highlight cores, at the full native render size. The selected profile
+uses `MSAA = 1`, `SSAA = False`; this is postprocessing AA, not multisampling.
+Measured median cloud throughput cost is about 7%, compared with about 30% for 4× MSAA.
+[Native comparisons, raw repeated timings and limitations](Design/aa-performance-review.md).
+
+Other graphics and controller preferences are preserved. Build with
 `-p:IplEmulatorAntialiasing=false` to stop enforcing these keys and manage AA in
 Dolphin yourself; this does not erase settings already written to the profile.
+For a stronger GPU, `-p:IplEmulatorSamples=4 -p:IplEmulatorPostProcessing=None`
+selects 4× MSAA. `-p:IplEmulatorSupersampling=true` additionally requests SSAA;
+only choose sample counts supported by the renderer. Unsupported counts can
+silently disable AA in Dolphin. Set postprocessing to `None` to disable the
+bundled edge filter, or use another installed shader's name.
 
-This is emulator antialiasing, not a hardware-AA mode in the DOL. The pinned SDK
-has no public hardware-AA display option. Its display, preview/revert and
-safe-mode behavior remain unchanged. [Captured comparison](Design/antialiasing-review.md).
+The SDK's real GX framebuffer AA is implemented for explicit review/benchmark
+builds with `-p:IplHardwareAntialiasing=true`. It applies to 240/480 modes and is automatically
+disabled for 576 output, which the SDK does not support with hardware AA. At 480,
+it uses a 242-line EFB and RGB565/Z16, so text is softer. The live blur capture
+crops two EFB lines to retain GX alignment and compensates its UVs. A boot-time
+AA allocation failure keeps the boot mode and disables hardware AA for the session.
+
+Hardware AA is blocked in normal interactive builds: cloud Dolphin 2503 produced
+a valid raw EFB dump but a magenta displayed window, and an AA-enabled transition
+from 480p to 576p stalled. That candidate was rejected despite its faster frame counter.
+Explicit `IplVisualReview` or `IplVideoModeReview` builds retain the diagnostic
+for reproduction. Physical console/cable/display
+performance remains unmeasured. Display preview/revert and safe mode are retained.

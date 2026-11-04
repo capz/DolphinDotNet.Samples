@@ -1,0 +1,1347 @@
+{
+  "renderer": {
+    "renderer": "llvmpipe (LLVM 19.1.7, 256 bits)",
+    "version": "4.5 (Compatibility Profile) Mesa 25.0.7-2+deb13u1",
+    "max_samples": 4,
+    "sample_shading": true,
+    "requested_to_actual_samples": {
+      "2": 4,
+      "4": 4
+    },
+    "rgba8_sample_counts": [
+      4
+    ],
+    "rgb565_sample_counts": [
+      4
+    ]
+  },
+  "warmup_seconds": 6.0,
+  "measurement_seconds": 12.0,
+  "method": "SDK native presentation counter sampled through GDB every 250 ms; no dumps/breakpoints; frame ring modulo 32; Dolphin speed limit 1.0; LP_NUM_THREADS=2.",
+  "limitation": "Cloud software-renderer throughput, not physical GameCube timing. The optional performance panel is enabled equally in all benchmark DOLs.",
+  "results": [
+    {
+      "candidate": "hw-off-samples-1-ssaa-0-r0",
+      "hardware": "off",
+      "msaa": 1,
+      "ssaa": false,
+      "repeat": 0,
+      "frames": 69,
+      "active_seconds": 11.709074874012003,
+      "wall_seconds": 12.278629210999497,
+      "active_fps": 5.892865212873799,
+      "wall_fps": 5.619519802600449,
+      "native_quality": {
+        "hardware_aa": false,
+        "efb_width": 640,
+        "efb_height": 480,
+        "xfb_height": 480
+      },
+      "dol_sha256": "60efbb0dd403279c90ae0457d24a937918d4ea7033e3b543b636d42a2d45eec9",
+      "samples": [
+        {
+          "active_seconds": 0.25690001499970094,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25023293000049307,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.26724825800192775,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25021920400104136,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.2542072639989783,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2502555270002631,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.2505176410013519,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2506482690005214,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2532133429995156,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25032236100014416,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.2502791859988065,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.250698445001035,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2502830379999068,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.2503170290001435,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.29185440199944424,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.250211324000702,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.25487116899967077,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2502462820011715,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.2553405029975693,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25025273700157413,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.26467342199975974,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.251179281000077,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.2502416860006633,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.25025362899759784,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2502378290009801,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.25038737599970773,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25031891300022835,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.2502594069992483,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2502961430000141,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25022217700097826,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.250316860001476,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.28977925300205243,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25024957800269476,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.27405958899908,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2502542149995861,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.25398639899867703,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25025501499840175,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.2819323240000813,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25028394399851095,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.25022222100233193,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.25063803699958953,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2501786560023902,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.25016155800039996,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25018090400044457,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.2501886350000859,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.25019889600298484,
+          "presented_frames": 2
+        }
+      ]
+    },
+    {
+      "candidate": "hw-off-samples-2-ssaa-0-r0",
+      "hardware": "off",
+      "msaa": 2,
+      "ssaa": false,
+      "repeat": 0,
+      "frames": 74,
+      "active_seconds": 11.381350626979838,
+      "wall_seconds": 12.148820816997613,
+      "active_fps": 6.501864534827769,
+      "wall_fps": 6.091126136000408,
+      "native_quality": {
+        "hardware_aa": false,
+        "efb_width": 640,
+        "efb_height": 480,
+        "xfb_height": 480
+      },
+      "dol_sha256": "60efbb0dd403279c90ae0457d24a937918d4ea7033e3b543b636d42a2d45eec9",
+      "samples": [
+        {
+          "active_seconds": 0.2507815989993105,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2501226800013683,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.25017559499974595,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.25020380599744385,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.2501830660003179,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2501626099983696,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.25022815500051365,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.2653560489998199,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25036941599682905,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.25029367299794103,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.2545949190025567,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2584740860002057,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25023044800036587,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.2583635740011232,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25024369599850615,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.25673436599754496,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2502759659982985,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.25027939999927185,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.25032862499938346,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25022185900161276,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.2502739429983194,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2502422049983579,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.2504586159993778,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2502037720005319,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.2501611449988559,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.25021186499725445,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25021237599867163,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.25017910999667947,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.25029710899980273,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.2503120499968645,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.25018771400209516,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2501795509997464,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.25021264599854476,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.250245860999712,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.2952558819997648,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25026779499967233,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.25032270700103254,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.2502066320012091,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25018080200243276,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.25011634600014077,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.250176346002263,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25018205200103694,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.25021954700059723,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.2831203709974943,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25030059599885135,
+          "presented_frames": 2
+        }
+      ]
+    },
+    {
+      "candidate": "hw-off-samples-4-ssaa-0-r0",
+      "hardware": "off",
+      "msaa": 4,
+      "ssaa": false,
+      "repeat": 0,
+      "frames": 51,
+      "active_seconds": 11.16710136202164,
+      "wall_seconds": 12.015238120999129,
+      "active_fps": 4.56698639572187,
+      "wall_fps": 4.24461000992289,
+      "native_quality": {
+        "hardware_aa": false,
+        "efb_width": 640,
+        "efb_height": 480,
+        "xfb_height": 480
+      },
+      "dol_sha256": "60efbb0dd403279c90ae0457d24a937918d4ea7033e3b543b636d42a2d45eec9",
+      "samples": [
+        {
+          "active_seconds": 0.32314202900306555,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25017607900008443,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.25032392399953096,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2502783140007523,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2502385650004726,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.31591679100165493,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2502385530024185,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.2502350700015086,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25033527899722685,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25016327100092894,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25020709700038424,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.25035650200152304,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25021459799972945,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2502511740021873,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25023551900085295,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2504286920011509,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2501816990006773,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2502589959985926,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.2503089910023846,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25248211700090906,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.3352328309993027,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2501812490008888,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2501791710019461,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.2503094109997619,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2593325419984467,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.3282556359990849,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25025654600176495,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.25023658799909754,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2509628719999455,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2502753839980869,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25027835899891215,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2502395460032858,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25132498200036935,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2641986180024105,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.32678575799945975,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2501779429985618,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.2502060660008283,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2502191759995185,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2502590650001366,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25137754200113704,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25026129899924854,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25034867100112024,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.2502288470022904,
+          "presented_frames": 1
+        }
+      ]
+    },
+    {
+      "candidate": "hw-off-samples-4-ssaa-1-r0",
+      "hardware": "off",
+      "msaa": 4,
+      "ssaa": true,
+      "repeat": 0,
+      "frames": 34,
+      "active_seconds": 9.945291076997819,
+      "wall_seconds": 12.289432834000763,
+      "active_fps": 3.418703357877341,
+      "wall_fps": 2.7666044852723664,
+      "native_quality": {
+        "hardware_aa": false,
+        "efb_width": 640,
+        "efb_height": 480,
+        "xfb_height": 480
+      },
+      "dol_sha256": "60efbb0dd403279c90ae0457d24a937918d4ea7033e3b543b636d42a2d45eec9",
+      "samples": [
+        {
+          "active_seconds": 0.355704361001699,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.35135052899931907,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25018729500152403,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25019146200065734,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.33907453600113513,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2501952220009116,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2501644900003157,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2501821529986046,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2501705410031718,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.3513163979987439,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.3931066949990054,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.3613974159998179,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.3738445919989317,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25019689399778144,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25022414100021706,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2502175809968321,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2502135949980584,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25021326299975044,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25020705399947474,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25022217800142244,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2502393739996478,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.30207401299776393,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25016954300008365,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.33799465199990664,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25016842700279085,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.31750588700015214,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.35895367600096506,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.34399984999981825,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2502315310011909,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2512983790002181,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25021640799968736,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25023086899818736,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.36503466299836873,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.38879340900166426,
+          "presented_frames": 1
+        }
+      ]
+    },
+    {
+      "candidate": "hw-on-samples-1-ssaa-0-r0",
+      "hardware": "on",
+      "msaa": 1,
+      "ssaa": false,
+      "repeat": 0,
+      "frames": 79,
+      "active_seconds": 11.638877829002013,
+      "wall_seconds": 12.246806066999852,
+      "active_fps": 6.787595948738809,
+      "wall_fps": 6.450661467798758,
+      "native_quality": {
+        "hardware_aa": true,
+        "efb_width": 640,
+        "efb_height": 242,
+        "xfb_height": 480
+      },
+      "dol_sha256": "bfee6f42f0a76c469f2d2f865d417ed9485614e95a3fdfad82519b8149761919",
+      "samples": [
+        {
+          "active_seconds": 0.25024540899903513,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.25240297200070927,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25018180800179834,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.2501324590011791,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.2502519139998185,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.2502274260004924,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25020062899784534,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.25026302699916414,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.25016119399879244,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.2501796620017558,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.25010748299973784,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.2501621449991944,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.25020118500106037,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.2502312840006198,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.2786377820011694,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25554498299970874,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.2516905199991015,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.2574269760007155,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2502589760006231,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.25974244800090673,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25025755900060176,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.2502235490028397,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.287312861000828,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2506240179973247,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.2501319860020885,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.25020255299750715,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.25182974000199465,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.25022775499746785,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.250267139999778,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.25392830000055255,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2502572699995653,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.25160381499881623,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.2502363780004089,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2502693329988688,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.25025127600019914,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25031613299870514,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.250325642999087,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.25031604900141247,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2502612450007291,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.25048324200179195,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2502707999992708,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.2800898099994811,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25027603300259216,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.250220043999434,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.2502155219990527,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2502294929981872,
+          "presented_frames": 2
+        }
+      ]
+    },
+    {
+      "candidate": "hw-on-samples-4-ssaa-0-r0",
+      "hardware": "on",
+      "msaa": 4,
+      "ssaa": false,
+      "repeat": 0,
+      "frames": 56,
+      "active_seconds": 11.276872377002292,
+      "wall_seconds": 12.235579678002978,
+      "active_fps": 4.965915914256925,
+      "wall_fps": 4.576816258299256,
+      "native_quality": {
+        "hardware_aa": true,
+        "efb_width": 640,
+        "efb_height": 242,
+        "xfb_height": 480
+      },
+      "dol_sha256": "bfee6f42f0a76c469f2d2f865d417ed9485614e95a3fdfad82519b8149761919",
+      "samples": [
+        {
+          "active_seconds": 0.25030117799906293,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2502212680010416,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2502767160003714,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2926344949992199,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2502641119972395,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.2502057040001091,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2502533660008339,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2550973760007764,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25649939000140876,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25055296800201177,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.2502548270022089,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25029840700153727,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.251624027001526,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2869915619994572,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2503497249999782,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.25022811199960415,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25031109699921217,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25028507800016087,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.29454438199900324,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2502520270027162,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.25050063700109604,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2502002349974646,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25016737500118325,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.25017915699936566,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2502024829991569,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2503488889997243,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.2502677560005395,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.3057833960010612,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2502264989998366,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.25598323500162223,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.27536065700041945,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25028943399956916,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.25133030299912207,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2501673799997661,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.2502454579989717,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25020659800065914,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25018319399896427,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.2502973859991471,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.250223263999942,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.25026536799850874,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2915997299969604,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2502361890001339,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.2502580920008768,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25090384500072105,
+          "presented_frames": 1
+        }
+      ]
+    },
+    {
+      "candidate": "hw-on-samples-4-ssaa-1-r0",
+      "hardware": "on",
+      "msaa": 4,
+      "ssaa": true,
+      "repeat": 0,
+      "frames": 36,
+      "active_seconds": 9.841177658006927,
+      "wall_seconds": 12.180095953001,
+      "active_fps": 3.658098781573145,
+      "wall_fps": 2.9556417403370387,
+      "native_quality": {
+        "hardware_aa": true,
+        "efb_width": 640,
+        "efb_height": 242,
+        "xfb_height": 480
+      },
+      "dol_sha256": "bfee6f42f0a76c469f2d2f865d417ed9485614e95a3fdfad82519b8149761919",
+      "samples": [
+        {
+          "active_seconds": 0.3075662020019081,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2502193040018028,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.250225171999773,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25014693699995405,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25022850100140204,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2502197440007876,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2502063920001092,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.3371839139981603,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2502034219978668,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2502007399998547,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25021007800023654,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25018505100160837,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.26173637399915606,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.29406044999996084,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2502142340017599,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2502031639996858,
+          "presented_frames": 2
+        },
+        {
+          "active_seconds": 0.2502147849991161,
+          "presented_frames": 0
+        },
+        {
+          "active_seconds": 0.25026471099772607,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.250249499000347,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.3714561519991548,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25178563900044537,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.33671327699994436,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25019216900182073,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25014444699991145,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.250267964998784,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25019464200158836,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.3019800000001851,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.29439284399995813,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2889561310003046,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.30319932299971697,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.3157770950019767,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.31770310800129664,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.3540935970013379,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25017283399938606,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25020423699970706,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2502055240001937,
+          "presented_frames": 1
+        }
+      ]
+    }
+  ]
+}

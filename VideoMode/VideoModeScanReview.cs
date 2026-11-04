@@ -21,6 +21,11 @@ internal sealed class VideoModeScanReview
     {
         if(!Failed&&!Complete&&frames++%16==0)Step();
     }
+    internal void CheckAntialiasing(bool actual,bool expected)
+    {
+        if(actual==expected)return;
+        Failed=true;Caption="SCAN "+Phase.ToString()+" FAIL AA STATE";
+    }
     internal void Step()
     {
         if(Failed||Complete)return;
@@ -28,17 +33,7 @@ internal sealed class VideoModeScanReview
         switch(Phase)
         {
             case 0:
-                label=resolution==1?"BASELINE I BLOCK576P":"BASELINE I";
-                if(resolution==1)
-                {
-                    // Exercise the release gate on the actual native output
-                    // before the supported i/p round trip begins.
-                    shell.Video.SelectRow(0);shell.Video.Edit(1);
-                    shell.Video.SelectRow(1);shell.Video.Edit(1);shell.Video.Apply();
-                    CheckMode(1,false);
-                    if(shell.Video.Status!="576P NOT QUALIFIED")Failed=true;
-                    shell.Video.CancelSelection();shell.Video.SelectRow(1);
-                }
+                label="BASELINE I";
                 CheckMode(1,false);break;
             case 1: label="PREVIEW P";Preview(2);break;
             case 2: label="KEEP P";shell.Confirm();CheckMode(2,false);break;
@@ -56,6 +51,14 @@ internal sealed class VideoModeScanReview
                 shell.Tick(VideoModeMenu.PreviewSeconds+.1f);
                 CheckMode(2,false);break;
             case 13:
+                label="PREVIEW OTHER P";PreviewResolution(resolution==1?2:1);break;
+            case 14:
+                label="KEEP OTHER P";shell.Confirm();CheckMode(2,false,resolution==1?2:1);break;
+            case 15:
+                label="PREVIEW ORIGINAL P";PreviewResolution(resolution);break;
+            case 16:
+                label="BACK OTHER P";shell.Back();CheckMode(2,false,resolution==1?2:1);break;
+            case 17:
                 label="PASS SAFE I";
                 shell.Video.SafeMode();CheckMode(1,false,1);
                 if(!Failed){shell.TurnTo(ShellFace.Video);shell.Tick(1);shell.Row=1;Complete=true;}
@@ -73,6 +76,16 @@ internal sealed class VideoModeScanReview
         shell.Direction(0,0,0);shell.Direction(0,scan==2?1:-1,.016f);
         if(!shell.Editing||shell.Video.Selected.Scan!=scan){Failed=true;return;}
         shell.Confirm();CheckMode(scan,true);
+    }
+    private void PreviewResolution(int target)
+    {
+        shell.Row=0;shell.Confirm();
+        for(int i=0;i<2&&shell.Video.Selected.Resolution!=target;i++)
+        {
+            shell.Direction(0,0,0);shell.Direction(0,1,.016f);
+        }
+        if(!shell.Editing||shell.Video.Selected.Resolution!=target){Failed=true;return;}
+        shell.Confirm();CheckMode(2,true,target);
     }
     private void CheckMode(int scan,bool pending,int expectedResolution=-1)
     {

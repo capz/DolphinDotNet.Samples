@@ -440,8 +440,7 @@ internal sealed class IplRenderer
             if(s.Face==ShellFace.Video&&!s.Video.Pending)
             {
                 string status=s.Video.Status;
-                if(status=="576P NOT QUALIFIED")Banner("576p is unavailable in this build.",true);
-                else if(status=="UNSUPPORTED MODE OR CABLE"||status=="NOT ENOUGH MEMORY FOR MODE")Banner(status=="UNSUPPORTED MODE OR CABLE"?"Unsupported mode or cable.":"Not enough memory for this mode.",true);
+                if(status=="UNSUPPORTED MODE OR CABLE"||status=="NOT ENOUGH MEMORY FOR MODE")Banner(status=="UNSUPPORTED MODE OR CABLE"?"Unsupported mode or cable.":"Not enough memory for this mode.",true);
                 else Center("A previews the mode. B discards changes.",320,350,16,White);
             }
             else if(s.Face==ShellFace.Options)Center("Sound demonstration. Changes last for this session.",320,351,14,0xc4c9deff);

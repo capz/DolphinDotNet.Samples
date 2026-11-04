@@ -18,7 +18,7 @@ internal sealed class IplShell
     private int hour, minute, day, month, year, sound;
     private int repeatX, repeatY;
     private float repeatTime;
-    internal IplShell(IVideoModeOutput output,bool allowUnvalidated576Progressive=false) { Video = new VideoModeMenu(output,allowUnvalidated576Progressive); }
+    internal IplShell(IVideoModeOutput output) { Video = new VideoModeMenu(output); }
     internal int Rows => Face == ShellFace.Video ? 3 : Face == ShellFace.Calendar ? 2 : Face == ShellFace.Options ? 3 : 1;
     internal bool Editing => Page == ShellPage.Detail;
     internal string Title => Face == ShellFace.Video ? "Video" : Face == ShellFace.Calendar ? "Calendar" : Face == ShellFace.Options ? "Options" : Face == ShellFace.Memory ? "Memory Card" : "Game Play";
