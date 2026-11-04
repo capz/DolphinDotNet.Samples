@@ -33,7 +33,9 @@ internal sealed class IplRenderer
     private readonly float[] depth=new float[6];
     private readonly IplPoint[] projected=new IplPoint[6*25*25];
     private readonly uint[] glassColors=new uint[6*25*25];
-    private const float Core=.925f,Round=.075f;
+    // A broad corner arc must remain visible at native resolution. The optical
+    // wall uses the same radius family as the underlying rounded solid.
+    private const float Round=.12f,Core=1-Round,WallCorner=.16f;
     internal IplRenderer(IIplCanvas canvas)
     {
         c=canvas;
@@ -235,8 +237,8 @@ internal sealed class IplRenderer
         for(int corner=0;corner<4;corner++)for(int j=0;j<=12;j++)
         {
             float a=(180-corner*90-j*90f/12)*.017453293f;
-            var o=WallPoint(face,corner,a,outer,.075f+(outer-.997f)/.147f*.010f,front);
-            var n=WallPoint(face,corner,a,inner,.075f+(inner-.997f)/.147f*.010f,back);
+            var o=WallPoint(face,corner,a,outer,WallCorner+(outer-.997f)/.147f*.015f,front);
+            var n=WallPoint(face,corner,a,inner,WallCorner+(inner-.997f)/.147f*.015f,back);
             if(corner==0&&j==0){firstOuter=o;firstInner=n;}
             else WallSegment(previousOuter,o,previousInner,n,color);
             previousOuter=o;previousInner=n;
@@ -274,9 +276,15 @@ internal sealed class IplRenderer
         var p=Rotate(point);
         float top=Light(p.X-.55f,(p.Y-1)*2,.28f);
         float corner=Light(p.X+.91f,(p.Y-.92f)*1.4f,.17f);
+        // Localized reflected lights reveal each curved return. Avoid a uniform
+        // contour, which would make the optical wall look like a stroked frame.
+        float rightCorner=Light(p.X-.92f,(p.Y-.92f)*1.25f,.18f);
+        float bottomCorners=Light(p.X+.92f,(p.Y+.92f)*1.25f,.20f)
+                           +Light(p.X-.92f,(p.Y+.92f)*1.25f,.20f);
         float lower=Light(p.X-.08f,(p.Y+1)*2,.42f);
+        lower+=bottomCorners*.35f;
         float warm=Light(p.X+1,p.Y+.50f,.45f);
-        float glint=top+corner*.85f;
+        float glint=top+corner*.85f+rightCorner*.70f+bottomCorners*.30f;
         int r=(int)((color>>24)*.55f+glint*190+warm*100+lower*40);
         int g=(int)(((color>>16)&255)*.65f+glint*185+warm*58+lower*28);
         int b=(int)(((color>>8)&255)*.80f+glint*170+lower*120);
