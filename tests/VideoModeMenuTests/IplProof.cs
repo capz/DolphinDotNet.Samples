@@ -3,7 +3,7 @@ using System.Globalization;
 using System.IO;
 using System.Text;
 
-// Inspection aid, not a Dolphin screenshot: exact shared scene commands and atlas.
+// Geometry inspection aid, not a Dolphin screenshot. Native reflection textures are not exported.
 internal sealed class IplProof : IIplCanvas
 {
     private readonly StringBuilder shapes=new StringBuilder();
@@ -24,7 +24,7 @@ internal sealed class IplProof : IIplCanvas
         uint color=Mix(Mix(ca,cb),cd);
         glass.Append("<path d='M"+N(a.X)+" "+N(a.Y)+"L"+N(b.X)+" "+N(b.Y)+"L"+N(d.X)+" "+N(d.Y)+"Z' fill='"+Color(color)+"' fill-opacity='"+N((color&255)/255f)+"'/>");
     }
-    public void GlassVertex(int index,IplPoint point,uint color){facePoints[index]=point;faceColors[index]=color;}
+    public void GlassVertex(int index,IplPoint point,uint color,float u,float v,float reflection){facePoints[index]=point;faceColors[index]=color;}
     public void EndGlassFace()
     {
         for(int y=0;y<24;y++)for(int x=0;x<24;x++)
@@ -41,6 +41,7 @@ internal sealed class IplProof : IIplCanvas
     }
     public void EndGlass() { }
     public void DrawGlass()=>shapes.Append(glass);
+    public void DrawReflections() { }
     public void BeginPanels()=>panels.Clear();
     public void PanelTriangle(IplPoint a,IplPoint b,IplPoint d)
     {panels.Append("M"+N(a.X)+" "+N(a.Y)+"L"+N(b.X)+" "+N(b.Y)+"L"+N(d.X)+" "+N(d.Y)+"Z");}

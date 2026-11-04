@@ -6,10 +6,11 @@ internal interface IIplCanvas
     void Triangle(float ax,float ay,float bx,float by,float cx,float cy,uint color);
     void Text(string value,float x,float y,float size,uint color,float angle);
     void BeginGlass();
-    void GlassVertex(int index,IplPoint point,uint color);
+    void GlassVertex(int index,IplPoint point,uint color,float u,float v,float reflection);
     void EndGlassFace();
     void EndGlass();
     void DrawGlass();
+    void DrawReflections();
     void BeginPanels();
     void PanelTriangle(IplPoint a,IplPoint b,IplPoint d);
     void EndPanels();
@@ -123,7 +124,7 @@ internal sealed class IplRenderer
         Rect(0,0,640,480,0x000000ff);
         if(shell.Editing) { Detail(shell); Footer(shell); return; }
         c.DrawGlass();
-        GlassRims();
+        GlassRims();c.DrawReflections();
         if(shell.Turn>.85f)
         {
             FaceIcon(shell);
@@ -153,10 +154,27 @@ internal sealed class IplRenderer
         for(int n=0;n<6;n++)
         {
             int face=faceOrder[n];
-            for(int i=0;i<625;i++)c.GlassVertex(i,projected[face*625+i],glassColors[face*625+i]);
+            for(int i=0;i<625;i++)
+            {
+                int at=face*625+i;var uv=ReflectionUv(points[at]);
+                c.GlassVertex(i,projected[at],glassColors[at],uv.X,uv.Y,uv.Z);
+            }
             c.EndGlassFace();
         }
         c.EndGlass();
+    }
+    private IplPoint ReflectionUv(IplPoint point)
+    {
+        var p=Rotate(point);
+        var n=Rotate(new IplPoint(point.X-Clamp(point.X,-Core,Core),point.Y-Clamp(point.Y,-Core,Core),point.Z-Clamp(point.Z,-Core,Core)));
+        float length=(float)Math.Sqrt(n.X*n.X+n.Y*n.Y+n.Z*n.Z);
+        n=new IplPoint(n.X/length,n.Y/length,n.Z/length);
+        var eye=new IplPoint(-p.X,-p.Y,3.8f-p.Z);
+        length=(float)Math.Sqrt(eye.X*eye.X+eye.Y*eye.Y+eye.Z*eye.Z);
+        eye=new IplPoint(eye.X/length,eye.Y/length,eye.Z/length);
+        float dot=n.X*eye.X+n.Y*eye.Y+n.Z*eye.Z;
+        float grazing=Clamp(1-dot,0,1);
+        return new IplPoint(Clamp(.5f+(2*dot*n.X-eye.X)*.5f,.002f,.998f),Clamp(.5f+(2*dot*n.Y-eye.Y)*.5f,.002f,.998f),Clamp(.04f+1.8f*grazing,0,1));
     }
     private uint GlassColor(IplPoint point)
     {
@@ -171,16 +189,11 @@ internal sealed class IplRenderer
         float amber=Light(p.X+.86f,p.Y+.22f,.78f);
         float violet=Light(p.X-.05f,p.Y+.92f,.55f);
         float fresnel=1-normal.Z;
-        // Reflections belong to the rounded optical surface, not closed strokes.
-        // The squared grazing response leaves the central pane transparent.
-        float bevel=fresnel*fresnel*(Light(p.X-.70f,p.Y-.90f,.50f)
-            +.60f*Light(p.X+.94f,p.Y+.40f,.70f)
-            +.50f*Light(p.X-.60f,p.Y+.90f,.60f));
-        float spec=Clamp(-normal.X*.25f+normal.Y*.48f+normal.Z*.84f,0,1);
-        spec=(float)Math.Pow(spec,24);
-        int r=(int)(8+teal*35+amber*112+violet*43+spec*180+fresnel*24+bevel*170);
-        int g=(int)(15+teal*110+amber*65+violet*14+spec*195+fresnel*36+bevel*180);
-        int blue=(int)(23+teal*87+amber*16+violet*112+spec*215+fresnel*54+bevel*205);
+        // Transmission carries colored light; the separate low-roughness
+        // reflection pass supplies white polish without a diffuse bevel haze.
+        int r=(int)(8+teal*35+amber*112+violet*43+fresnel*12);
+        int g=(int)(15+teal*110+amber*65+violet*14+fresnel*18);
+        int blue=(int)(23+teal*87+amber*16+violet*112+fresnel*27);
         return Rgba(r,g,blue,(int)(205-normal.Z*22));
     }
     private static float Light(float x,float y,float spread)=>(float)Math.Exp(-(x*x+y*y)/(spread*spread));
@@ -200,10 +213,10 @@ internal sealed class IplRenderer
             for(int band=0;band<16;band++)
             {
                 float t=(band+.5f)/16;
-                float polish=(float)Math.Exp(-Math.Pow((t-.12f)/.15f,2));
-                float exit=(float)Math.Exp(-Math.Pow((t-.80f)/.20f,2));
+                float polish=(float)Math.Exp(-Math.Pow((t-.12f)/.045f,2));
+                float exit=(float)Math.Exp(-Math.Pow((t-.80f)/.060f,2));
                 float envelope=(float)Math.Sin(t*3.1415926f);
-                int alpha=(int)((18+polish*86+exit*28)*Math.Sqrt(envelope));
+                int alpha=(int)((2+polish*170+exit*95)*Math.Sqrt(envelope));
                 uint tint=Rgba((int)(65+polish*62+exit*28),(int)(91+polish*67+exit*25),(int)(117+polish*70+exit*32),alpha);
                 float outside=band/16f,inside=(band+1)/16f;
                 GlassWall(face,.997f-outside*.087f,.997f-inside*.087f,1-outside*.045f,1-inside*.045f,tint);

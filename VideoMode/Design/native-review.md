@@ -1,3 +1,5 @@
+The latest clear-glass material review is in [gloss-review.md](gloss-review.md).
+
 # Optical glass native review
 
 Target: [exact mockup](optical-glass-target.png). This review continued

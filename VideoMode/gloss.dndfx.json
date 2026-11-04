@@ -1,0 +1,1 @@
+{"uniforms":[],"nodes":[{"id":"light","op":"texture"},{"id":"fresnel","op":"raster"},{"id":"reflection","op":"multiply","a":"light","b":"fresnel"}],"output":"reflection"}
