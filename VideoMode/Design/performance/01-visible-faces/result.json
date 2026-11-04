@@ -1,0 +1,88 @@
+{
+  "variant": "visible-faces",
+  "environment": "cloud Dolphin 2503 / Mesa llvmpipe, NOT physical hardware",
+  "clock": "native guest monotonic microseconds; emulated CPU/GPU timing does not establish hardware performance",
+  "method": "30 warmup + 96 recorded frames, fixed Options pose, no interrupts or dumps during measurement; Y logger uses the same buffer",
+  "dol_sha256": "f4f1f197cc3914f6ee2ad8eeee2855d78a96819e93fcb7e4227c49e2fbcbed85",
+  "frames": 96,
+  "summary": {
+    "frame_us": {
+      "mean": 116780.82291666667,
+      "median": 116781.0,
+      "p95": 116783,
+      "max": 116784
+    },
+    "prepare_us": {
+      "mean": 47717.875,
+      "median": 47715.0,
+      "p95": 47739,
+      "max": 47739
+    },
+    "submit_us": {
+      "mean": 55456.75,
+      "median": 55457.0,
+      "p95": 55471,
+      "max": 55472
+    },
+    "end_us": {
+      "mean": 13580.09375,
+      "median": 13582.0,
+      "p95": 13608,
+      "max": 13611
+    },
+    "gpu_wait_us": {
+      "mean": 3.125,
+      "median": 3.0,
+      "p95": 4,
+      "max": 4
+    },
+    "retrace_us": {
+      "mean": 13563.927083333334,
+      "median": 13566.0,
+      "p95": 13592,
+      "max": 13595
+    },
+    "capture_us": {
+      "mean": 616.1041666666666,
+      "median": 616.0,
+      "p95": 618,
+      "max": 618
+    },
+    "blur_us": {
+      "mean": 1104.3958333333333,
+      "median": 1104.0,
+      "p95": 1106,
+      "max": 1106
+    },
+    "draws": {
+      "mean": 102,
+      "median": 102.0,
+      "p95": 102,
+      "max": 102
+    },
+    "triangles": {
+      "mean": 19780,
+      "median": 19780.0,
+      "p95": 19780,
+      "max": 19780
+    },
+    "begin_copy_us": {
+      "mean": 3.0104166666666665,
+      "median": 3.0,
+      "p95": 3,
+      "max": 4
+    },
+    "gate_us": {
+      "mean": 0,
+      "median": 0.0,
+      "p95": 0,
+      "max": 0
+    },
+    "active_us": {
+      "mean": 103216.89583333333,
+      "median": 103215.0,
+      "p95": 103247,
+      "max": 103253
+    }
+  }
+}

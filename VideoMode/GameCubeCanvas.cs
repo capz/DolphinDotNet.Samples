@@ -79,18 +79,18 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
     }
     public void EndGlass()
     {
-        if(glassCount!=6)throw new InvalidOperationException("Incomplete glass geometry.");
+        if(glassCount<1||glassCount>3)throw new InvalidOperationException("Incomplete glass geometry.");
     }
     public void DrawGlass()
     {
         draw.End();renderer.Begin3D(camera);
-        for(int i=0;i<6;i++)renderer.DrawMesh(glassMeshes[i],glassMaterial,identity);
+        for(int i=0;i<glassCount;i++)renderer.DrawMesh(glassMeshes[i],glassMaterial,identity);
         renderer.End3D();draw.Begin();
     }
     public void DrawReflections()
     {
         draw.End();renderer.Begin3D(camera);
-        for(int i=0;i<6;i++)renderer.DrawMesh(glossMeshes[i],glossMaterial,identity);
+        for(int i=0;i<glassCount;i++)renderer.DrawMesh(glossMeshes[i],glossMaterial,identity);
         renderer.End3D();draw.Begin();
     }
     public void BeginPanels(){panelCount=0;}

@@ -31,8 +31,6 @@ internal sealed class IplRenderer
     private readonly IplPoint[] points=new IplPoint[6*25*25];
     private readonly int[] faceOrder=new int[6];
     private readonly float[] depth=new float[6];
-    private readonly IplPoint[] projected=new IplPoint[6*25*25];
-    private readonly uint[] glassColors=new uint[6*25*25];
     // A broad corner arc must remain visible at native resolution. The optical
     // wall uses the same radius family as the underlying rounded solid.
     private const float Round=.24f,Core=1-Round,WallCorner=.28f;
@@ -143,23 +141,22 @@ internal sealed class IplRenderer
     private void Cube()
     {
         c.BeginGlass();
-        for(int i=0;i<points.Length;i++)
-        {
-            projected[i]=Project(points[i]);
-            float facing=Clamp((Rotate(Surface(i/625,0,0)).Z-.08f)/.20f,0,1);
-            facing=facing*facing*(3-2*facing);
-            uint color=GlassColor(points[i]);
-            glassColors[i]=(color&0xffffff00)|(uint)((color&255)*facing);
-        }
         for(int f=0;f<6;f++){faceOrder[f]=f;depth[f]=Rotate(Surface(f,0,0)).Z;}
         for(int i=1;i<6;i++){int j=i;while(j>0&&depth[faceOrder[j]]<depth[faceOrder[j-1]]){int v=faceOrder[j];faceOrder[j]=faceOrder[j-1];faceOrder[j-1]=v;j--;}}
         for(int n=0;n<6;n++)
         {
             int face=faceOrder[n];
+            // The old path uploaded and drew all six faces, even when their
+            // complete transmission and reflection contribution was zero.
+            float facing=Clamp((depth[face]-.08f)/.20f,0,1);
+            if(facing<=0)continue;
+            facing=facing*facing*(3-2*facing);
             for(int i=0;i<625;i++)
             {
                 int at=face*625+i;var uv=ReflectionUv(points[at]);
-                c.GlassVertex(i,projected[at],glassColors[at],uv.X,uv.Y,uv.Z);
+                uint color=GlassColor(points[at]);
+                color=(color&0xffffff00)|(uint)((color&255)*facing);
+                c.GlassVertex(i,Project(points[at]),color,uv.X,uv.Y,uv.Z);
             }
             c.EndGlassFace();
         }
