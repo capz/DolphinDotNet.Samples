@@ -16,7 +16,7 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
     private readonly DynamicMesh[] glassMeshes=new DynamicMesh[6];
     private readonly IplPoint[] panelPoints=new IplPoint[PanelVertices];
     private readonly VertexPositionColorTexture[] panelVertices=new VertexPositionColorTexture[PanelVertices];
-    private readonly DynamicMesh[] panelMeshes=new DynamicMesh[9];
+    private readonly DynamicMesh[] panelMeshes=new DynamicMesh[25];
     private SceneCapture? capture;
     private int glassCount,panelCount,captureWidth,captureHeight;
     private float scale=1,offset,logicalWidth=640,logicalHeight=480;
@@ -33,7 +33,7 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
             indices[at++]=(ushort)(a+1);indices[at++]=(ushort)(a+26);indices[at++]=(ushort)(a+25);
         }
         for(int i=0;i<6;i++)glassMeshes[i]=DynamicMesh.Create(glass,indices);
-        for(int i=0;i<9;i++)panelMeshes[i]=DynamicMesh.Create(panelVertices);
+        for(int i=0;i<25;i++)panelMeshes[i]=DynamicMesh.Create(panelVertices);
         camera.LookAt(new Vector3(0,0,1),new Vector3(0,0,0),new Vector3(0,1,0));
     }
     internal void Prepare()
@@ -73,11 +73,11 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
     {panelPoints[panelCount++]=a;panelPoints[panelCount++]=b;panelPoints[panelCount++]=d;}
     public void EndPanels()
     {
-        // All nine meshes sample one immutable snapshot. Offsetting only UVs
+        // All twenty-five meshes sample one immutable snapshot. Offsetting only UVs
         // keeps the rounded silhouette fixed while averaging the backdrop.
-        for(int tap=0;tap<9;tap++)
+        for(int tap=0;tap<25;tap++)
         {
-            float dx=(tap%3-1)*4,dy=(tap/3-1)*4;
+            float dx=(tap%5-2)*3,dy=(tap/5-2)*3;
             for(int i=0;i<PanelVertices;i++)
             {
                 if(i>=panelCount){panelVertices[i]=default;continue;}
@@ -96,7 +96,7 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
     {
         if(panelCount==0)return;
         draw.End();renderer.Begin3D(camera);
-        for(int tap=0;tap<9;tap++)
+        for(int tap=0;tap<25;tap++)
         {
             // Incremental normalized average: each pass contributes 1/(tap+1).
             // Pass zero replaces the unblurred row; later taps blend into it.
