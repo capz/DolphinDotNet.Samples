@@ -12,11 +12,11 @@ for y in range(size):
     for x in range(size):
         u=x/(size-1);v=y/(size-1)
         white=box(u,v,.52,.78,.70,.040,.006)
-        white+=box(u,v,.17,.54,.045,.48,.006)*.72
+        white+=box(u,v,.17,.54,.045,.48,.006)*.45
         white+=box(u,v,.53,.70,.64,.008,.004)*.60
         white+=box(u,v,.13,.54,.008,.43,.004)*.38
         white+=box(u,v,.81,.72,.13,.10,.006)
-        white+=box(u,v,.80,.83,.18,.015,.004)*.9
+        white+=box(u,v,.80,.90,.24,.10,.006)*.95
         teal=box(u,v,.78,.47,.014,.50,.012)*.45
         violet=box(u,v,.48,.20,.55,.01,.008)*.48
         # A weak, crisp panel reflected in the flat front pane.

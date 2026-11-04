@@ -31,3 +31,13 @@ Added localized layered polish, a third optical cross-section lobe and restraine
 chromatic separation. Increased reflection exposure and enlarged a studio light.
 The uniform blue frame is subdued and corners are brighter. Left polish still
 outweighs the right, and the face lighting is darker/browner than the target.
+
+## Pass 4/6 — native pass 33
+
+![Pass 33](pass-33-native.png)
+
+Rebalanced and localized transmitted teal/amber/violet light, and repositioned
+the upper-right reflected studio light. At fixed corresponding unblurred patches,
+upper-right native RGB is `(60,118,110)` versus target `(63,119,111)`; left amber
+is `(95,52,17)` versus `(95,55,21)`. These local samples do not imply a global
+image match. Row frost is still too pale/grid-like and the gear is too low.

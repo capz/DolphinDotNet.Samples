@@ -185,15 +185,15 @@ internal sealed class IplRenderer
         var p=Rotate(point);
         // Soft environment lobes, anchored in world space, move across the glass
         // during the idle float. These are light, not an opaque blue coating.
-        float teal=Light(p.X-.70f,p.Y-.65f,.78f);
-        float amber=Light(p.X+.86f,p.Y+.22f,.78f);
+        float teal=Light(p.X-.70f,p.Y-.65f,.68f);
+        float amber=Light(p.X+.86f,p.Y+.22f,.70f);
         float violet=Light(p.X-.05f,p.Y+.92f,.55f);
         float fresnel=1-normal.Z;
         // Transmission carries colored light; the separate low-roughness
         // reflection pass supplies white polish without a diffuse bevel haze.
-        int r=(int)(8+teal*35+amber*112+violet*43+fresnel*12);
-        int g=(int)(15+teal*110+amber*65+violet*14+fresnel*18);
-        int blue=(int)(23+teal*87+amber*16+violet*112+fresnel*27);
+        int r=(int)(8+teal*78+amber*127+violet*51+fresnel*12);
+        int g=(int)(15+teal*154+amber*59+violet*31+fresnel*18);
+        int blue=(int)(18+teal*139+amber*4+violet*147+fresnel*27);
         return Rgba(r,g,blue,(int)(205-normal.Z*22));
     }
     private static float Light(float x,float y,float spread)=>(float)Math.Exp(-(x*x+y*y)/(spread*spread));
