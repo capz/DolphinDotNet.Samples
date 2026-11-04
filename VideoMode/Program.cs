@@ -48,7 +48,7 @@ internal static class Program
 #endif
         device.ConfigureDisplay(new DisplayOptions {Resolution=reviewDisplay,Scan=ScanMode.Interlaced,Widescreen=false});
 #endif
-#if IPL_VISUAL_REVIEW
+#if IPL_VISUAL_REVIEW || IPL_PERFORMANCE_REVIEW
         device.ConfigureDisplay(new DisplayOptions {Resolution=GraphicsResolution.R640x480,Scan=ScanMode.Interlaced,Widescreen=false});
 #endif
 #if IPL_HARDWARE_AA
@@ -61,27 +61,33 @@ internal static class Program
 #if IPL_VIDEO_MODE_REVIEW
         var scanReview=new VideoModeScanReview(shell,output,reviewResolution);
 #endif
-#if IPL_VISUAL_REVIEW
+#if IPL_VISUAL_REVIEW || IPL_PERFORMANCE_REVIEW
         // Repeatable native review pose; normal builds retain the interactive IPL.
         shell.TurnTo(ShellFace.Options);shell.Row=1;shell.Tick(1);shell.Time=0;
 #endif
         using var canvas=new GameCubeCanvas(device);
         var renderer=new IplRenderer(canvas);
         var clock=new FrameClock {MaximumDeltaSeconds=.05f};
+#if IPL_PERFORMANCE_REVIEW
+        IplFrameProfiler.Start();
+#endif
 #if IPL_VISUAL_REVIEW && !IPL_AA_BENCHMARK
         int reviewFrames=0;
 #endif
         while(true)
         {
+            long frameStart=IplFrameProfiler.Active?Clock.Timestamp:0;
+            IplFrameProfiler.CaptureUs=IplFrameProfiler.BlurUs=0;
             Controller.Update();var pad=Controller.GetState(0);float dt=clock.Tick();
             shell.Tick(dt);
-#if IPL_VISUAL_REVIEW
+#if IPL_VISUAL_REVIEW || IPL_PERFORMANCE_REVIEW
             shell.Time=0;
 #endif
 #if IPL_VIDEO_MODE_REVIEW
             scanReview.Tick();
             scanReview.CheckAntialiasing(device.Display.Antialiasing,hardwareAntialiasing&&shell.Video.Applied.Resolution!=2);
 #else
+            if(pad.Y.WasPressed&&!IplFrameProfiler.Active)IplFrameProfiler.Start();
             if(pad.Start.WasPressed) {shell.Video.Revert();if(!shell.Video.Pending)return 0;}
             if(pad.X.WasPressed)
             {
@@ -97,12 +103,30 @@ internal static class Program
                 shell.Direction(x,y,dt);
             }
 #endif
+            long phaseStart=IplFrameProfiler.Active?Clock.Timestamp:0;
             canvas.Prepare();renderer.Prepare(shell);
+            int prepare=IplFrameProfiler.Active?IplFrameProfiler.Since(phaseStart):0;
+            phaseStart=IplFrameProfiler.Active?Clock.Timestamp:0;
             device.BeginFrame(Color32.Black);canvas.Begin();renderer.Present(shell);
+            if(!IplFrameProfiler.Active&&IplFrameProfiler.Status.Length>0)
+                canvas.Text(IplFrameProfiler.Status,12,6,12,0x98d8c9ffu,0);
 #if IPL_VIDEO_MODE_REVIEW
             canvas.Text(scanReview.Caption,12,6,16,scanReview.Failed?0xff4545ffu:0x7bffb0ffu,0);
 #endif
-            canvas.End();device.EndFrame();
+            canvas.End();
+            int submit=IplFrameProfiler.Active?IplFrameProfiler.Since(phaseStart):0;
+            phaseStart=IplFrameProfiler.Active?Clock.Timestamp:0;
+            device.EndFrame();
+            if(IplFrameProfiler.Active)
+            {
+                int end=IplFrameProfiler.Since(phaseStart);
+                IplFrameProfiler.Record(frameStart,prepare,submit,end,device,shell);
+                if(IplFrameProfiler.Ready)IplFrameProfiler.Export();
+            }
+#if IPL_PERFORMANCE_REVIEW
+            // Keep the completed buffer stable for read-only debugger extraction.
+            if(IplFrameProfiler.Ready)while(Clock.Timestamp>=0) { }
+#endif
 #if IPL_VISUAL_REVIEW && !IPL_AA_BENCHMARK
             // Freeze only after a complete native presentation, so window
             // captures cannot stop between the cube and footer drawing passes.

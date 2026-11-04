@@ -1,5 +1,6 @@
 using System;
 using Dolphin.Graphics;
+using Dolphin.Timing;
 
 internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
 {
@@ -115,11 +116,14 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
     }
     public void CaptureBackdrop()
     {
+        long start=IplFrameProfiler.Active?Clock.Timestamp:0;
         draw.End();capture!.Capture(new Viewport(0,0,copyWidth,copyHeight));draw.Begin();
+        if(IplFrameProfiler.Active)IplFrameProfiler.CaptureUs=IplFrameProfiler.Since(start);
     }
     public void DrawFrostedPanels()
     {
         if(panelCount==0)return;
+        long start=IplFrameProfiler.Active?Clock.Timestamp:0;
         draw.End();renderer.Begin3D(camera);
         float accumulated=0;
         for(int tap=0;tap<BlurTaps;tap++)
@@ -132,6 +136,7 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
             renderer.DrawMesh(panelMeshes[tap],frostMaterial,identity);
         }
         renderer.End3D();draw.Begin();
+        if(IplFrameProfiler.Active)IplFrameProfiler.BlurUs=IplFrameProfiler.Since(start);
     }
     public void Triangle(float ax,float ay,float bx,float by,float cx,float cy,uint color)
     {draw.FillTriangle(new Vector2(offset+ax*scale,ay*scale),new Vector2(offset+bx*scale,by*scale),new Vector2(offset+cx*scale,cy*scale),Color(color));}
