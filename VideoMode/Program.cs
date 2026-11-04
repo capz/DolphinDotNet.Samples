@@ -30,6 +30,7 @@ internal static class Program
         DebugOverlay.TextVisible=false;
         var shell=new IplShell(new VideoModeOutput(device));
 #if IPL_VISUAL_REVIEW
+        device.ConfigureDisplay(new DisplayOptions {Resolution=GraphicsResolution.R640x480,Scan=ScanMode.Interlaced,Widescreen=false});
         // Repeatable native review pose; normal builds retain the interactive IPL.
         shell.TurnTo(ShellFace.Options);shell.Row=1;shell.Tick(1);shell.Time=0;
 #endif

@@ -119,6 +119,7 @@ internal sealed class IplRenderer
         Rect(0,0,640,480,0x000000ff);
         if(shell.Editing) { Detail(shell); Footer(shell); return; }
         c.DrawGlass();
+        GlassRims();
         if(shell.Turn>.85f)
         {
             FaceIcon(shell);
@@ -165,7 +166,35 @@ internal sealed class IplRenderer
                 int g=(int)(22+lit*25+spec*205+streak*143+edge*65+sweep*25);
                 int blue=(int)(37+lit*32+spec*220+streak*158+edge*88+sweep*38);
                 if(p.X>.25f){g+=9;r+=3;} if(p.X<-.5f)blue+=12;
-                return Rgba(r,g,blue,normal.Z>0?155:48);
+                return Rgba(r,g,blue,normal.Z>0?95:22);
+    }
+    // Parallel curved boundaries describe the outer polish and the inner wall.
+    // They are projected with the cube, so wall depth remains visible in motion.
+    private void GlassRims()
+    {
+        for(int face=0;face<6;face++)
+        {
+            if(Rotate(Surface(face,0,0)).Z<.2f)continue;
+            GlassRing(face,.987f,.075f,1,.65f,0xc9e4edb0);
+            GlassRing(face,.965f,.070f,.985f,.6f,0x6e8cbd85);
+            GlassRing(face,.900f,.060f,.88f,.7f,0xa6bdab80);
+        }
+    }
+    private void GlassRing(int face,float extent,float radius,float depth,float width,uint color)
+    {
+        IplPoint previous=default,first=default;
+        for(int corner=0;corner<4;corner++)for(int j=0;j<=12;j++)
+        {
+            float x=corner==0||corner==3?-extent+radius:extent-radius;
+            float y=corner<2?extent-radius:-extent+radius;
+            float a=(180-corner*90-j*90f/12)*.017453293f;
+            var p=Surface(face,x+(float)Math.Cos(a)*radius,y+(float)Math.Sin(a)*radius);
+            var point=Project(new IplPoint(p.X*depth,p.Y*depth,p.Z*depth));
+            if(corner==0&&j==0)first=point;
+            else Line(previous.X,previous.Y,point.X,point.Y,width,color);
+            previous=point;
+        }
+        Line(previous.X,previous.Y,first.X,first.Y,width,color);
     }
     private static uint Rgba(int r,int g,int b,int a)=>(uint)((Math.Min(255,r)<<24)|(Math.Min(255,g)<<16)|(Math.Min(255,b)<<8)|a);
     private static int SurfaceIndex(ShellFace face)=>face==ShellFace.Calendar?4:face==ShellFace.Options?2:face==ShellFace.Play?3:(int)face;
