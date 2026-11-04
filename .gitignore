@@ -9,3 +9,4 @@
 *.dnd-debug.json
 *.dnd-addresses.json
 DolphinDotNet.local.props
+__pycache__/

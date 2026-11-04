@@ -93,7 +93,7 @@ def run(args):
                 if any(r['frame_us'] <= 0 or r['prepare_us'] <= 0 or r['width'] != 640 or r['height'] != 480 for r in rows):
                     raise ValueError('Invalid frame log')
                 output = io.StringIO()
-                writer = csv.DictWriter(output, FIELDS)
+                writer = csv.DictWriter(output, FIELDS, lineterminator='\n')
                 writer.writeheader()
                 writer.writerows(rows)
                 (root / 'frames.csv').write_text(output.getvalue())
