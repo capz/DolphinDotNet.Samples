@@ -4,6 +4,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <DefineConstants Condition="'$(IplVisualReview)' == 'true'">$(DefineConstants);IPL_VISUAL_REVIEW</DefineConstants>
+    <DefineConstants Condition="'$(IplVisualReview)' == 'true' and '$(IplVisualReviewAngle)' == 'true'">$(DefineConstants);IPL_VISUAL_REVIEW_ANGLE</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="DolphinDotNet.GameCube" Version="$(DndPackageVersion)" />

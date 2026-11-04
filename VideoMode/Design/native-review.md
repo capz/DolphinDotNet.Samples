@@ -4,6 +4,8 @@ Target: [exact mockup](optical-glass-target.png). This review continued
 `codex/optical-glass-refinement` from
 `10790baa7f4e23d057ae5df2b29ef2c9bb9691ba`, preserving passes 1 and 2.
 
+The angled border-removal refinement is recorded in [the continued review](angled-review.md).
+
 ## Captures and findings
 
 Passes 3–9 are actual GameCube DOL frame dumps from cloud-local Dolphin,
@@ -25,7 +27,7 @@ compare their game viewport only.
 | 8 | [PNG](pass-08-native.png) | Added translucent wall ribbons, smooth facing opacity and repositioned footer. More depth; a faint side-wall trapezoid remained near the title. |
 | 9 | [PNG](pass-09-native.png) | Additional cleanup: smooth opacity starts past the almost edge-on pose; concentrated upper-right teal light. Removed that overlap. |
 
-![Final native review](pass-09-native.png)
+![Round-one native review](pass-09-native.png)
 
 The layout, layered rims, face lighting, row frost and footer are closer to the
 mockup. This is not a pixel-perfect match: the target has substantially richer

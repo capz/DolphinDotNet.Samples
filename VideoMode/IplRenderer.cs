@@ -106,6 +106,10 @@ internal sealed class IplRenderer
         yaw=PoseYaw(shell.PreviousFace)+(PoseYaw(shell.Face)-PoseYaw(shell.PreviousFace))*ease;
         pitch=PosePitch(shell.PreviousFace)+(PosePitch(shell.Face)-PosePitch(shell.PreviousFace))*ease;
         if(!shell.ReducedMotion){yaw+=(float)Math.Sin(shell.Time/5.3f*6.2831853f)*.075f;pitch+=.035f+(float)Math.Sin(shell.Time/7.1f*6.2831853f)*.055f;}
+#if IPL_VISUAL_REVIEW_ANGLE
+        // Reproducible oblique pose exposes walls and face seams for native review.
+        yaw+=.30f;pitch-=.16f;
+#endif
         cosYaw=(float)Math.Cos(yaw);sinYaw=(float)Math.Sin(yaw);cosPitch=(float)Math.Cos(pitch);sinPitch=(float)Math.Sin(pitch);
         cy=202+(shell.ReducedMotion?0:(float)Math.Sin(shell.Time*.7f)*3);scale=106;
         Cube();
@@ -167,17 +171,21 @@ internal sealed class IplRenderer
         float amber=Light(p.X+.86f,p.Y+.22f,.78f);
         float violet=Light(p.X-.05f,p.Y+.92f,.55f);
         float fresnel=1-normal.Z;
+        // Reflections belong to the rounded optical surface, not closed strokes.
+        // The squared grazing response leaves the central pane transparent.
+        float bevel=fresnel*fresnel*(Light(p.X-.70f,p.Y-.90f,.50f)
+            +.60f*Light(p.X+.94f,p.Y+.40f,.70f)
+            +.50f*Light(p.X-.60f,p.Y+.90f,.60f));
         float spec=Clamp(-normal.X*.25f+normal.Y*.48f+normal.Z*.84f,0,1);
         spec=(float)Math.Pow(spec,24);
-        int r=(int)(8+teal*35+amber*112+violet*43+spec*180+fresnel*24);
-        int g=(int)(15+teal*110+amber*65+violet*14+spec*195+fresnel*36);
-        int blue=(int)(23+teal*87+amber*16+violet*112+spec*215+fresnel*54);
+        int r=(int)(8+teal*35+amber*112+violet*43+spec*180+fresnel*24+bevel*170);
+        int g=(int)(15+teal*110+amber*65+violet*14+spec*195+fresnel*36+bevel*180);
+        int blue=(int)(23+teal*87+amber*16+violet*112+spec*215+fresnel*54+bevel*205);
         return Rgba(r,g,blue,(int)(205-normal.Z*22));
     }
     private static float Light(float x,float y,float spread)=>(float)Math.Exp(-(x*x+y*y)/(spread*spread));
 
-    // Parallel curved boundaries describe the outer polish and the inner wall.
-    // They are projected with the cube, so wall depth remains visible in motion.
+    // A shaded optical cross-section follows the rotating wall without strokes.
     private void GlassRims()
     {
         for(int face=0;face<6;face++)
@@ -185,17 +193,21 @@ internal sealed class IplRenderer
             float facing=Rotate(Surface(face,0,0)).Z;
             if(facing<=0)continue;
             rimVisibility=Clamp((facing-.08f)/.20f,0,1);
+            if(rimVisibility<=0)continue;
             rimVisibility=rimVisibility*rimVisibility*(3-2*rimVisibility);
-            GlassWall(face,.990f,.974f,1,.998f,0x809ba350);
-            GlassWall(face,.974f,.946f,.998f,.987f,0x26394b68);
-            GlassWall(face,.946f,.920f,.987f,.965f,0x879d9a35);
-            GlassRing(face,.990f,.075f,1,2.4f,0x597b8960);
-            GlassRing(face,.987f,.075f,1,1.0f,0xe0f1efdc);
-            GlassRing(face,.974f,.072f,.998f,1.2f,0x141b32e0);
-            GlassRing(face,.963f,.070f,.995f,1.0f,0x91bfc4a0);
-            GlassRing(face,.946f,.068f,.987f,1.5f,0x3c508f90);
-            GlassRing(face,.920f,.065f,.965f,1.2f,0xa6bda685);
-            GlassRing(face,.910f,.064f,.958f,.7f,0xe1d3a952);
+            // A continuous optical cross-section replaces nested stroked rings.
+            // Broad transmission and two soft polish lobes have no hard seam.
+            for(int band=0;band<16;band++)
+            {
+                float t=(band+.5f)/16;
+                float polish=(float)Math.Exp(-Math.Pow((t-.12f)/.15f,2));
+                float exit=(float)Math.Exp(-Math.Pow((t-.80f)/.20f,2));
+                float envelope=(float)Math.Sin(t*3.1415926f);
+                int alpha=(int)((18+polish*86+exit*28)*Math.Sqrt(envelope));
+                uint tint=Rgba((int)(65+polish*62+exit*28),(int)(91+polish*67+exit*25),(int)(117+polish*70+exit*32),alpha);
+                float outside=band/16f,inside=(band+1)/16f;
+                GlassWall(face,.997f-outside*.087f,.997f-inside*.087f,1-outside*.045f,1-inside*.045f,tint);
+            }
         }
     }
     // Translucent ribbons give the optical wall a body between its polished
@@ -206,8 +218,8 @@ internal sealed class IplRenderer
         for(int corner=0;corner<4;corner++)for(int j=0;j<=12;j++)
         {
             float a=(180-corner*90-j*90f/12)*.017453293f;
-            var o=WallPoint(face,corner,a,outer,.075f,front);
-            var n=WallPoint(face,corner,a,inner,.065f,back);
+            var o=WallPoint(face,corner,a,outer,.075f+(outer-.997f)/.087f*.010f,front);
+            var n=WallPoint(face,corner,a,inner,.075f+(inner-.997f)/.087f*.010f,back);
             if(corner==0&&j==0){firstOuter=o;firstInner=n;}
             else WallSegment(previousOuter,o,previousInner,n,color);
             previousOuter=o;previousInner=n;
@@ -237,35 +249,6 @@ internal sealed class IplRenderer
             previousOuter=outer;previousInner=inner;
         }
     }
-    private void GlassRing(int face,float extent,float radius,float depth,float width,uint color)
-    {
-        IplPoint previous=default,first=default;
-        for(int corner=0;corner<4;corner++)for(int j=0;j<=12;j++)
-        {
-            float x=corner==0||corner==3?-extent+radius:extent-radius;
-            float y=corner<2?extent-radius:-extent+radius;
-            float a=(180-corner*90-j*90f/12)*.017453293f;
-            var p=Surface(face,x+(float)Math.Cos(a)*radius,y+(float)Math.Sin(a)*radius);
-            p=new IplPoint(p.X*depth,p.Y*depth,p.Z*depth);
-            if(corner==0&&j==0)first=p;else RimSegment(previous,p,width,color);
-            previous=p;
-        }
-        RimSegment(previous,first,width,color);
-    }
-    private void RimSegment(IplPoint a,IplPoint b,float width,uint color)
-    {
-        var previous=Project(a);var end=Project(b);
-        float dx=end.X-previous.X,dy=end.Y-previous.Y;
-        int steps=Math.Max(1,(int)Math.Ceiling(Math.Sqrt(dx*dx+dy*dy)/5));
-        for(int i=1;i<=steps;i++)
-        {
-            float t=i/(float)steps;
-            var p=new IplPoint(a.X+(b.X-a.X)*t,a.Y+(b.Y-a.Y)*t,a.Z+(b.Z-a.Z)*t);
-            var next=Project(p);
-            Line(previous.X,previous.Y,next.X,next.Y,width,RimColor(p,color));
-            previous=next;
-        }
-    }
     private uint RimColor(IplPoint point,uint color)
     {
         var p=Rotate(point);
@@ -277,7 +260,7 @@ internal sealed class IplRenderer
         int r=(int)((color>>24)*.55f+glint*190+warm*100+lower*40);
         int g=(int)(((color>>16)&255)*.65f+glint*185+warm*58+lower*28);
         int b=(int)(((color>>8)&255)*.80f+glint*170+lower*120);
-        return Rgba(r,g,b,(int)((color&255)*rimVisibility));
+        return Rgba(r,g,b,(int)(Math.Min(255,(color&255)*(1+glint*3))*rimVisibility));
     }
     private static uint Rgba(int r,int g,int b,int a)=>(uint)((Math.Min(255,r)<<24)|(Math.Min(255,g)<<16)|(Math.Min(255,b)<<8)|a);
     private static int SurfaceIndex(ShellFace face)=>face==ShellFace.Calendar?4:face==ShellFace.Options?2:face==ShellFace.Play?3:(int)face;
