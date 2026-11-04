@@ -149,25 +149,26 @@ internal sealed class IplRenderer
     }
     private uint GlassColor(IplPoint point)
     {
-                float nx=point.X-Clamp(point.X,-Core,Core),ny=point.Y-Clamp(point.Y,-Core,Core),nz=point.Z-Clamp(point.Z,-Core,Core);
-                float len=(float)Math.Sqrt(nx*nx+ny*ny+nz*nz);var normal=Rotate(new IplPoint(nx/len,ny/len,nz/len));
-                var p=Rotate(point);
-                float lit=Clamp(normal.X*-.35f+normal.Y*.6f+normal.Z*.65f,0,1);
-                float spec=Clamp(normal.X*-.25f+normal.Y*.48f+normal.Z*.84f,0,1);
-                spec*=spec;spec*=spec;spec*=spec;spec*=spec;
-                // Broad environmental reflection, a tight hot spot and the thin
-                // rounded rim give the IPL's dark glass, rather than opaque plastic.
-                float edge=1-(float)Math.Abs(normal.Z);
-                float streak=(p.Y-.72f+p.X*.14f)*24;streak*=streak;
-                streak=.32f/(1+streak*streak);
-                float sweep=p.X*.22f+p.Y-.52f+(float)Math.Sin(yaw*2)*.16f;
-                sweep=1/(1+sweep*sweep*95);
-                int r=(int)(17+lit*20+spec*195+streak*135+edge*58+sweep*21);
-                int g=(int)(22+lit*25+spec*205+streak*143+edge*65+sweep*25);
-                int blue=(int)(37+lit*32+spec*220+streak*158+edge*88+sweep*38);
-                if(p.X>.25f){g+=9;r+=3;} if(p.X<-.5f)blue+=12;
-                return Rgba(r,g,blue,normal.Z>0?95:22);
+        float nx=point.X-Clamp(point.X,-Core,Core),ny=point.Y-Clamp(point.Y,-Core,Core),nz=point.Z-Clamp(point.Z,-Core,Core);
+        float len=(float)Math.Sqrt(nx*nx+ny*ny+nz*nz);
+        var normal=Rotate(new IplPoint(nx/len,ny/len,nz/len));
+        if(normal.Z<=0)return 0;
+        var p=Rotate(point);
+        // Soft environment lobes, anchored in world space, move across the glass
+        // during the idle float. These are light, not an opaque blue coating.
+        float teal=Light(p.X-.70f,p.Y-.65f,.90f);
+        float amber=Light(p.X+.86f,p.Y+.22f,.78f);
+        float violet=Light(p.X-.05f,p.Y+.92f,.55f);
+        float fresnel=1-normal.Z;
+        float spec=Clamp(-normal.X*.25f+normal.Y*.48f+normal.Z*.84f,0,1);
+        spec=(float)Math.Pow(spec,24);
+        int r=(int)(8+teal*35+amber*112+violet*43+spec*180+fresnel*24);
+        int g=(int)(15+teal*110+amber*65+violet*14+spec*195+fresnel*36);
+        int blue=(int)(23+teal*87+amber*16+violet*112+spec*215+fresnel*54);
+        return Rgba(r,g,blue,(int)(205-normal.Z*22));
     }
+    private static float Light(float x,float y,float spread)=>(float)Math.Exp(-(x*x+y*y)/(spread*spread));
+
     // Parallel curved boundaries describe the outer polish and the inner wall.
     // They are projected with the cube, so wall depth remains visible in motion.
     private void GlassRims()
@@ -175,9 +176,9 @@ internal sealed class IplRenderer
         for(int face=0;face<6;face++)
         {
             if(Rotate(Surface(face,0,0)).Z<.2f)continue;
-            GlassRing(face,.987f,.075f,1,.65f,0xc9e4edb0);
-            GlassRing(face,.965f,.070f,.985f,.6f,0x6e8cbd85);
-            GlassRing(face,.900f,.060f,.88f,.7f,0xa6bdab80);
+            GlassRing(face,.987f,.075f,1,1.1f,0xc9e4edc0);
+            GlassRing(face,.965f,.070f,.985f,1,0x6e8cbda0);
+            GlassRing(face,.900f,.060f,.88f,1,0xa6bdab95);
         }
     }
     private void GlassRing(int face,float extent,float radius,float depth,float width,uint color)
