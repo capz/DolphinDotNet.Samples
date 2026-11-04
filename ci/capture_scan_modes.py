@@ -27,6 +27,8 @@ def run(args):
     (config/'GFX.ini').write_text('[Settings]\nDumpFramesAsImages = True\nInternalResolution = 1\nMSAA = 4\nSSAA = False\nAspectRatio = 2\n[Hacks]\nForceProgressive = '+('False' if args.native_fields else 'True')+'\n')
     dol=repo/'VideoMode/bin/Release/net8.0/VideoMode.dol'
     if not dol.is_file():raise ValueError('Build the scan review DOL first')
+    dol_sha256=hashlib.sha256(dol.read_bytes()).hexdigest()
+    sdk_version=json.loads((repo/'global.json').read_text())['msbuild-sdks']['DolphinDotNet.Sdk']
     if not shutil.which('tesseract'):raise ValueError('tesseract is required')
     name='ipl-scan-'+str(args.resolution)
     seen=set();records={};started=time.monotonic();last_frame=started;highest=0
@@ -35,7 +37,8 @@ def run(args):
              '--volume',f'{repo}:{repo}','--volume',f'{root}:{root}',
              '-e','LP_NUM_THREADS=2',args.image,'xvfb-run','-a',
              '/usr/games/dolphin-emu-nogui','-u',str(root/'user'),'-C','SYSCONF.IPL.PGS=True','-e',str(dol)]
-    expected=[1,2,2,1,1,2,1,2,2,1,2,1,2,1]
+    expected=[1,2,2,1,1,2,1,2,2,1,2,1,2,2,2,2,2,1]
+    phase_count=len(expected)
     with (root/'emulator.log').open('w') as log:
         process=subprocess.Popen(command,stdout=log,stderr=subprocess.STDOUT)
         try:
@@ -68,28 +71,29 @@ def run(args):
                     phase=int(phase_match.group(1))
                     if 'FAIL' in text:raise RuntimeError('Native scan assertion failed: '+text)
                     actual=re.search(r'ACTUAL\s*(480|576)\s*([IP1])',text)
-                    if phase not in range(1,15) or not actual:continue
-                    wanted_resolution=480 if phase==14 else args.resolution
+                    if phase not in range(1,phase_count+1) or not actual:continue
+                    other_resolution=576 if args.resolution==480 else 480
+                    wanted_resolution=480 if phase==phase_count else other_resolution if phase in (14,15,17) else args.resolution
                     wanted_scan='P' if expected[phase-1]==2 else 'I'
                     resolved=actual.group(1)+('I' if actual.group(2)=='1' else actual.group(2))
                     if resolved!=str(wanted_resolution)+wanted_scan:
                         raise RuntimeError(f'Phase {phase}: native readback {resolved}, expected {wanted_resolution}{wanted_scan}')
-                    if phase==14 and 'PASS' not in text:continue
+                    if phase==phase_count and 'PASS' not in text:continue
                     if phase not in records:
                         dest=root/f'scan-{phase:02}-{resolved.lower()}-native.png';dest.write_bytes(raw)
                         records[phase]={'caption':text,'resolved_mode':resolved,'frame':number,'native_png':dest.name,'sha256':hashlib.sha256(raw).hexdigest()}
                         print(text,flush=True)
-                    if len(records)==14:
-                        report={'resolution':args.resolution,'native_fields':args.native_fields,'success':True,'dol_sha256':hashlib.sha256(dol.read_bytes()).hexdigest(),
+                    if len(records)==phase_count:
+                        report={'resolution':args.resolution,'native_fields':args.native_fields,'success':True,'sdk_version':sdk_version,'dol_sha256':dol_sha256,
                                 'note':'Device display readback asserted by the native driver. Timeout uses a forced logical 12.1-second tick, not a wall-clock measurement.',
                                 'phases':[records[p] for p in sorted(records)]}
                         (root/'result.json').write_text(json.dumps(report,indent=2)+'\n')
                         return
                 time.sleep(.2)
-            raise TimeoutError('Missing native phases: '+str(sorted(set(range(1,15))-records.keys())))
+            raise TimeoutError('Missing native phases: '+str(sorted(set(range(1,phase_count+1))-records.keys())))
         except Exception as error:
             (root/'result.json').write_text(json.dumps({'resolution':args.resolution,'native_fields':args.native_fields,'success':False,'error':str(error),
-                'dol_sha256':hashlib.sha256(dol.read_bytes()).hexdigest(),'phases':[records[p] for p in sorted(records)]},indent=2)+'\n')
+                'sdk_version':sdk_version,'dol_sha256':dol_sha256,'phases':[records[p] for p in sorted(records)]},indent=2)+'\n')
             raise
         finally:
             subprocess.run(['docker','stop',name],stdout=subprocess.DEVNULL,check=False)

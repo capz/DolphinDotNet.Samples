@@ -1,7 +1,10 @@
 # Native scan-mode verification
 
-The 480 sequence passes all 14 phases in cloud-local **Dolphin [master] 2503**,
-OpenGL, 4× MSAA, SDK/GameCube package `0.1.0-preview.103.1`. The actual GameCube
+The updated acceptance sequences cover both **480i/480p and 576i/576p**, plus
+480p/576p resolution changes, in cloud-local **Dolphin [master] 2503**, OpenGL,
+4× MSAA, SDK/GameCube package **`0.1.0-preview.217.1`**. The SDK update includes
+the VIDEO blanking correction from
+[SDK PR #151](https://github.com/capz/DolphinDotNet/pull/151). The actual GameCube
 DOL invokes the same shell/editor/preview code as the interactive application.
 Each phase asserts `GraphicsDevice.Display` readback, applied mode, preview state
 and rollback state. The capture script OCRs the diagnostic caption and preserves
@@ -10,39 +13,46 @@ it is not an electrical measurement or a physical TV acceptance test.
 
 | Sequence | Native result |
 | --- | --- |
-| Release gate rejects 576p while at 480i | Passed; output remains 480i |
-| 480i → preview 480p → keep | Passed |
-| 480p → preview 480i → keep | Passed |
-| 480i → preview 480p → B restores 480i | Passed |
-| 480p → preview 480i → B restores 480p | Passed |
-| 480p → preview 480i → timeout restores 480p | Passed with forced logical 12.1-second tick |
-| Safe mode from 480p | Passed; resolves to 480i, 4:3 |
-| Repeated 576i/p switching, PAL fallback region | Incomplete; frame production stalled at frame 95 after phase 6 |
+| At 480 and 576: interlaced → preview progressive → keep | Passed |
+| At 480 and 576: progressive → preview interlaced → keep | Passed |
+| Interlaced → preview progressive → B restores interlaced | Passed |
+| Progressive → preview interlaced → B restores progressive | Passed |
+| Progressive → preview interlaced → timeout restores progressive | Passed with forced logical 12.1-second tick |
+| 480p ↔ 576p resolution preview, keep and B rollback | Passed |
+| Safe mode after the resolution sequence | Passed; resolves to 480i, 4:3 |
 
 The timeout checks the real rollback path with an advanced logical clock. It does
 not measure 12 seconds of wall time. Host tests additionally cover rejected output
-and the 576 Auto/interlaced release policy. Fake-output 576 tests validate menu
-logic only; they do not qualify native 576p.
+and rollback allocation failures. The review driver uses the normal shell and
+output adapter; there is no special 576p policy bypass.
 
-![480p kept](scan-modes/480/scan-03-480p-native.png)
-![480i kept](scan-modes/480/scan-05-480i-native.png)
-![Safe mode after the complete sequence](scan-modes/480/scan-14-480i-native.png)
+![576p kept with the fixed SDK](scan-modes/sdk-fixed/576/scan-03-576p-native.png)
+![576i rollback after the former freeze point](scan-modes/sdk-fixed/576/scan-07-576i-native.png)
+![480p kept with the fixed SDK](scan-modes/sdk-fixed/480/scan-03-480p-native.png)
 
-[All 14 passing phases and PNG SHA-256 hashes](scan-modes/480/result.json).
-[Incomplete 576 diagnostic and retained phases](scan-modes/576-unqualified/result.json).
-The two reports record their individual DOL hashes; they were separate builds.
+[480 sequence, SDK version, DOL and PNG hashes](scan-modes/sdk-fixed/480/result.json).
+[576 sequence, SDK version, DOL and PNG hashes](scan-modes/sdk-fixed/576/result.json).
+Both sequences have 18 stages and independent DOLs.
 
-## Release behavior and unresolved 576p
+## SDK fix and app behavior
 
-480i and 480p remain selectable. Normal interactive builds reject explicit 576p
-before calling the output adapter and show an unavailable message. At 576, Auto
-resolves to interlaced, preventing the SDK from selecting unqualified progressive
-timing. 576i remains available. No SDK or NuGet binaries were patched.
+480i, 480p, 576i and 576p are available through the normal menu. The temporary
+576p rejection, forced interlaced resolution for 576 Auto and diagnostic bypass
+have been removed. Auto follows the SDK's timing/cable rules. Unsupported output
+and allocation failures retain the existing transactional error/rollback paths.
 
-The 576 stall reproduced with PAL fallback region and with Dolphin's progressive
-XFB presentation workaround disabled. Its exact cause has not been isolated
-between the pinned native runtime and this emulator. The diagnostic explicitly
-bypasses the guard to help reproduce it; it is not a release capability switch.
+The original freeze was caused by libogc2 black timing: 1218 half-lines overflowed
+a 10-bit pre-blanking field and disrupted VI interrupts. The SDK redistributes the
+overflow between pre/post blanking while preserving field length, and bundles the
+corrected VIDEO object in its verified native overlay. Updating the package and
+rebuilding the native DOL is required; old DOLs are unchanged. No app-side native
+patch or installed-toolchain modification is used.
+
+The original preview.103.1 [480 passing report](scan-modes/480/result.json) and
+[576 failure report](scan-modes/576-unqualified/result.json) remain as historical
+evidence. The old 576 run stalled after phase 6 at frame 95. Local packages built
+from fixed SDK commit `51b426b5d7620e4a67b39472b37d16e2e085255d` first confirmed
+that the full optical-glass app continued through that rollback successfully.
 
 Dolphin's default `GFX.Hacks.ForceProgressive=True` presentation workaround remains
 enabled in the passing captures. It does not set the SDK's requested/resolved VI
@@ -64,10 +74,10 @@ Use a fresh evidence directory. The isolated profile advertises component output
 using `-C SYSCONF.IPL.PGS=True`; without it, progressive is correctly rejected.
 The evidence uses raw frame dumps, not a browser/SVG proof or resized substitute.
 
-To reproduce the **known failing** 576 diagnostic, build with the additional
+To run the 576 acceptance sequence, build with the additional
 `-p:IplVideoModeReviewResolution=576`, then capture with `--resolution 576`.
-The watchdog stops the emulator after stalled frame production. This build
-intentionally bypasses 576p qualification and must not be shipped as interactive.
+The watchdog fails the test if frame production stalls. Both resolutions exercise
+the same app path, without a capability bypass.
 
 Rebuild without either review property for the normal interactive DOL. Review
 builds have no controller interaction; their caption and driver are absent from
@@ -77,7 +87,7 @@ combined.
 ## Final validation
 
 The normal interactive native build links and boots with no review driver or
-caption in its generated AOT C. [Normal boot capture](scan-modes/normal-interactive-native.png).
+caption in its generated AOT C. [Updated normal boot capture](aa-performance/interactive-native.png).
 All 16 managed sample builds, ten runnable test projects, two compile-only Kart
 intrinsic projects, three repository validators, explicit packaged AOT compilation
 and DOL/PowerPC ELF checks passed. Invalid review-property combinations are rejected.

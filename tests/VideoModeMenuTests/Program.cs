@@ -3,6 +3,7 @@ using System;
 internal sealed class FakeOutput : IVideoModeOutput
 {
     internal VideoModeSettings Current=new VideoModeSettings(1,1,false);
+    internal VideoModeSettings LastRequested;
     internal int Failure;
     internal int Changes;
     public VideoModeSettings Read()=>Current;
@@ -10,6 +11,7 @@ internal sealed class FakeOutput : IVideoModeOutput
     {
         if(Failure==1 || settings.Resolution==0 && settings.Scan==1) throw new InvalidOperationException();
         if(Failure==2) throw new OutOfMemoryException();
+        LastRequested=settings;
         Current=new VideoModeSettings(settings.Resolution,
             settings.Scan==0?(settings.Resolution==0?2:1):settings.Scan,settings.Widescreen);
         Changes++;

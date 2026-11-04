@@ -1,0 +1,261 @@
+{
+  "renderer": {
+    "renderer": "llvmpipe (LLVM 19.1.7, 256 bits)",
+    "version": "4.5 (Compatibility Profile) Mesa 25.0.7-2+deb13u1",
+    "max_samples": 4,
+    "sample_shading": true,
+    "requested_to_actual_samples": {
+      "2": 4,
+      "4": 4
+    },
+    "texture_requested_to_actual_samples": {
+      "2": 4,
+      "4": 4
+    },
+    "rgba8_sample_counts": [
+      4
+    ],
+    "rgb565_sample_counts": [
+      4
+    ],
+    "depth32f_sample_counts": [
+      4
+    ],
+    "dolphin_aa_modes": [
+      1,
+      4
+    ]
+  },
+  "warmup_seconds": 6.0,
+  "measurement_seconds": 18.0,
+  "method": "SDK native presentation counter sampled through GDB every 250 ms; no dumps/breakpoints; frame ring modulo 32; Dolphin speed limit 1.0; LP_NUM_THREADS=2.",
+  "limitation": "Cloud software-renderer throughput, not physical GameCube timing. The optional performance panel is enabled equally in all benchmark DOLs.",
+  "results": [
+    {
+      "candidate": "hw-off-samples-4-ssaa-r0",
+      "hardware": "off",
+      "msaa": 4,
+      "ssaa": true,
+      "postshader": "",
+      "repeat": 0,
+      "frames": 51,
+      "active_seconds": 14.180439233994548,
+      "wall_seconds": 18.23619378500007,
+      "active_fps": 3.596503546782845,
+      "wall_fps": 2.7966362170350125,
+      "native_quality": {
+        "hardware_aa": false,
+        "efb_width": 640,
+        "efb_height": 480,
+        "xfb_height": 480
+      },
+      "dol_sha256": "60efbb0dd403279c90ae0457d24a937918d4ea7033e3b543b636d42a2d45eec9",
+      "samples": [
+        {
+          "active_seconds": 0.3572984679994988,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2502324649976799,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2501838610005507,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25023631600197405,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2502042400010396,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.33072446699952707,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.250219351000851,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25020944100106135,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.3321189200032677,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.3702825059990573,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2533426150002924,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25019982600133517,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2502240480025648,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2501857690003817,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2502311380012543,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25028370800282573,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2501984009977605,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2503744360001292,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2501886560021376,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2502284469992446,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.3741716840013396,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.3661021410007379,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25020684899936896,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.307588764000684,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.40277930199954426,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.38040017199818976,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.345966557997599,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25018847600222216,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25018560199896456,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2501751809977577,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25019075499949395,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2501845249971666,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25018449999697623,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2502067939967674,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2502681779988052,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25025691100017866,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.32507330199950957,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25020582400247804,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2501986120005313,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2502307499999006,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.3372389510004723,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25085911199857946,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.3695712509979785,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.25071923699943,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2502437539988023,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.3176927139975305,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.250179662998562,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2502080200029013,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2502156680020562,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2513180200003262,
+          "presented_frames": 1
+        },
+        {
+          "active_seconds": 0.2502608849972603,
+          "presented_frames": 1
+        }
+      ]
+    }
+  ]
+}
