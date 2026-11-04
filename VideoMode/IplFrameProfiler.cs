@@ -9,17 +9,19 @@ using Dolphin.Timing;
 // measured frame. Clock timestamps are unclamped microseconds, unlike shell dt.
 internal static class IplFrameProfiler
 {
-    internal const string Variant="cached-lighting";
+    internal const string Variant="skip-transparent-triangles";
     internal const int Frames=96, Columns=17;
     internal static readonly int[] Samples=new int[Frames*Columns];
     private static readonly byte[] line=new byte[256];
+    private static readonly int[] ordered=new int[Frames];
     internal static int Count;
-    internal static bool Active,Ready;
+    internal static bool Active,Ready,NeedsExport;
     internal static int CaptureUs,BlurUs;
     private static int warmup;
     internal static string Status="";
+    internal static string Summary="";
     internal static void Start()
-    { Count=0;warmup=30;Active=true;Ready=false;Status="Recording frame times"; }
+    { Count=0;warmup=30;Active=true;Ready=NeedsExport=false;Status="Recording frame times";Summary=""; }
     internal static int Since(long start)=>(int)(Clock.Timestamp-start);
     internal static void Record(long start,int prepare,int submit,int end,GraphicsDevice device,IplShell shell)
     {
@@ -34,7 +36,18 @@ internal static class IplFrameProfiler
         Samples[at+10]=GpuProfiler.BeginFrameCopyMicroseconds;Samples[at+11]=GpuProfiler.GateReacquireMicroseconds;
         Samples[at+12]=device.Width;Samples[at+13]=device.Height;Samples[at+14]=(int)device.Display.Scan;
         Samples[at+15]=(int)shell.Face;Samples[at+16]=shell.Editing?1:0;
-        if(++Count==Frames){Active=false;Ready=true;Status="Frame times captured";}
+        if(++Count==Frames)
+        {
+            Active=false;Ready=NeedsExport=true;Status="Frame times captured";
+            long total=0;
+            for(int i=0;i<Frames;i++)
+            {
+                int value=Samples[i*Columns];total+=value;
+                int j=i;while(j>0&&ordered[j-1]>value){ordered[j]=ordered[j-1];j--;}
+                ordered[j]=value;
+            }
+            Summary="Frame mean "+(total/Frames)+" us | p95 "+ordered[91]+" us";
+        }
     }
     // ASCII formatting avoids hundreds of temporary strings on the 256 KiB heap.
     private static void Text(Dolphin.IO.FileStream stream,string value)
@@ -47,12 +60,20 @@ internal static class IplFrameProfiler
     internal static void Export()
     {
         if(!Ready)return;
-        for(int candidate=0;candidate<4;candidate++)
-        {
-            var storage=candidate==0?StorageDevice.SdSerialPort2:candidate==1?StorageDevice.SdSlotB:candidate==2?StorageDevice.SdSlotA:StorageDevice.GcLoader;
+#if IPL_LOG_SD2SP2 || IPL_LOG_SDA || IPL_LOG_SDB || IPL_LOG_GCLOADER
+#if IPL_LOG_SD2SP2
+            const StorageDevice storage=StorageDevice.SdSerialPort2;
+#elif IPL_LOG_SDA
+            const StorageDevice storage=StorageDevice.SdSlotA;
+#elif IPL_LOG_SDB
+            const StorageDevice storage=StorageDevice.SdSlotB;
+#else
+            const StorageDevice storage=StorageDevice.GcLoader;
+#endif
             try
             {
-                if(!Storage.IsMounted(storage)&&!Storage.Mount(storage))continue;
+                if(!Storage.IsMounted(storage)&&!Storage.Mount(storage))
+                {Status="SD unavailable; frame times retained in RAM";return;}
                 Storage.CreateDirectory(storage,"videomode-perf");
                 int number=0;string path;
                 do {path="videomode-perf/frame-"+number+".csv";number++;}while(Storage.FileExists(storage,path)&&number<1000);
@@ -69,9 +90,13 @@ internal static class IplFrameProfiler
                 }
                 Status="Saved "+Storage.GetPath(storage,path);return;
             }
-            // Logging must never interrupt a video preview or strand the UI.
+            // Recover write errors; probes require a known attached adapter.
             catch(Exception) { }
-        }
         Status="No writable SD; frame times retained in RAM";
+#else
+        // Probing an absent EXI adapter can block inside the native driver.
+        // Select a known attached target at build time for physical SD logging.
+        Status="Captured in RAM; SD export disabled in this build";
+#endif
     }
 }

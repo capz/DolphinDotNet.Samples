@@ -85,7 +85,12 @@ internal sealed class IplRenderer
         p=Rotate(p);float f=3.8f/(3.8f-p.Z);
         return new IplPoint(322+p.X*scale*.975f*f,cy-p.Y*scale*f,p.Z);
     }
-    private void Tri(IplPoint a,IplPoint b,IplPoint d,uint color)=>c.Triangle(a.X,a.Y,b.X,b.Y,d.X,d.Y,color);
+    private void Tri(IplPoint a,IplPoint b,IplPoint d,uint color)
+    {
+        // Quantized optical lighting often produces exactly zero alpha. Skip
+        // those triangles before virtual dispatch and native canvas staging.
+        if((color&255)!=0)c.Triangle(a.X,a.Y,b.X,b.Y,d.X,d.Y,color);
+    }
     private void Rect(float x,float y,float w,float h,uint color)
     {c.Triangle(x,y,x+w,y,x,y+h,color);c.Triangle(x+w,y,x+w,y+h,x,y+h,color);}
     private void Line(float x,float y,float xx,float yy,float width,uint color)

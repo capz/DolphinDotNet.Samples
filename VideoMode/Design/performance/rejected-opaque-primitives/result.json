@@ -1,0 +1,90 @@
+{
+  "variant": "batched-triangles",
+  "environment": "cloud Dolphin 2503 / Mesa llvmpipe, NOT physical hardware",
+  "clock": "native guest monotonic microseconds; emulated CPU/GPU timing does not establish hardware performance",
+  "method": "30 warmup + 96 recorded frames, fixed Options pose, no interrupts or dumps during measurement; Y logger uses the same buffer",
+  "dol_sha256": "fadb5ac1e3335150879e8a77b696c933f6a8a0902d7ae5e3af0222dc4ffd2131",
+  "frames": 96,
+  "summary": {
+    "frame_us": {
+      "mean": 66730.8125,
+      "median": 66731.0,
+      "p95": 66733,
+      "max": 66734
+    },
+    "prepare_us": {
+      "mean": 9249.333333333334,
+      "median": 9249.0,
+      "p95": 9251,
+      "max": 9252
+    },
+    "submit_us": {
+      "mean": 42475.625,
+      "median": 42476.0,
+      "p95": 42490,
+      "max": 42491
+    },
+    "end_us": {
+      "mean": 14979.6875,
+      "median": 14979.5,
+      "p95": 14994,
+      "max": 14997
+    },
+    "gpu_wait_us": {
+      "mean": 3.15625,
+      "median": 3.0,
+      "p95": 4,
+      "max": 4
+    },
+    "retrace_us": {
+      "mean": 14963.416666666666,
+      "median": 14964.0,
+      "p95": 14978,
+      "max": 14981
+    },
+    "capture_us": {
+      "mean": 43.864583333333336,
+      "median": 44.0,
+      "p95": 44,
+      "max": 45
+    },
+    "blur_us": {
+      "mean": 1691.6458333333333,
+      "median": 1692.0,
+      "p95": 1692,
+      "max": 1693
+    },
+    "draws": {
+      "mean": 133,
+      "median": 133.0,
+      "p95": 133,
+      "max": 133
+    },
+    "triangles": {
+      "mean": 19780,
+      "median": 19780.0,
+      "p95": 19780,
+      "max": 19780
+    },
+    "begin_copy_us": {
+      "mean": 3,
+      "median": 3.0,
+      "p95": 3,
+      "max": 3
+    },
+    "gate_us": {
+      "mean": 0,
+      "median": 0.0,
+      "p95": 0,
+      "max": 0
+    },
+    "active_us": {
+      "mean": 51767.395833333336,
+      "median": 51767.0,
+      "p95": 51781,
+      "max": 51784
+    }
+  },
+  "accepted": false,
+  "rejection": "SDK DrawPrimitives uses opaque blending/depth defaults. Native capture regressed glass, row tint and footer; performance result rejected."
+}

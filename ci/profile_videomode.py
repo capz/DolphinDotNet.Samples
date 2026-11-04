@@ -49,10 +49,10 @@ def run(args):
     for line in table.splitlines():
         parts = line.split()
         if len(parts) == 3:
-            for name in ('Count', 'Ready', 'Samples'):
+            for name in ('Count', 'Ready', 'Samples', 'Status', 'Summary'):
                 if parts[2].split('.lto_priv.')[0] == 'dnd_static_IplFrameProfiler_' + name:
                     symbols[name] = int(parts[0], 16)
-    if len(symbols) != 3:
+    if not {'Count', 'Ready', 'Samples'} <= symbols.keys():
         raise ValueError('Missing profiling symbols: ' + repr(symbols))
     with (root / 'emulator.log').open('w') as log:
         process = subprocess.Popen(['/usr/games/dolphin-emu-nogui', '--platform', 'x11', '-u', str(root / 'user'), '-C', 'SYSCONF.IPL.PGS=True', '-e', str(dol)], stdout=log, stderr=subprocess.STDOUT)
@@ -101,6 +101,22 @@ def run(args):
                           'clock': 'native guest monotonic microseconds; emulated CPU/GPU timing does not establish hardware performance',
                           'method': '30 warmup + 96 recorded frames, fixed Options pose, no interrupts or dumps during measurement; Y logger uses the same buffer',
                           'dol_sha256': hashlib.sha256(dol.read_bytes()).hexdigest(), 'frames': len(rows), 'summary': summarize(rows)}
+                for name in ('Status', 'Summary'):
+                    if name not in symbols:
+                        continue
+                    pointer = int.from_bytes(memory(conn, symbols[name], 4), 'big')
+                    length = int.from_bytes(memory(conn, pointer + 8, 4), 'big')
+                    if length > 256:
+                        raise ValueError('Unexpected profiler status length')
+                    report['native_' + name.lower()] = memory(conn, pointer + 12, length * 2).decode('utf-16-be')
+                send(conn, 'p40')
+                pc = reply(conn)
+                while pc == '' or pc.startswith(('T', 'S')):
+                    pc = reply(conn)
+                report['completion_pc'] = pc
+                (root / 'result.json').write_text(json.dumps(report, indent=2) + '\n')
+                if 'native_status' in report and not report['native_status'].startswith(('Captured in RAM', 'No writable SD', 'Saved ')) and not args.allow_legacy_export_stall:
+                    raise RuntimeError('Native post-capture export did not finish: ' + report['native_status'])
                 (root / 'result.json').write_text(json.dumps(report, indent=2) + '\n')
                 subprocess.run(['python3', str(Path(__file__).with_name('capture_x11.py')), str(root / 'native-window.ppm')], check=True)
                 print(json.dumps(report), flush=True)
@@ -119,4 +135,5 @@ if __name__ == '__main__':
     parser.add_argument('--logs', type=Path, required=True)
     parser.add_argument('--variant', required=True)
     parser.add_argument('--wait', type=float, default=45)
+    parser.add_argument('--allow-legacy-export-stall', action='store_true', help='Only for archived baseline DOLs: samples finish, but legacy absent-SD probing then stalls; record status and PC without accepting this behavior in current builds')
     run(parser.parse_args())

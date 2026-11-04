@@ -109,7 +109,10 @@ internal static class Program
             phaseStart=IplFrameProfiler.Active?Clock.Timestamp:0;
             device.BeginFrame(Color32.Black);canvas.Begin();renderer.Present(shell);
             if(!IplFrameProfiler.Active&&IplFrameProfiler.Status.Length>0)
+            {
                 canvas.Text(IplFrameProfiler.Status,12,6,12,0x98d8c9ffu,0);
+                canvas.Text(IplFrameProfiler.Summary,12,21,12,0x98d8c9ffu,0);
+            }
 #if IPL_VIDEO_MODE_REVIEW
             canvas.Text(scanReview.Caption,12,6,16,scanReview.Failed?0xff4545ffu:0x7bffb0ffu,0);
 #endif
@@ -121,8 +124,9 @@ internal static class Program
             {
                 int end=IplFrameProfiler.Since(phaseStart);
                 IplFrameProfiler.Record(frameStart,prepare,submit,end,device,shell);
-                if(IplFrameProfiler.Ready)IplFrameProfiler.Export();
             }
+            if(IplFrameProfiler.NeedsExport&&!shell.Video.Pending)
+            {IplFrameProfiler.NeedsExport=false;IplFrameProfiler.Export();}
 #if IPL_PERFORMANCE_REVIEW
             // Keep the completed buffer stable for read-only debugger extraction.
             if(IplFrameProfiler.Ready)while(Clock.Timestamp>=0) { }

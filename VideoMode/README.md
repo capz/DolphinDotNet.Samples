@@ -19,8 +19,9 @@ snapshot inside projected rounded row meshes, then tint and crisp
 text are drawn on top. Texture allocation and geometry uploads happen between
 frames. The host SVG proof approximates blur with an SVG filter and omits native reflection
 textures; only a native capture verifies the GX result. The 81 frost draws reuse
-one managed vertex buffer and snapshot, with separate native meshes. Hardware
-performance has not been measured.
+one native rounded mesh and snapshot, with precomputed texture offsets and weights.
+Glass skips invisible faces and zero-alpha triangles; invariant wall math is cached.
+Physical hardware performance has not been measured in this cloud session.
 
 [Six-pass native review and mockup comparisons](Design/six-pass-review.md).
 [Rounded-corner correction, front and angle captures](Design/corner-review.md).
@@ -93,6 +94,16 @@ A pixel-identical reproduction and complete platform input/hardware acceptance
 must not be claimed without a captured native run against the reference images.
 
 ## Antialiasing and performance
+
+Press **Y** in the normal app to capture frame times (30 warmup + 96 samples).
+Mean and p95 appear on screen; raw samples remain in RAM. For physical SD export,
+build with `-p:IplFrameLogDevice=Sd2Sp2` (or `SdSlotA`, `SdSlotB`, `GcLoader`)
+for the adapter actually attached. After sampling, that build writes
+`videomode-perf/frame-N.csv`. Default `None` avoids absent-device probes. Logging includes geometry, submission, GX
+blocking, retrace, capture/blur and actual mode/scene information. It performs no
+storage I/O during measurement. [Incremental optimizations, accepted/rejected
+experiments, raw native logs and hardware instructions](Design/performance-review.md)
+separate Dolphin guest-clock results from the pending physical-console measurements.
 
 Native builds install the bundled **IplEdgeAA** postprocessing shader in the
 isolated Dolphin play/debug profiles. It smooths staircase edges while preserving

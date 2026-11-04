@@ -3,6 +3,11 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
+    <IplFrameLogDevice Condition="'$(IplFrameLogDevice)' == ''">None</IplFrameLogDevice>
+    <DefineConstants Condition="'$(IplFrameLogDevice)' == 'Sd2Sp2'">$(DefineConstants);IPL_LOG_SD2SP2</DefineConstants>
+    <DefineConstants Condition="'$(IplFrameLogDevice)' == 'SdSlotA'">$(DefineConstants);IPL_LOG_SDA</DefineConstants>
+    <DefineConstants Condition="'$(IplFrameLogDevice)' == 'SdSlotB'">$(DefineConstants);IPL_LOG_SDB</DefineConstants>
+    <DefineConstants Condition="'$(IplFrameLogDevice)' == 'GcLoader'">$(DefineConstants);IPL_LOG_GCLOADER</DefineConstants>
     <DefineConstants Condition="'$(IplPerformanceReview)' == 'true'">$(DefineConstants);IPL_PERFORMANCE_REVIEW</DefineConstants>
     <IplHardwareAntialiasing Condition="'$(IplHardwareAntialiasing)' == ''">false</IplHardwareAntialiasing>
     <DefineConstants Condition="'$(IplHardwareAntialiasing)' == 'true'">$(DefineConstants);IPL_HARDWARE_AA</DefineConstants>
@@ -10,13 +15,17 @@
     <DefineConstants Condition="'$(IplVideoModeReview)' == 'true' and '$(IplVideoModeReviewResolution)' == '576'">$(DefineConstants);IPL_VIDEO_MODE_REVIEW_PAL</DefineConstants>
     <DefineConstants Condition="'$(IplVideoModeReview)' == 'true'">$(DefineConstants);IPL_VIDEO_MODE_REVIEW</DefineConstants>
     <DefineConstants Condition="'$(IplVisualReview)' == 'true'">$(DefineConstants);IPL_VISUAL_REVIEW</DefineConstants>
-    <DefineConstants Condition="'$(IplVisualReview)' == 'true' and '$(IplVisualReviewAngle)' == 'true'">$(DefineConstants);IPL_VISUAL_REVIEW_ANGLE</DefineConstants>
+    <DefineConstants Condition="('$(IplVisualReview)' == 'true' or '$(IplPerformanceReview)' == 'true') and '$(IplVisualReviewAngle)' == 'true'">$(DefineConstants);IPL_VISUAL_REVIEW_ANGLE</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <DndEffect Include="gloss.dndfx.json" GeneratedSource="IplGlossEffect.g.cs" ClassName="IplGlossEffect" />
     <PackageReference Include="DolphinDotNet.GameCube" Version="$(DndPackageVersion)" />
   </ItemGroup>
   <Target Name="ValidateIplReviewModes" BeforeTargets="CoreCompile">
+    <Error Condition="'$(IplFrameLogDevice)' != 'None' and '$(IplFrameLogDevice)' != 'Sd2Sp2' and '$(IplFrameLogDevice)' != 'SdSlotA' and '$(IplFrameLogDevice)' != 'SdSlotB' and '$(IplFrameLogDevice)' != 'GcLoader'"
+           Text="IplFrameLogDevice must be None, Sd2Sp2, SdSlotA, SdSlotB or GcLoader. Select only an attached adapter; no absent-device probing is performed by default." />
+    <Error Condition="'$(IplPerformanceReview)' == 'true' and ('$(IplVisualReview)' == 'true' or '$(IplVideoModeReview)' == 'true')"
+           Text="Choose one deterministic review: performance, visual or scan." />
     <Error Condition="'$(IplHardwareAntialiasing)' == 'true' and '$(IplVisualReview)' != 'true' and '$(IplVideoModeReview)' != 'true'"
            Text="Hardware AA remains experimental after a native transition stall. Use an explicit visual/scan review build; normal builds use the measured Dolphin edge-AA profile." />
     <Error Condition="'$(IplAntialiasingBenchmark)' == 'true' and '$(IplVisualReview)' != 'true'"
