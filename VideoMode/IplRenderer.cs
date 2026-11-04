@@ -32,7 +32,7 @@ internal sealed class IplRenderer
     private readonly float[] depth=new float[6];
     private readonly IplPoint[] projected=new IplPoint[6*25*25];
     private readonly uint[] glassColors=new uint[6*25*25];
-    private const float Core=.82f,Round=.18f;
+    private const float Core=.925f,Round=.075f;
     internal IplRenderer(IIplCanvas canvas)
     {
         c=canvas;
@@ -107,7 +107,7 @@ internal sealed class IplRenderer
         pitch=PosePitch(shell.PreviousFace)+(PosePitch(shell.Face)-PosePitch(shell.PreviousFace))*ease;
         if(!shell.ReducedMotion){yaw+=(float)Math.Sin(shell.Time/5.3f*6.2831853f)*.075f;pitch+=.035f+(float)Math.Sin(shell.Time/7.1f*6.2831853f)*.055f;}
         cosYaw=(float)Math.Cos(yaw);sinYaw=(float)Math.Sin(yaw);cosPitch=(float)Math.Cos(pitch);sinPitch=(float)Math.Sin(pitch);
-        cy=211+(shell.ReducedMotion?0:(float)Math.Sin(shell.Time*.7f)*3);scale=116;
+        cy=211+(shell.ReducedMotion?0:(float)Math.Sin(shell.Time*.7f)*3);scale=104;
         Cube();
         c.BeginPanels();
         if(shell.Page==ShellPage.Face&&shell.Face!=ShellFace.Play&&shell.Face!=ShellFace.Memory)

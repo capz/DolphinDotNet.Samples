@@ -29,6 +29,10 @@ internal static class Program
         var device=GraphicsDevice.Default;
         DebugOverlay.TextVisible=false;
         var shell=new IplShell(new VideoModeOutput(device));
+#if IPL_VISUAL_REVIEW
+        // Repeatable native review pose; normal builds retain the interactive IPL.
+        shell.TurnTo(ShellFace.Options);shell.Row=1;shell.Tick(1);shell.Time=0;
+#endif
         using var canvas=new GameCubeCanvas(device);
         var renderer=new IplRenderer(canvas);
         var clock=new FrameClock {MaximumDeltaSeconds=.05f};
@@ -36,6 +40,9 @@ internal static class Program
         {
             Controller.Update();var pad=Controller.GetState(0);float dt=clock.Tick();
             shell.Tick(dt);
+#if IPL_VISUAL_REVIEW
+            shell.Time=0;
+#endif
             if(pad.Start.WasPressed) {shell.Video.Revert();if(!shell.Video.Pending)return 0;}
             if(pad.X.WasPressed)
             {
