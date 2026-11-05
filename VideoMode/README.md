@@ -97,6 +97,9 @@ must not be claimed without a captured native run against the reference images.
 
 ## Antialiasing and performance
 
+[Latest incremental timings and native comparisons](Design/performance-followup.md)
+cover the frontal menu, flat editor and oblique stress pose.
+
 The Z overlay shows mean milliseconds over roughly 250 ms for glass/row geometry,
 transmission, optical rims, gloss, icons, backdrop capture, frosted rows, row tint,
 text, footer and the flat editor. These are exclusive CPU submission scopes;

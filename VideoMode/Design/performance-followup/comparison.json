@@ -28,5 +28,10 @@
     "reference": "06-angle-before",
     "changed_pixels": 5,
     "max_channel_error": 1
+  },
+  "09-editor-final": {
+    "reference": "04-editor-before",
+    "changed_pixels": 0,
+    "max_channel_error": 0
   }
 }

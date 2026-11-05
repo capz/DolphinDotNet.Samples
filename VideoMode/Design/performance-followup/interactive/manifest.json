@@ -1,0 +1,40 @@
+{
+  "source_revision": "71ade97d74570e8a236de13520ba3188e6f6531d",
+  "build": "Release native, normal interactive configuration; no review flags",
+  "environment": "cloud Dolphin 2503 / Mesa llvmpipe, Xvfb; NOT physical hardware",
+  "dol_sha256": "568052a5ae32ae4c61e002339a0c443ddc6cba17cd9a13ff71fd1da3007262f2",
+  "method": "Real XTest keyboard events through Dolphin GameCube controller; paused full 640x480 X11 window captures, no resizing; visual inspection of all six PNGs",
+  "note": "These frame-dumped interactive captures verify controls and drawing, not a controlled performance comparison",
+  "events": [
+    {
+      "capture": "01-default-hidden",
+      "completed_frames": 301,
+      "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)"
+    },
+    {
+      "capture": "02-z-held-visible",
+      "completed_frames": 394,
+      "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)"
+    },
+    {
+      "capture": "03-options-visible",
+      "completed_frames": 431,
+      "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)"
+    },
+    {
+      "capture": "04-editor-visible",
+      "completed_frames": 526,
+      "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)"
+    },
+    {
+      "capture": "05-z-hidden-editor",
+      "completed_frames": 684,
+      "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)"
+    },
+    {
+      "capture": "06-reopened-options",
+      "completed_frames": 890,
+      "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)"
+    }
+  ]
+}

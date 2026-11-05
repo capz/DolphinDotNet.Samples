@@ -1,5 +1,9 @@
 # Incremental native frame-time review
 
+[Further improvements measured from the Z-overlay build](performance-followup.md)
+include native editor and angled-scene comparisons. This page retains the earlier
+baseline and checkpoints.
+
 These are **cloud Dolphin 2503 / Mesa llvmpipe guest-clock timings**, not real
 GameCube measurements. They identify expensive native application paths and
 verify changes incrementally; Dolphin does not model CPU/GPU timing accurately
@@ -129,7 +133,9 @@ The performance review build automatically captures the Options pose and holds
 the completed buffer for read-only debugger extraction; it is not the normal
 interactive DOL. `IplVisualReviewAngle=true` additionally exercises an oblique
 pose. The logger itself is available via Y in normal builds. Never mix review
-modes or use a review build for normal controller acceptance.
+modes or use a review build for normal controller acceptance. For new angled
+measurements, use `IplPerformanceReviewScene=Oblique` and pass `--scene Oblique`
+to the profiling script so its metadata identifies the pose.
 
 ## Validation
 
