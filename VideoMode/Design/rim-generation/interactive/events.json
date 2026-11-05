@@ -1,0 +1,47 @@
+[
+  {
+    "capture": "01-default-hidden",
+    "completed_frames": 427,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)"
+  },
+  {
+    "capture": "02-z-held-visible",
+    "completed_frames": 549,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)"
+  },
+  {
+    "capture": "03-options-visible",
+    "completed_frames": 590,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)"
+  },
+  {
+    "capture": "04-editor-visible",
+    "completed_frames": 684,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)"
+  },
+  {
+    "capture": "05-z-hidden-editor",
+    "completed_frames": 837,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)"
+  },
+  {
+    "capture": "06-reopened-options",
+    "completed_frames": 1038,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)"
+  },
+  {
+    "capture": "07-widescreen-kept",
+    "completed_frames": 1528,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)"
+  },
+  {
+    "capture": "08-widescreen-hidden",
+    "completed_frames": 1569,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)"
+  },
+  {
+    "capture": "09-safe-mode",
+    "completed_frames": 1616,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)"
+  }
+]
