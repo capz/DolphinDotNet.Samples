@@ -13,6 +13,10 @@ internal interface IIplCanvas
     void EndGlass();
     void DrawGlass();
     void DrawReflections();
+    void BeginRims();
+    void RimQuad(IplPoint a,IplPoint b,IplPoint c,IplPoint d,uint color);
+    void EndRims();
+    void DrawRims();
     void BeginPanels();
     void PanelTriangle(IplPoint a,IplPoint b,IplPoint d);
     void EndPanels();
@@ -179,6 +183,8 @@ internal sealed class IplRenderer
         if(shell.Page==ShellPage.Face&&shell.Face!=ShellFace.Play&&shell.Face!=ShellFace.Memory)
             for(int i=0;i<shell.Rows;i++)FacePanel(shell,i);
         c.EndPanels();
+        c.Section(IplRenderPhase.RimGeometry);
+        c.BeginRims();GlassRims();c.EndRims();
         c.Section(IplRenderPhase.None);
     }
     internal void Present(IplShell shell)
@@ -191,7 +197,7 @@ internal sealed class IplRenderer
         }
         c.Section(IplRenderPhase.Transmission);
         c.DrawGlass();
-        c.Section(IplRenderPhase.Rims);GlassRims();
+        c.Section(IplRenderPhase.Rims);c.DrawRims();
         c.Section(IplRenderPhase.Reflections);c.DrawReflections();
         if(shell.Turn>.85f)
         {
@@ -321,7 +327,7 @@ internal sealed class IplRenderer
             var p=Lerp(a,b,i/(float)steps);var outer=ProjectView(p);
             var inner=ProjectView(Lerp(innerA,innerB,i/(float)steps));
             uint shade=RimColor(p,color);
-            Tri(previousOuter,outer,previousInner,shade);Tri(outer,inner,previousInner,shade);
+            if((shade&255)!=0)c.RimQuad(previousOuter,outer,previousInner,inner,shade);
             previousOuter=outer;previousInner=inner;
         }
     }

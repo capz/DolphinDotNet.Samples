@@ -16,7 +16,7 @@ internal static class IplFrameProfiler
     private static readonly int[] ordered=new int[Frames];
     internal static int Count;
     internal static bool Active,Ready,NeedsExport;
-    internal static int CaptureUs,BlurUs;
+    internal static int CaptureUs,BlurUs,ExtraDraws,ExtraTriangles;
     private static int warmup;
     internal static string Status="";
     internal static string Summary="";
@@ -32,7 +32,7 @@ internal static class IplFrameProfiler
         Samples[at]=Since(start);Samples[at+1]=prepare;Samples[at+2]=submit;Samples[at+3]=end;
         Samples[at+4]=GpuProfiler.GpuWaitMicroseconds;Samples[at+5]=GpuProfiler.RetraceWaitMicroseconds;
         Samples[at+6]=CaptureUs;Samples[at+7]=BlurUs;
-        Samples[at+8]=gpu.DrawSubmissions;Samples[at+9]=gpu.Triangles;
+        Samples[at+8]=gpu.DrawSubmissions+ExtraDraws;Samples[at+9]=gpu.Triangles+ExtraTriangles;
         Samples[at+10]=GpuProfiler.BeginFrameCopyMicroseconds;Samples[at+11]=GpuProfiler.GateReacquireMicroseconds;
         Samples[at+12]=device.Width;Samples[at+13]=device.Height;Samples[at+14]=(int)device.Display.Scan;
         Samples[at+15]=(int)shell.Face;Samples[at+16]=shell.Editing?1:0;

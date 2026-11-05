@@ -111,6 +111,7 @@ internal static class Program
         {
             long frameStart=Clock.Timestamp;
             IplFrameProfiler.CaptureUs=IplFrameProfiler.BlurUs=0;
+            IplFrameProfiler.ExtraDraws=IplFrameProfiler.ExtraTriangles=0;
             Controller.Update();var pad=Controller.GetState(0);float dt=clock.Tick();
             shell.Tick(dt);
 #if IPL_VISUAL_REVIEW || IPL_PERFORMANCE_REVIEW || IPL_HARDWARE_RUNNER
@@ -160,12 +161,14 @@ internal static class Program
 #endif
             canvas.End();
             int submit=timing?IplFrameProfiler.Since(phaseStart):0;
+#if !IPL_HARDWARE_RUNNER
             if(IplPerformanceOverlay.Stats.Visible)
             {
                 long overlayStart=Clock.Timestamp;
                 canvas.Begin();IplPerformanceOverlay.Draw(canvas);canvas.End();
                 IplPerformanceOverlay.Stats.Current[IplPerformanceStats.Overlay]=IplFrameProfiler.Since(overlayStart);
             }
+#endif
             phaseStart=timing?Clock.Timestamp:0;
             device.EndFrame();
             int end=timing?IplFrameProfiler.Since(phaseStart):0;

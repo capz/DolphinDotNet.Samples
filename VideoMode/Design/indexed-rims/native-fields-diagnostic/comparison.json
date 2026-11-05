@@ -1,0 +1,9 @@
+{
+  "baseline_revision": "30f9256",
+  "description": "Matched ForceProgressive=False diagnostic; identical magenta frames, not caused by indexed rims",
+  "image_size": [
+    640,
+    528
+  ],
+  "pixel_differences": null
+}

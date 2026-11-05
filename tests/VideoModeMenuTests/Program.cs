@@ -63,6 +63,7 @@ internal static class Program
         Console.WriteLine("Video mode menu: navigation, apply/keep/revert, timeout, invalid modes, allocation rollback and safe mode passed.");
         IplShellTests.Run();
         IplPerformanceStatsTests.Run();
+        IplRimCommandsTests.Run();
         float last=1;
         for(int i=0;i<=160000;i++)
         {

@@ -7,6 +7,7 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
     private const int GlassVertices=25*25, PanelVertices=3*36*3,BlurAxis=9,BlurTaps=BlurAxis*BlurAxis;
     private readonly GraphicsDevice device;
     private readonly Draw2D draw;
+    private readonly IndexedRims rims=new IndexedRims();
     private readonly Texture2D atlas=Texture2D.FromPng(IplFontData.Png,true);
     private readonly Renderer renderer;
     private readonly Texture2D glossMap=Texture2D.FromPng(IplGlossData.Png,true);
@@ -59,6 +60,7 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
     {
         var size=draw.LogicalSize;logicalWidth=size.X;logicalHeight=size.Y;
         scale=size.Y/480f;offset=(size.X-640*scale)/2;
+        rims.Prepare(size.X,size.Y,scale,offset);
         camera.SetOrthographic(size.X,size.Y,.1f,10);
         if(captureWidth!=device.Width||captureHeight!=device.Height)
         {
@@ -113,6 +115,10 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
         for(int i=0;i<glassCount;i++)renderer.DrawMesh(glossMeshes[i],glossMaterial,identity);
         renderer.End3D();draw.Begin();
     }
+    public void BeginRims()=>rims.Begin();
+    public void RimQuad(IplPoint a,IplPoint b,IplPoint c,IplPoint d,uint color)=>rims.Quad(a,b,c,d,color);
+    public void EndRims()=>rims.End();
+    public void DrawRims(){draw.End();rims.Draw(device);draw.Begin();}
     public void BeginPanels(){panelCount=0;}
     public void PanelTriangle(IplPoint a,IplPoint b,IplPoint d)
     {panelPoints[panelCount++]=a;panelPoints[panelCount++]=b;panelPoints[panelCount++]=d;}
@@ -181,6 +187,7 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
     }
     public void Dispose()
     {
+        rims.Dispose();
         capture?.Dispose();panelMesh.Dispose();
         for(int i=0;i<glassMeshes.Length;i++){glassMeshes[i].Dispose();glossMeshes[i].Dispose();}draw.Dispose();atlas.Dispose();glossMap.Dispose();glossEffect.Dispose();
     }
