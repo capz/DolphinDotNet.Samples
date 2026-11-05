@@ -1,0 +1,10 @@
+{
+  "excluded_numeric_rectangle": [
+    185,
+    62,
+    277,
+    427
+  ],
+  "changed_pixels_outside_numeric_rectangle": 0,
+  "max_channel_difference_outside_numeric_rectangle": 0
+}

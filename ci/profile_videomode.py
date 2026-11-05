@@ -2,7 +2,8 @@
 """Extract the bounded native frame log after an uninterrupted profiling run.
 
 Run inside dnd-cloud-dolphin/Xvfb. Build with IplPerformanceReview=true and
-IplPerformanceReviewScene matching --scene (Options by default).
+IplPerformanceReviewScene matching --scene (Options by default), and
+IplPerformanceReviewOverlay matching --overlay (Off by default).
 No debugger interrupts, screenshots, frame dumps or file writes during sampling.
 The guest-clock timings are Dolphin measurements, NOT physical GameCube results.
 """
@@ -50,11 +51,13 @@ def run(args):
     for line in table.splitlines():
         parts = line.split()
         if len(parts) == 3:
-            for name in ('Count', 'Ready', 'Samples', 'Status', 'Summary'):
+            for name in ('Count', 'Ready', 'Samples', 'Status', 'Summary', 'OverlaySamples', 'OverlaySetupUs'):
                 if parts[2].split('.lto_priv.')[0] == 'dnd_static_IplFrameProfiler_' + name:
                     symbols[name] = int(parts[0], 16)
     if not {'Count', 'Ready', 'Samples'} <= symbols.keys():
         raise ValueError('Missing profiling symbols: ' + repr(symbols))
+    if args.overlay != 'Off' and 'OverlaySamples' not in symbols:
+        raise ValueError('Overlay review requires an instrumented performance-review build')
     with (root / 'emulator.log').open('w') as log:
         process = subprocess.Popen(['/usr/games/dolphin-emu-nogui', '--platform', 'x11', '-u', str(root / 'user'), '-C', 'SYSCONF.IPL.PGS=True', '-e', str(dol)], stdout=log, stderr=subprocess.STDOUT)
         try:
@@ -105,7 +108,27 @@ def run(args):
                           'clock': 'native guest monotonic microseconds; emulated CPU/GPU timing does not establish hardware performance',
                           'method': '30 warmup + 96 recorded frames, fixed '+args.scene+' pose, no interrupts or dumps during measurement; Y logger uses the same buffer',
                           'scene': args.scene,
+                          'overlay_mode': args.overlay,
                           'dol_sha256': hashlib.sha256(dol.read_bytes()).hexdigest(), 'frames': len(rows), 'summary': summarize(rows)}
+                if 'OverlaySetupUs' in symbols:
+                    report['overlay_setup_us']=int.from_bytes(memory(conn,symbols['OverlaySetupUs'],4),'big')
+                if 'OverlaySamples' in symbols:
+                    fields=('labels_us','numbers_us','format_us','flush_us','overlay_us','publish_us')
+                    pointer=int.from_bytes(memory(conn,symbols['OverlaySamples'],4),'big')
+                    header=struct.unpack('>6I',memory(conn,pointer,24))
+                    if header[2:4]!=(96*len(fields),4):raise ValueError('Unexpected overlay sample layout')
+                    raw=b''.join(memory(conn,pointer+24+at,min(512,96*len(fields)*4-at)) for at in range(0,96*len(fields)*4,512))
+                    values=struct.unpack('>'+'i'*(96*len(fields)),raw)
+                    detail=[dict(zip(fields,values[i:i+len(fields)])) for i in range(0,len(values),len(fields))]
+                    if args.overlay=='Full' and any(r['overlay_us']<=0 for r in detail):raise ValueError('Expected a drawn overlay')
+                    if args.overlay!='Full' and any(r['overlay_us']!=0 for r in detail):raise ValueError('Unexpected overlay drawing')
+                    if args.overlay=='Off' and any(r['publish_us']!=0 for r in detail):raise ValueError('Unexpected timing collection')
+                    output=io.StringIO();writer=csv.DictWriter(output,fields,lineterminator='\n');writer.writeheader();writer.writerows(detail)
+                    (root/'overlay.csv').write_text(output.getvalue())
+                    report['overlay_summary']={}
+                    for field in fields:
+                        numbers=sorted(r[field] for r in detail)
+                        report['overlay_summary'][field]={'mean':statistics.mean(numbers),'median':statistics.median(numbers),'p95':numbers[91],'max':max(numbers)}
                 for name in ('Status', 'Summary'):
                     if name not in symbols:
                         continue
@@ -140,6 +163,7 @@ if __name__ == '__main__':
     parser.add_argument('--logs', type=Path, required=True)
     parser.add_argument('--variant', required=True)
     parser.add_argument('--scene',choices=('Options','Oblique','Cube','Detail'),default='Options')
+    parser.add_argument('--overlay',choices=('Off','Timers','Full'),default='Off',help='Must match IplPerformanceReviewOverlay')
     parser.add_argument('--wait', type=float, default=45)
     parser.add_argument('--allow-legacy-export-stall', action='store_true', help='Only for archived baseline DOLs: samples finish, but legacy absent-SD probing then stalls; record status and PC without accepting this behavior in current builds')
     run(parser.parse_args())

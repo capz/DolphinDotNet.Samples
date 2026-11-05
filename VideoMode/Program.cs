@@ -104,6 +104,12 @@ internal static class Program
 #if IPL_PERFORMANCE_REVIEW || IPL_HARDWARE_RUNNER
         IplFrameProfiler.Start();
 #endif
+#if IPL_OVERLAY_REVIEW
+        IplPerformanceOverlay.Stats.Toggle();
+#endif
+#if IPL_OVERLAY_TIMERS_ONLY
+        IplPerformanceOverlay.DrawEnabled=false;
+#endif
 #if IPL_VISUAL_REVIEW && !IPL_AA_BENCHMARK
         int reviewFrames=0;
 #endif
@@ -126,6 +132,7 @@ internal static class Program
                 // The SDK also toggles its generic panel in Controller.Update.
                 // Use the app's detailed panel instead of drawing both.
                 DebugOverlay.PerformanceVisible=false;
+                IplPerformanceOverlay.DrawEnabled=true;
                 IplPerformanceOverlay.Stats.Toggle();
             }
             if(pad.Y.WasPressed&&!IplFrameProfiler.Active)IplFrameProfiler.Start();
@@ -162,10 +169,17 @@ internal static class Program
             canvas.End();
             int submit=timing?IplFrameProfiler.Since(phaseStart):0;
 #if !IPL_HARDWARE_RUNNER
-            if(IplPerformanceOverlay.Stats.Visible)
+            if(IplPerformanceOverlay.Stats.Visible&&IplPerformanceOverlay.DrawEnabled)
             {
                 long overlayStart=Clock.Timestamp;
-                canvas.Begin();IplPerformanceOverlay.Draw(canvas);canvas.End();
+                canvas.Begin();IplPerformanceOverlay.Draw(canvas);
+#if IPL_PERFORMANCE_REVIEW
+                long overlayFlushStart=Clock.Timestamp;
+#endif
+                canvas.End();
+#if IPL_PERFORMANCE_REVIEW
+                IplPerformanceOverlay.FlushUs=IplFrameProfiler.Since(overlayFlushStart);
+#endif
                 IplPerformanceOverlay.Stats.Current[IplPerformanceStats.Overlay]=IplFrameProfiler.Since(overlayStart);
             }
 #endif

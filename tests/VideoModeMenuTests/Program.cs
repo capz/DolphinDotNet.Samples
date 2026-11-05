@@ -64,6 +64,7 @@ internal static class Program
         IplShellTests.Run();
         IplPerformanceStatsTests.Run();
         IplRimCommandsTests.Run();
+        IplOverlayLayoutTests.Run();
         float last=1;
         for(int i=0;i<=160000;i++)
         {
