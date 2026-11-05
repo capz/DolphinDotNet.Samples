@@ -34,6 +34,7 @@ internal sealed class IplRenderer
     private readonly float[] depth=new float[6];
     private readonly uint[] wallTints=new uint[16];
     private readonly IplPoint[] wallDirections=new IplPoint[4*13];
+    private readonly IplPoint[] circleDirections=new IplPoint[33],panelDirections=new IplPoint[4*9];
     // A broad corner arc must remain visible at native resolution. The optical
     // wall uses the same radius family as the underlying rounded solid.
     private const float Round=.24f,Core=1-Round,WallCorner=.28f;
@@ -46,6 +47,16 @@ internal sealed class IplRenderer
         {
             float a=(180-corner*90-j*90f/12)*.017453293f;
             wallDirections[corner*13+j]=new IplPoint((float)Math.Cos(a),(float)Math.Sin(a));
+        }
+        for(int i=0;i<=32;i++)
+        {
+            float a=i*6.2831853f/32;
+            circleDirections[i]=new IplPoint((float)Math.Cos(a),(float)Math.Sin(a));
+        }
+        for(int corner=0;corner<4;corner++)for(int j=0;j<=8;j++)
+        {
+            float a=(180-corner*90-j*90f/8)*.017453293f;
+            panelDirections[corner*9+j]=new IplPoint((float)Math.Cos(a),(float)Math.Sin(a));
         }
         for(int band=0;band<16;band++)
         {
@@ -109,9 +120,9 @@ internal sealed class IplRenderer
     {
         for(int i=0;i<32;i++)
         {
-            float a=i*6.2831853f/32,b=(i+1)*6.2831853f/32;
-            float ax=x+(float)Math.Cos(a)*r,ay=y+(float)Math.Sin(a)*r;
-            float bx=x+(float)Math.Cos(b)*r,by=y+(float)Math.Sin(b)*r;
+            var a=circleDirections[i];var b=circleDirections[i+1];
+            float ax=x+a.X*r,ay=y+a.Y*r;
+            float bx=x+b.X*r,by=y+b.Y*r;
             if(fill)c.Triangle(x,y,ax,ay,bx,by,color);else Line(ax,ay,bx,by,1,color);
         }
     }
@@ -359,8 +370,8 @@ internal sealed class IplRenderer
         {
             float x=corner==0||corner==3?left+radius:right-radius;
             float y=corner<2?top-radius:bottom+radius;
-            float a=(180-corner*90-j*90f/8)*.017453293f;
-            var point=FacePoint(s,x+(float)Math.Cos(a)*radius,y+(float)Math.Sin(a)*radius);
+            var direction=panelDirections[corner*9+j];
+            var point=FacePoint(s,x+direction.X*radius,y+direction.Y*radius);
             if(corner==0&&j==0)first=point;
             else if(tint==0)c.PanelTriangle(center,previous,point);else Tri(center,previous,point,tint);
             previous=point;
@@ -394,8 +405,8 @@ internal sealed class IplRenderer
         {
             float x=corner==0||corner==3?u+radius:u+width-radius;
             float y=corner<2?v-radius:v-height+radius;
-            float angle=(180-corner*90-j*30)*.017453293f;
-            var p=FacePoint(s,x+(float)Math.Cos(angle)*radius,y+(float)Math.Sin(angle)*radius);
+            var direction=wallDirections[corner*13+j*4];
+            var p=FacePoint(s,x+direction.X*radius,y+direction.Y*radius);
             if(corner==0&&j==0)first=p;else Tri(center,previous,p,color);
             previous=p;
         }
@@ -509,12 +520,12 @@ internal sealed class IplRenderer
         float stick=s.Page==ShellPage.Cube?214:111;
         for(int r=15;r>3;r-=3)Circle(stick,y,r,Rgba(210,214,217,130),false);
         Circle(stick,y,3,0xd7d9dfff,true);
-        Text("... "+(s.Page==ShellPage.Cube?"Menu Selection":s.Face==ShellFace.Calendar&&s.Editing?"Part / Value":"Select"),stick+24,y-13,s.Page==ShellPage.Cube?20:17,White);
+        Text(s.Page==ShellPage.Cube?"... Menu Selection":s.Face==ShellFace.Calendar&&s.Editing?"... Part / Value":"... Select",stick+24,y-13,s.Page==ShellPage.Cube?20:17,White);
         if(s.Page==ShellPage.Cube)return;
         for(int r=22;r>10;r-=3)Circle(320,y,r,Rgba(255,35,107,10),true);
-        Circle(320,y,11,0xa42351ff,true);Center("B",320,y-14,20,White);Text("... "+(s.Editing?"Cancel":"Back"),340,y-13,17,White);
+        Circle(320,y,11,0xa42351ff,true);Center("B",320,y-14,20,White);Text(s.Editing?"... Cancel":"... Back",340,y-13,17,White);
         if(s.Video.Reverting)return;
         for(int r=23;r>12;r-=3)Circle(470,y,r,Rgba(15,245,196,10),true);
-        Circle(470,y,13,0x168a73ff,true);Center("A",470,y-14,20,White);Text("... "+(s.Editing?"Confirm":"Open"),492,y-13,17,White);
+        Circle(470,y,13,0x168a73ff,true);Center("A",470,y-14,20,White);Text(s.Editing?"... Confirm":"... Open",492,y-13,17,White);
     }
 }
