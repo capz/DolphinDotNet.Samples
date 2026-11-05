@@ -249,7 +249,9 @@ class Bridge:
                             raise ValueError('Native scene/mode differs from the prepared job')
                         summary, csv = protocol.results(rows)
                         directory = self.settings['artifacts'] / job.id
-                        (directory / 'frames.csv').write_text(csv)
+                        csv_pending=directory/'frames.csv.tmp'
+                        csv_pending.write_text(csv)
+                        csv_pending.replace(directory/'frames.csv')
                         job.result = {'frames': len(rows), 'units': 'microseconds', 'summary': summary,
                                       'payload_sha256': digest, 'received_at': time.time(), 'target': self.target(),
                                       'measurement_origin': 'native-clock-over-BBA' if self.settings['target_kind'] == 'gamecube' else 'simulated-target-not-hardware',
