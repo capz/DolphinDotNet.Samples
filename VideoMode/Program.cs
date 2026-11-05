@@ -90,9 +90,9 @@ internal static class Program
 #endif
 #if IPL_VISUAL_REVIEW || IPL_PERFORMANCE_REVIEW || IPL_HARDWARE_RUNNER
         // Repeatable native review pose; normal builds retain the interactive IPL.
-#if !IPL_RUNNER_CUBE
+#if !IPL_RUNNER_CUBE && !IPL_REVIEW_CUBE
         shell.TurnTo(ShellFace.Options);shell.Row=1;shell.Tick(1);shell.Time=0;
-#if IPL_RUNNER_DETAIL
+#if IPL_RUNNER_DETAIL || IPL_REVIEW_DETAIL
         shell.TurnTo(ShellFace.Video);shell.Row=1;shell.Tick(1);
         shell.Confirm();
 #endif

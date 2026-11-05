@@ -18,6 +18,10 @@
     <DefineConstants Condition="'$(IplFrameLogDevice)' == 'SdSlotB'">$(DefineConstants);IPL_LOG_SDB</DefineConstants>
     <DefineConstants Condition="'$(IplFrameLogDevice)' == 'GcLoader'">$(DefineConstants);IPL_LOG_GCLOADER</DefineConstants>
     <DefineConstants Condition="'$(IplPerformanceReview)' == 'true'">$(DefineConstants);IPL_PERFORMANCE_REVIEW</DefineConstants>
+    <IplPerformanceReviewScene Condition="'$(IplPerformanceReviewScene)' == ''">Options</IplPerformanceReviewScene>
+    <DefineConstants Condition="'$(IplPerformanceReview)' == 'true' and '$(IplPerformanceReviewScene)' == 'Cube'">$(DefineConstants);IPL_REVIEW_CUBE</DefineConstants>
+    <DefineConstants Condition="'$(IplPerformanceReview)' == 'true' and '$(IplPerformanceReviewScene)' == 'Detail'">$(DefineConstants);IPL_REVIEW_DETAIL</DefineConstants>
+    <DefineConstants Condition="'$(IplPerformanceReview)' == 'true' and '$(IplPerformanceReviewScene)' == 'Oblique'">$(DefineConstants);IPL_VISUAL_REVIEW_ANGLE</DefineConstants>
     <IplHardwareAntialiasing Condition="'$(IplHardwareAntialiasing)' == ''">false</IplHardwareAntialiasing>
     <DefineConstants Condition="'$(IplHardwareAntialiasing)' == 'true'">$(DefineConstants);IPL_HARDWARE_AA</DefineConstants>
     <DefineConstants Condition="'$(IplAntialiasingBenchmark)' == 'true'">$(DefineConstants);IPL_AA_BENCHMARK</DefineConstants>
@@ -46,6 +50,8 @@
            Text="IplFrameLogDevice must be None, Sd2Sp2, SdSlotA, SdSlotB or GcLoader. Select only an attached adapter; no absent-device probing is performed by default." />
     <Error Condition="'$(IplPerformanceReview)' == 'true' and ('$(IplVisualReview)' == 'true' or '$(IplVideoModeReview)' == 'true')"
            Text="Choose one deterministic review: performance, visual or scan." />
+    <Error Condition="'$(IplPerformanceReview)' == 'true' and '$(IplPerformanceReviewScene)' != 'Options' and '$(IplPerformanceReviewScene)' != 'Oblique' and '$(IplPerformanceReviewScene)' != 'Cube' and '$(IplPerformanceReviewScene)' != 'Detail'"
+           Text="IplPerformanceReviewScene must be Options, Oblique, Cube or Detail." />
     <Error Condition="'$(IplHardwareAntialiasing)' == 'true' and '$(IplVisualReview)' != 'true' and '$(IplVideoModeReview)' != 'true'"
            Text="Hardware AA remains experimental after a native transition stall. Use an explicit visual/scan review build; normal builds use the measured Dolphin edge-AA profile." />
     <Error Condition="'$(IplAntialiasingBenchmark)' == 'true' and '$(IplVisualReview)' != 'true'"

@@ -108,6 +108,11 @@ waits include the overlay's GPU work. Hide it for baseline Y/bridge measurements
 Values use reusable buffers and timing scopes stop collecting while hidden.
 [Native Z-button review and captures](Design/performance-overlay.md).
 
+For an uninterrupted native benchmark, build with `IplPerformanceReview=true`
+and `IplPerformanceReviewScene=Options`, `Oblique`, `Cube` or `Detail`, then run
+`ci/profile_videomode.py --scene` with the same scene. The default is Options.
+Each run retains 30 warmup and 96 measured frames with the live overlay hidden.
+
 For a BBA + GC Loader console, the [Windows hardware bridge](../tools/gamecube_bridge/README.md)
 uses a private Microsoft dev tunnel, resident ELF uploads and post-window native
 timing callbacks. It keeps a debugger out of the optimized Release build. Its

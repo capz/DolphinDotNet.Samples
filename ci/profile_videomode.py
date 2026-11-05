@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Extract the bounded native frame log after an uninterrupted profiling run.
 
-Run inside dnd-cloud-dolphin/Xvfb. Build with IplPerformanceReview=true.
+Run inside dnd-cloud-dolphin/Xvfb. Build with IplPerformanceReview=true and
+IplPerformanceReviewScene matching --scene (Options by default).
 No debugger interrupts, screenshots, frame dumps or file writes during sampling.
 The guest-clock timings are Dolphin measurements, NOT physical GameCube results.
 """
@@ -92,6 +93,9 @@ def run(args):
                 rows = [dict(zip(FIELDS, values[i:i + len(FIELDS)])) for i in range(0, len(values), len(FIELDS))]
                 if any(r['frame_us'] <= 0 or r['prepare_us'] <= 0 or r['width'] != 640 or r['height'] != 480 for r in rows):
                     raise ValueError('Invalid frame log')
+                expected_face,expected_editing={'Options':(3,0),'Oblique':(3,0),'Cube':(0,0),'Detail':(1,1)}[args.scene]
+                if any(r['face']!=expected_face or r['editing']!=expected_editing for r in rows):
+                    raise ValueError('Native scene does not match --scene '+args.scene)
                 output = io.StringIO()
                 writer = csv.DictWriter(output, FIELDS, lineterminator='\n')
                 writer.writeheader()
@@ -99,7 +103,8 @@ def run(args):
                 (root / 'frames.csv').write_text(output.getvalue())
                 report = {'variant': args.variant, 'environment': 'cloud Dolphin 2503 / Mesa llvmpipe, NOT physical hardware',
                           'clock': 'native guest monotonic microseconds; emulated CPU/GPU timing does not establish hardware performance',
-                          'method': '30 warmup + 96 recorded frames, fixed Options pose, no interrupts or dumps during measurement; Y logger uses the same buffer',
+                          'method': '30 warmup + 96 recorded frames, fixed '+args.scene+' pose, no interrupts or dumps during measurement; Y logger uses the same buffer',
+                          'scene': args.scene,
                           'dol_sha256': hashlib.sha256(dol.read_bytes()).hexdigest(), 'frames': len(rows), 'summary': summarize(rows)}
                 for name in ('Status', 'Summary'):
                     if name not in symbols:
@@ -134,6 +139,7 @@ if __name__ == '__main__':
     parser.add_argument('--dol', type=Path, required=True)
     parser.add_argument('--logs', type=Path, required=True)
     parser.add_argument('--variant', required=True)
+    parser.add_argument('--scene',choices=('Options','Oblique','Cube','Detail'),default='Options')
     parser.add_argument('--wait', type=float, default=45)
     parser.add_argument('--allow-legacy-export-stall', action='store_true', help='Only for archived baseline DOLs: samples finish, but legacy absent-SD probing then stalls; record status and PC without accepting this behavior in current builds')
     run(parser.parse_args())
