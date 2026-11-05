@@ -95,6 +95,12 @@ must not be claimed without a captured native run against the reference images.
 
 ## Antialiasing and performance
 
+For a BBA + GC Loader console, the [Windows hardware bridge](../tools/gamecube_bridge/README.md)
+uses a private Microsoft dev tunnel, resident ELF uploads and post-window native
+timing callbacks. It keeps a debugger out of the optimized Release build. Its
+Windows setup scripts, client and wire-protocol tests are included; physical rig
+activation is separate from the validated Dolphin BBA transport.
+
 Press **Y** in the normal app to capture frame times (30 warmup + 96 samples).
 Mean and p95 appear on screen; raw samples remain in RAM. For physical SD export,
 build with `-p:IplFrameLogDevice=Sd2Sp2` (or `SdSlotA`, `SdSlotB`, `GcLoader`)

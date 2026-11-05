@@ -52,6 +52,17 @@ and SHA-256 of its measured DOL. The screenshot files are unscaled 640x480 nativ
 Dolphin client captures, made after sampling. They preserve the existing visual
 result; they do not establish a perfect match to the optical-glass mockup.
 
+The final source repeat independently reproduces 50.05 ms/frame and 48.93 ms
+outside retrace; [raw repeat](performance/repeats/final/result.json). The baseline
+repeat reproduces 150.15 ms/frame. The old baseline's export stalls after sampling,
+which is retained explicitly in its diagnostic metadata.
+
+The [oblique stress pose](performance/angle/result.json) is substantially slower:
+100.10 ms/frame (p95 100.10), 95.60 ms outside retrace, 20.90 ms preparation and
+74.67 ms submission. It exposes three contributing cube faces. It is not directly
+comparable to the frontal baseline. Turning still needs work; a frontal-only
+benchmark would conceal that limitation. [Full native angle capture](performance/angle/native.png).
+
 ## Rejected experiments
 
 - [Opaque primitive batching](performance/rejected-opaque-primitives/result.json):
@@ -119,3 +130,16 @@ the completed buffer for read-only debugger extraction; it is not the normal
 interactive DOL. `IplVisualReviewAngle=true` additionally exercises an oblique
 pose. The logger itself is available via Y in normal builds. Never mix review
 modes or use a review build for normal controller acceptance.
+
+## Validation
+
+All 30 local managed-build/test/manifest commands passed, including the linked
+VideoMode interaction and lighting tests. Both native scan reviews passed all
+18 stages: [480 sequence](performance/validation/scan480/result.json) and
+[576 sequence](performance/validation/scan576/result.json). They cover i/p,
+resolution transitions, keep/back, forced logical timeout rollback and safe mode.
+The saved native screenshots preserve each stage.
+
+[GitHub run 41930566668](https://github.com/capz/DolphinDotNet.Samples/actions/runs/41930566668)
+passed all managed sample builds/tests and the three packaged native AOT groups
+for code revision 9198b85. Physical console/cable/SD-device acceptance remains open.

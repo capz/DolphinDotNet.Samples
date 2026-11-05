@@ -1,0 +1,63 @@
+name: GameCube hardware bridge validation
+on:
+  pull_request:
+    paths: ['tools/gamecube_bridge/**', 'VideoMode/**', '.github/workflows/hardware-bridge.yml', 'global.json', 'Directory.Build.props']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  bridge:
+    strategy:
+      matrix:
+        os: [ubuntu-24.04, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Test authenticated API, launcher wire protocol and telemetry
+        run: python -m unittest discover -s tools/gamecube_bridge/tests -v
+      - name: Parse Windows provisioning scripts
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Get-ChildItem tools/gamecube_bridge/*.ps1 | ForEach-Object {
+            $tokens = $null; $parseErrors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile($_.FullName, [ref]$tokens, [ref]$parseErrors) | Out-Null
+            if ($parseErrors.Count) { throw ($parseErrors | Out-String) }
+          }
+      - name: Validate private Windows setup without contacting a console
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $env:LOCALAPPDATA = Join-Path $env:RUNNER_TEMP 'dnd-bridge-setup-test'
+          New-Item -ItemType Directory -Path $env:LOCALAPPDATA -Force | Out-Null
+          ./tools/gamecube_bridge/Setup-Windows.ps1 -ConsoleAddress 192.168.1.80
+          $configRoot = Join-Path $env:LOCALAPPDATA 'DolphinDotNet/HardwareBridge'
+          $tokenValue = [IO.File]::ReadAllText((Join-Path $configRoot 'api-token.txt'))
+          if ($tokenValue.Length -ne 64) { throw 'Invalid generated API credential length' }
+          $settings = Get-Content (Join-Path $configRoot 'config.json') -Raw | ConvertFrom-Json
+          if ($settings.target_kind -ne 'gamecube' -or $settings.api_port -ne 6280) { throw 'Invalid generated configuration' }
+          # Credential values are never printed.
+  native-reporting-build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile optimized native callback variants (no hardware contact)
+        env:
+          IplRunnerHost: 10.0.2.2
+          IplRunnerToken: 0123456789abcdef0123456789abcdef
+        run: |
+          set -euo pipefail
+          dotnet build VideoMode/VideoMode.csproj -c Release -p:DndBuildNative=true -p:DndBuildBackend=Docker -p:IplHardwareRunner=true -p:DndDebugSymbols=false -p:DndGdbTransport=Off
+          python3 -c 'import sys,pathlib;sys.path.insert(0,"tools/gamecube_bridge");import client,protocol;client.optimized(pathlib.Path("VideoMode/obj/Release/net8.0/native/Makefile"));protocol.validate_elf(pathlib.Path("VideoMode/bin/Release/net8.0/VideoMode.elf").read_bytes(),"0123456789abcdef0123456789abcdef")'
+          dotnet build VideoMode/VideoMode.csproj -c Release -p:DndBuildNative=true -p:DndBuildBackend=Docker -p:IplHardwareRunner=true -p:IplRunnerScene=Detail -p:IplRunnerVideo=576p -p:DndDebugSymbols=false -p:DndGdbTransport=Off
+          python3 ci/verify_aot.py VideoMode --generated-c VideoMode/obj/Release/net8.0/native/source/generated_program.c

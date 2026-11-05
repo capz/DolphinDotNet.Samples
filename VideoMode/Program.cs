@@ -31,7 +31,20 @@ internal sealed class VideoModeOutput : IVideoModeOutput
 }
 internal static class Program
 {
+#if IPL_HARDWARE_RUNNER
+    private static async System.Threading.Tasks.Task<int> Main()
+    {
+        // Finish BBA/DHCP initialization before warmup and measurement. Leaving
+        // it to the post-window sender lets native auto-network setup race frames.
+        await IplHardwareReporter.Initialize();
+        int result=RunFrames();
+        if(result==0)await IplHardwareReporter.Send();
+        return result;
+    }
+    private static int RunFrames()
+#else
     private static int Main()
+#endif
     {
         var device=GraphicsDevice.Default;
         DebugOverlay.TextVisible=false;
@@ -51,6 +64,19 @@ internal static class Program
 #if IPL_VISUAL_REVIEW || IPL_PERFORMANCE_REVIEW
         device.ConfigureDisplay(new DisplayOptions {Resolution=GraphicsResolution.R640x480,Scan=ScanMode.Interlaced,Widescreen=false});
 #endif
+#if IPL_HARDWARE_RUNNER
+#if IPL_RUNNER_576
+        const GraphicsResolution runnerResolution=GraphicsResolution.R640x576;
+#else
+        const GraphicsResolution runnerResolution=GraphicsResolution.R640x480;
+#endif
+#if IPL_RUNNER_PROGRESSIVE
+        const ScanMode runnerScan=ScanMode.Progressive;
+#else
+        const ScanMode runnerScan=ScanMode.Interlaced;
+#endif
+        device.ConfigureDisplay(new DisplayOptions {Resolution=runnerResolution,Scan=runnerScan,Widescreen=false});
+#endif
 #if IPL_HARDWARE_AA
         const bool hardwareAntialiasing=true;
 #else
@@ -61,14 +87,20 @@ internal static class Program
 #if IPL_VIDEO_MODE_REVIEW
         var scanReview=new VideoModeScanReview(shell,output,reviewResolution);
 #endif
-#if IPL_VISUAL_REVIEW || IPL_PERFORMANCE_REVIEW
+#if IPL_VISUAL_REVIEW || IPL_PERFORMANCE_REVIEW || IPL_HARDWARE_RUNNER
         // Repeatable native review pose; normal builds retain the interactive IPL.
+#if !IPL_RUNNER_CUBE
         shell.TurnTo(ShellFace.Options);shell.Row=1;shell.Tick(1);shell.Time=0;
+#if IPL_RUNNER_DETAIL
+        shell.TurnTo(ShellFace.Video);shell.Row=1;shell.Tick(1);
+        shell.Confirm();
+#endif
+#endif
 #endif
         using var canvas=new GameCubeCanvas(device);
         var renderer=new IplRenderer(canvas);
         var clock=new FrameClock {MaximumDeltaSeconds=.05f};
-#if IPL_PERFORMANCE_REVIEW
+#if IPL_PERFORMANCE_REVIEW || IPL_HARDWARE_RUNNER
         IplFrameProfiler.Start();
 #endif
 #if IPL_VISUAL_REVIEW && !IPL_AA_BENCHMARK
@@ -80,13 +112,13 @@ internal static class Program
             IplFrameProfiler.CaptureUs=IplFrameProfiler.BlurUs=0;
             Controller.Update();var pad=Controller.GetState(0);float dt=clock.Tick();
             shell.Tick(dt);
-#if IPL_VISUAL_REVIEW || IPL_PERFORMANCE_REVIEW
+#if IPL_VISUAL_REVIEW || IPL_PERFORMANCE_REVIEW || IPL_HARDWARE_RUNNER
             shell.Time=0;
 #endif
 #if IPL_VIDEO_MODE_REVIEW
             scanReview.Tick();
             scanReview.CheckAntialiasing(device.Display.Antialiasing,hardwareAntialiasing&&shell.Video.Applied.Resolution!=2);
-#else
+#elif !IPL_HARDWARE_RUNNER
             if(pad.Y.WasPressed&&!IplFrameProfiler.Active)IplFrameProfiler.Start();
             if(pad.Start.WasPressed) {shell.Video.Revert();if(!shell.Video.Pending)return 0;}
             if(pad.X.WasPressed)
@@ -130,6 +162,11 @@ internal static class Program
 #if IPL_PERFORMANCE_REVIEW
             // Keep the completed buffer stable for read-only debugger extraction.
             if(IplFrameProfiler.Ready)while(Clock.Timestamp>=0) { }
+#endif
+#if IPL_HARDWARE_RUNNER
+            // All rendering and timing finish before BBA reporting starts.
+            // Returning from the async entry point restores the resident loader.
+            if(IplFrameProfiler.Ready)return 0;
 #endif
 #if IPL_VISUAL_REVIEW && !IPL_AA_BENCHMARK
             // Freeze only after a complete native presentation, so window
