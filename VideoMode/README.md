@@ -37,6 +37,8 @@ Physical hardware performance has not been measured in this cloud session.
 - B from a face returns to the cube. Memory Card returns to Options first.
 - Both the analog stick and D-pad work, with delayed directional repeat.
 - X requests 640x480 interlaced, 4:3. Start exits after safely reverting a preview.
+- Z toggles a live performance overlay (off at startup). Y still records the
+  bounded frame-time sample independently.
 - Options > Motion disables idle floating and turning overshoot.
 
 Video settings use real `GraphicsDevice.ConfigureDisplay` calls between frames.
@@ -94,6 +96,17 @@ A pixel-identical reproduction and complete platform input/hardware acceptance
 must not be claimed without a captured native run against the reference images.
 
 ## Antialiasing and performance
+
+The Z overlay shows mean milliseconds over roughly 250 ms for glass/row geometry,
+transmission, optical rims, gloss, icons, backdrop capture, frosted rows, row tint,
+text, footer and the flat editor. These are exclusive CPU submission scopes;
+buffered GX work can finish later. Preparation and submission totals include
+their listed scopes and other frame setup. Finish/present includes the SDK's GX
+completion and VSync waits; GX wait alone is not total GPU execution time.
+Overlay CPU is measured separately from app submission. Frame and presentation
+waits include the overlay's GPU work. Hide it for baseline Y/bridge measurements.
+Values use reusable buffers and timing scopes stop collecting while hidden.
+[Native Z-button review and captures](Design/performance-overlay.md).
 
 For a BBA + GC Loader console, the [Windows hardware bridge](../tools/gamecube_bridge/README.md)
 uses a private Microsoft dev tunnel, resident ELF uploads and post-window native

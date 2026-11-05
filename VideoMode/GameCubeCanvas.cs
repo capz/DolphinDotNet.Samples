@@ -79,6 +79,7 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
     }
     internal void Begin()=>draw.Begin();
     internal void End()=>draw.End();
+    public void Section(IplRenderPhase phase)=>IplPerformanceOverlay.Section(phase);
     private static Color32 Color(uint c)=>new Color32((byte)(c>>24),(byte)(c>>16),(byte)(c>>8),(byte)c);
     private Vector3 World(IplPoint p)=>new Vector3((p.X-320)*scale,(240-p.Y)*scale,0);
     public void BeginGlass(){glassCount=0;}
@@ -161,6 +162,19 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
             draw.DrawTexture(atlas,new RectF(ch%16*32,ch/16*40,32,40),
                 new RectF(offset+(x+advance*co)*scale,(y+advance*si)*scale,32*factor*stretch*scale,40*factor*scale),Color(color),angle,new Vector2(0,0));
             advance+=IplFontData.Widths[ch]*factor*stretch;
+        }
+    }
+    internal void TextAscii(byte[] value,int length,float right,float y,float size,uint color)
+    {
+        float factor=size/28,width=0;
+        for(int i=0;i<length;i++)width+=IplFontData.Widths[value[i]-32]*factor;
+        float x=right-width;
+        for(int i=0;i<length;i++)
+        {
+            int ch=value[i]-32;
+            draw.DrawTexture(atlas,new RectF(ch%16*32,ch/16*40,32,40),
+                new RectF(offset+x*scale,y*scale,32*factor*scale,40*factor*scale),Color(color),0,new Vector2(0,0));
+            x+=IplFontData.Widths[ch]*factor;
         }
     }
     public void Dispose()

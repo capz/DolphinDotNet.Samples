@@ -48,6 +48,7 @@ internal static class Program
     {
         var device=GraphicsDevice.Default;
         DebugOverlay.TextVisible=false;
+        DebugOverlay.PerformanceVisible=false;
 #if IPL_AA_BENCHMARK
         DebugOverlay.PerformanceVisible=true;
 #endif
@@ -108,7 +109,7 @@ internal static class Program
 #endif
         while(true)
         {
-            long frameStart=IplFrameProfiler.Active?Clock.Timestamp:0;
+            long frameStart=Clock.Timestamp;
             IplFrameProfiler.CaptureUs=IplFrameProfiler.BlurUs=0;
             Controller.Update();var pad=Controller.GetState(0);float dt=clock.Tick();
             shell.Tick(dt);
@@ -119,6 +120,13 @@ internal static class Program
             scanReview.Tick();
             scanReview.CheckAntialiasing(device.Display.Antialiasing,hardwareAntialiasing&&shell.Video.Applied.Resolution!=2);
 #elif !IPL_HARDWARE_RUNNER
+            if(pad.Z.WasPressed)
+            {
+                // The SDK also toggles its generic panel in Controller.Update.
+                // Use the app's detailed panel instead of drawing both.
+                DebugOverlay.PerformanceVisible=false;
+                IplPerformanceOverlay.Stats.Toggle();
+            }
             if(pad.Y.WasPressed&&!IplFrameProfiler.Active)IplFrameProfiler.Start();
             if(pad.Start.WasPressed) {shell.Video.Revert();if(!shell.Video.Pending)return 0;}
             if(pad.X.WasPressed)
@@ -135,12 +143,14 @@ internal static class Program
                 shell.Direction(x,y,dt);
             }
 #endif
-            long phaseStart=IplFrameProfiler.Active?Clock.Timestamp:0;
+            IplPerformanceOverlay.BeginFrame();
+            bool timing=IplFrameProfiler.Active||IplPerformanceOverlay.Stats.Visible;
+            long phaseStart=timing?Clock.Timestamp:0;
             canvas.Prepare();renderer.Prepare(shell);
-            int prepare=IplFrameProfiler.Active?IplFrameProfiler.Since(phaseStart):0;
-            phaseStart=IplFrameProfiler.Active?Clock.Timestamp:0;
+            int prepare=timing?IplFrameProfiler.Since(phaseStart):0;
+            phaseStart=timing?Clock.Timestamp:0;
             device.BeginFrame(Color32.Black);canvas.Begin();renderer.Present(shell);
-            if(!IplFrameProfiler.Active&&IplFrameProfiler.Status.Length>0)
+            if(!IplPerformanceOverlay.Stats.Visible&&!IplFrameProfiler.Active&&IplFrameProfiler.Status.Length>0)
             {
                 canvas.Text(IplFrameProfiler.Status,12,6,12,0x98d8c9ffu,0);
                 canvas.Text(IplFrameProfiler.Summary,12,21,12,0x98d8c9ffu,0);
@@ -149,12 +159,19 @@ internal static class Program
             canvas.Text(scanReview.Caption,12,6,16,scanReview.Failed?0xff4545ffu:0x7bffb0ffu,0);
 #endif
             canvas.End();
-            int submit=IplFrameProfiler.Active?IplFrameProfiler.Since(phaseStart):0;
-            phaseStart=IplFrameProfiler.Active?Clock.Timestamp:0;
+            int submit=timing?IplFrameProfiler.Since(phaseStart):0;
+            if(IplPerformanceOverlay.Stats.Visible)
+            {
+                long overlayStart=Clock.Timestamp;
+                canvas.Begin();IplPerformanceOverlay.Draw(canvas);canvas.End();
+                IplPerformanceOverlay.Stats.Current[IplPerformanceStats.Overlay]=IplFrameProfiler.Since(overlayStart);
+            }
+            phaseStart=timing?Clock.Timestamp:0;
             device.EndFrame();
+            int end=timing?IplFrameProfiler.Since(phaseStart):0;
+            IplPerformanceOverlay.CompleteFrame(frameStart,prepare,submit,end);
             if(IplFrameProfiler.Active)
             {
-                int end=IplFrameProfiler.Since(phaseStart);
                 IplFrameProfiler.Record(frameStart,prepare,submit,end,device,shell);
             }
             if(IplFrameProfiler.NeedsExport&&!shell.Video.Pending)

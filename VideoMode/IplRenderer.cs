@@ -3,6 +3,7 @@ using System;
 // The native adapter and the visual proof exporter consume the same geometry.
 internal interface IIplCanvas
 {
+    void Section(IplRenderPhase phase);
     void Triangle(float ax,float ay,float bx,float by,float cx,float cy,uint color);
     void Text(string value,float x,float y,float size,uint color,float angle,float stretch=1);
     void BeginGlass();
@@ -124,6 +125,7 @@ internal sealed class IplRenderer
     internal void Prepare(IplShell shell)
     {
         if(shell.Editing)return;
+        c.Section(IplRenderPhase.GlassGeometry);
         float t=shell.Turn, ease=1-(float)Math.Pow(1-t,3);
         if(t<1)ease+=(float)Math.Sin(t*3.1415926f)*.045f;
         yaw=PoseYaw(shell.PreviousFace)+(PoseYaw(shell.Face)-PoseYaw(shell.PreviousFace))*ease;
@@ -136,29 +138,40 @@ internal sealed class IplRenderer
         cosYaw=(float)Math.Cos(yaw);sinYaw=(float)Math.Sin(yaw);cosPitch=(float)Math.Cos(pitch);sinPitch=(float)Math.Sin(pitch);
         cy=202+(shell.ReducedMotion?0:(float)Math.Sin(shell.Time*.7f)*3);scale=106;
         Cube();
+        c.Section(IplRenderPhase.FrostGeometry);
         c.BeginPanels();
         if(shell.Page==ShellPage.Face&&shell.Face!=ShellFace.Play&&shell.Face!=ShellFace.Memory)
             for(int i=0;i<shell.Rows;i++)FacePanel(shell,i);
         c.EndPanels();
+        c.Section(IplRenderPhase.None);
     }
     internal void Present(IplShell shell)
     {
         Rect(0,0,640,480,0x000000ff);
-        if(shell.Editing) { Detail(shell); Footer(shell); return; }
+        if(shell.Editing)
+        {
+            c.Section(IplRenderPhase.Editor);Detail(shell);
+            c.Section(IplRenderPhase.Footer);Footer(shell);c.Section(IplRenderPhase.None);return;
+        }
+        c.Section(IplRenderPhase.Transmission);
         c.DrawGlass();
-        GlassRims();c.DrawReflections();
+        c.Section(IplRenderPhase.Rims);GlassRims();
+        c.Section(IplRenderPhase.Reflections);c.DrawReflections();
         if(shell.Turn>.85f)
         {
-            FaceIcon(shell);
+            c.Section(IplRenderPhase.Icons);FaceIcon(shell);
             if(shell.Page==ShellPage.Face&&shell.Face!=ShellFace.Play&&shell.Face!=ShellFace.Memory)
             {
-                c.CaptureBackdrop();c.DrawFrostedPanels();
+                c.Section(IplRenderPhase.Capture);c.CaptureBackdrop();
+                c.Section(IplRenderPhase.Frost);c.DrawFrostedPanels();
+                c.Section(IplRenderPhase.PanelTint);
                 for(int i=0;i<shell.Rows;i++)if(shell.Face!=ShellFace.Play&&shell.Face!=ShellFace.Memory)PanelTint(shell,i);
             }
+            c.Section(IplRenderPhase.Labels);
             if(shell.Page==ShellPage.Cube) MenuLabels(shell);
             else FaceMenu(shell);
         }
-        Footer(shell);
+        c.Section(IplRenderPhase.Footer);Footer(shell);c.Section(IplRenderPhase.None);
     }
     private void Cube()
     {

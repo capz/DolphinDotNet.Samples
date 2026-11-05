@@ -62,6 +62,7 @@ internal static class Program
         Check(output.Current.Scan==1,"Rollback restores resolved scan mode");
         Console.WriteLine("Video mode menu: navigation, apply/keep/revert, timeout, invalid modes, allocation rollback and safe mode passed.");
         IplShellTests.Run();
+        IplPerformanceStatsTests.Run();
         float last=1;
         for(int i=0;i<=160000;i++)
         {

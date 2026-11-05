@@ -1,0 +1,38 @@
+{
+  "environment": "Cloud Dolphin 2503, Mesa software OpenGL, Xvfb; not physical hardware",
+  "build": "Release native, default interactive configuration, published SDK 0.1.0-preview.217.1",
+  "dol_sha256": "b5703fc6a889bc0a100f3138097bf0e9bfed740e707ea88b252bc21137dc22ef",
+  "screenshots": "Full unscaled 640x480 X11 Dolphin client, emulator SIGSTOP before capture; saved PNGs visually inspected",
+  "events": [
+    {
+      "capture": "01-default-hidden",
+      "completed_frames": 290,
+      "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)"
+    },
+    {
+      "capture": "02-z-held-visible",
+      "completed_frames": 352,
+      "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)"
+    },
+    {
+      "capture": "03-options-visible",
+      "completed_frames": 388,
+      "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)"
+    },
+    {
+      "capture": "04-editor-visible",
+      "completed_frames": 478,
+      "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)"
+    },
+    {
+      "capture": "05-z-hidden-editor",
+      "completed_frames": 600,
+      "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)"
+    },
+    {
+      "capture": "06-reopened-options",
+      "completed_frames": 785,
+      "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)"
+    }
+  ]
+}

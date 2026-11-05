@@ -6,6 +6,7 @@ using System.Text;
 // Geometry inspection aid, not a Dolphin screenshot. Native reflection textures are not exported.
 internal sealed class IplProof : IIplCanvas
 {
+    public void Section(IplRenderPhase phase) { }
     private readonly StringBuilder shapes=new StringBuilder();
     private readonly StringBuilder glass=new StringBuilder(),panels=new StringBuilder();
     private string backdrop="";
