@@ -1,0 +1,89 @@
+{
+  "target": "Dolphin BBA simulation, NOT physical GameCube",
+  "rows": 96,
+  "peer": [
+    "10.0.2.2",
+    49790
+  ],
+  "summary": {
+    "frame_us": {
+      "mean": 66730.88541666667,
+      "median": 66731.0,
+      "p95": 66732,
+      "max": 66733
+    },
+    "prepare_us": {
+      "mean": 9244.25,
+      "median": 9244.0,
+      "p95": 9246,
+      "max": 9248
+    },
+    "submit_us": {
+      "mean": 44827.135416666664,
+      "median": 44827.0,
+      "p95": 44840,
+      "max": 44844
+    },
+    "end_us": {
+      "mean": 12638.90625,
+      "median": 12639.0,
+      "p95": 12653,
+      "max": 12655
+    },
+    "gpu_wait_us": {
+      "mean": 3.25,
+      "median": 3.0,
+      "p95": 4,
+      "max": 4
+    },
+    "retrace_us": {
+      "mean": 12622.510416666666,
+      "median": 12623.0,
+      "p95": 12636,
+      "max": 12639
+    },
+    "capture_us": {
+      "mean": 616.1875,
+      "median": 616.0,
+      "p95": 618,
+      "max": 618
+    },
+    "blur_us": {
+      "mean": 1692.4166666666667,
+      "median": 1693.0,
+      "p95": 1693,
+      "max": 1693
+    },
+    "draws": {
+      "mean": 102,
+      "median": 102.0,
+      "p95": 102,
+      "max": 102
+    },
+    "triangles": {
+      "mean": 17504,
+      "median": 17504.0,
+      "p95": 17504,
+      "max": 17504
+    },
+    "begin_copy_us": {
+      "mean": 3,
+      "median": 3.0,
+      "p95": 3,
+      "max": 3
+    },
+    "gate_us": {
+      "mean": 0,
+      "median": 0.0,
+      "p95": 0,
+      "max": 0
+    },
+    "active_us": {
+      "mean": 54108.375,
+      "median": 54109.0,
+      "p95": 54122,
+      "max": 54124
+    }
+  },
+  "sha256": "345a2f8fe3c03d7edb6807084744f8b1f736c7961b146e42678d4c2ba83e487c"
+}

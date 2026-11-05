@@ -1,0 +1,348 @@
+[
+  {
+    "command": [
+      "python3",
+      "ci/validate_samples.py"
+    ],
+    "exit_code": 0,
+    "log": "/workspace/scratch/ipl-validation-round2/00.log"
+  },
+  {
+    "command": [
+      "python3",
+      "ci/validate_run_configs.py"
+    ],
+    "exit_code": 0,
+    "log": "/workspace/scratch/ipl-validation-round2/01.log"
+  },
+  {
+    "command": [
+      "python3",
+      "ci/validate_sample_tests.py"
+    ],
+    "exit_code": 0,
+    "log": "/workspace/scratch/ipl-validation-round2/02.log"
+  },
+  {
+    "command": [
+      "dotnet",
+      "build",
+      "/workspace/DolphinDotNet.Samples/AsyncNetworking/AsyncNetworking.csproj",
+      "-c",
+      "Release",
+      "-p:DndBuildNative=false"
+    ],
+    "exit_code": 0,
+    "log": "/workspace/scratch/ipl-validation-round2/03.log"
+  },
+  {
+    "command": [
+      "dotnet",
+      "build",
+      "/workspace/DolphinDotNet.Samples/AudioDemo/AudioDemo.csproj",
+      "-c",
+      "Release",
+      "-p:DndBuildNative=false"
+    ],
+    "exit_code": 0,
+    "log": "/workspace/scratch/ipl-validation-round2/04.log"
+  },
+  {
+    "command": [
+      "dotnet",
+      "build",
+      "/workspace/DolphinDotNet.Samples/DiscBrowser/DiscBrowser.csproj",
+      "-c",
+      "Release",
+      "-p:DndBuildNative=false"
+    ],
+    "exit_code": 0,
+    "log": "/workspace/scratch/ipl-validation-round2/05.log"
+  },
+  {
+    "command": [
+      "dotnet",
+      "build",
+      "/workspace/DolphinDotNet.Samples/Fox/Fox.csproj",
+      "-c",
+      "Release",
+      "-p:DndBuildNative=false"
+    ],
+    "exit_code": 0,
+    "log": "/workspace/scratch/ipl-validation-round2/06.log"
+  },
+  {
+    "command": [
+      "dotnet",
+      "build",
+      "/workspace/DolphinDotNet.Samples/GoogleLogoAram/GoogleLogoAram.csproj",
+      "-c",
+      "Release",
+      "-p:DndBuildNative=false"
+    ],
+    "exit_code": 0,
+    "log": "/workspace/scratch/ipl-validation-round2/07.log"
+  },
+  {
+    "command": [
+      "dotnet",
+      "build",
+      "/workspace/DolphinDotNet.Samples/GreenMen/GreenMen.csproj",
+      "-c",
+      "Release",
+      "-p:DndBuildNative=false"
+    ],
+    "exit_code": 0,
+    "log": "/workspace/scratch/ipl-validation-round2/08.log"
+  },
+  {
+    "command": [
+      "dotnet",
+      "build",
+      "/workspace/DolphinDotNet.Samples/HardwareDiagnostics/HardwareDiagnostics.csproj",
+      "-c",
+      "Release",
+      "-p:DndBuildNative=false"
+    ],
+    "exit_code": 0,
+    "log": "/workspace/scratch/ipl-validation-round2/09.log"
+  },
+  {
+    "command": [
+      "dotnet",
+      "build",
+      "/workspace/DolphinDotNet.Samples/HelloGameCube/HelloGameCube.csproj",
+      "-c",
+      "Release",
+      "-p:DndBuildNative=false"
+    ],
+    "exit_code": 0,
+    "log": "/workspace/scratch/ipl-validation-round2/10.log"
+  },
+  {
+    "command": [
+      "dotnet",
+      "build",
+      "/workspace/DolphinDotNet.Samples/HttpTexture/HttpTexture.csproj",
+      "-c",
+      "Release",
+      "-p:DndBuildNative=false"
+    ],
+    "exit_code": 0,
+    "log": "/workspace/scratch/ipl-validation-round2/11.log"
+  },
+  {
+    "command": [
+      "dotnet",
+      "build",
+      "/workspace/DolphinDotNet.Samples/Kart/Kart.csproj",
+      "-c",
+      "Release",
+      "-p:DndBuildNative=false"
+    ],
+    "exit_code": 0,
+    "log": "/workspace/scratch/ipl-validation-round2/12.log"
+  },
+  {
+    "command": [
+      "dotnet",
+      "build",
+      "/workspace/DolphinDotNet.Samples/ManagedGameCube/ManagedGameCube.csproj",
+      "-c",
+      "Release",
+      "-p:DndBuildNative=false"
+    ],
+    "exit_code": 0,
+    "log": "/workspace/scratch/ipl-validation-round2/13.log"
+  },
+  {
+    "command": [
+      "dotnet",
+      "build",
+      "/workspace/DolphinDotNet.Samples/Pong/Pong.csproj",
+      "-c",
+      "Release",
+      "-p:DndBuildNative=false"
+    ],
+    "exit_code": 0,
+    "log": "/workspace/scratch/ipl-validation-round2/14.log"
+  },
+  {
+    "command": [
+      "dotnet",
+      "build",
+      "/workspace/DolphinDotNet.Samples/ShaderDemo/ShaderDemo.csproj",
+      "-c",
+      "Release",
+      "-p:DndBuildNative=false"
+    ],
+    "exit_code": 0,
+    "log": "/workspace/scratch/ipl-validation-round2/15.log"
+  },
+  {
+    "command": [
+      "dotnet",
+      "build",
+      "/workspace/DolphinDotNet.Samples/Snake/Snake.csproj",
+      "-c",
+      "Release",
+      "-p:DndBuildNative=false"
+    ],
+    "exit_code": 0,
+    "log": "/workspace/scratch/ipl-validation-round2/16.log"
+  },
+  {
+    "command": [
+      "dotnet",
+      "build",
+      "/workspace/DolphinDotNet.Samples/StorageIntegrity/StorageIntegrity.csproj",
+      "-c",
+      "Release",
+      "-p:DndBuildNative=false"
+    ],
+    "exit_code": 0,
+    "log": "/workspace/scratch/ipl-validation-round2/17.log"
+  },
+  {
+    "command": [
+      "dotnet",
+      "run",
+      "--project",
+      "/workspace/DolphinDotNet.Samples/tests/DiscBrowserNavigationTests/DiscBrowserNavigationTests.csproj",
+      "-c",
+      "Release"
+    ],
+    "exit_code": 0,
+    "log": "/workspace/scratch/ipl-validation-round2/18.log"
+  },
+  {
+    "command": [
+      "dotnet",
+      "run",
+      "--project",
+      "/workspace/DolphinDotNet.Samples/tests/FoxRulesSmoke/FoxRulesSmoke.csproj",
+      "-c",
+      "Release"
+    ],
+    "exit_code": 0,
+    "log": "/workspace/scratch/ipl-validation-round2/19.log"
+  },
+  {
+    "command": [
+      "dotnet",
+      "run",
+      "--project",
+      "/workspace/DolphinDotNet.Samples/tests/GreenMenRulesSmoke/GreenMenRulesSmoke.csproj",
+      "-c",
+      "Release"
+    ],
+    "exit_code": 0,
+    "log": "/workspace/scratch/ipl-validation-round2/20.log"
+  },
+  {
+    "command": [
+      "dotnet",
+      "build",
+      "/workspace/DolphinDotNet.Samples/tests/KartInputSmoke/KartInputSmoke.csproj",
+      "-c",
+      "Release"
+    ],
+    "exit_code": 0,
+    "log": "/workspace/scratch/ipl-validation-round2/21.log"
+  },
+  {
+    "command": [
+      "dotnet",
+      "run",
+      "--project",
+      "/workspace/DolphinDotNet.Samples/tests/KartItemSmoke/KartItemSmoke.csproj",
+      "-c",
+      "Release"
+    ],
+    "exit_code": 0,
+    "log": "/workspace/scratch/ipl-validation-round2/22.log"
+  },
+  {
+    "command": [
+      "dotnet",
+      "build",
+      "/workspace/DolphinDotNet.Samples/tests/KartNetworkSmoke/KartNetworkSmoke.csproj",
+      "-c",
+      "Release"
+    ],
+    "exit_code": 0,
+    "log": "/workspace/scratch/ipl-validation-round2/23.log"
+  },
+  {
+    "command": [
+      "dotnet",
+      "run",
+      "--project",
+      "/workspace/DolphinDotNet.Samples/tests/KartRulesSmoke/KartRulesSmoke.csproj",
+      "-c",
+      "Release"
+    ],
+    "exit_code": 0,
+    "log": "/workspace/scratch/ipl-validation-round2/24.log"
+  },
+  {
+    "command": [
+      "dotnet",
+      "run",
+      "--project",
+      "/workspace/DolphinDotNet.Samples/tests/PongRulesSmoke/PongRulesSmoke.csproj",
+      "-c",
+      "Release"
+    ],
+    "exit_code": 0,
+    "log": "/workspace/scratch/ipl-validation-round2/25.log"
+  },
+  {
+    "command": [
+      "dotnet",
+      "run",
+      "--project",
+      "/workspace/DolphinDotNet.Samples/tests/SampleDownloadTests/SampleDownloadTests.csproj",
+      "-c",
+      "Release"
+    ],
+    "exit_code": 0,
+    "log": "/workspace/scratch/ipl-validation-round2/26.log"
+  },
+  {
+    "command": [
+      "dotnet",
+      "run",
+      "--project",
+      "/workspace/DolphinDotNet.Samples/tests/SampleRecordsTests/SampleRecordsTests.csproj",
+      "-c",
+      "Release"
+    ],
+    "exit_code": 0,
+    "log": "/workspace/scratch/ipl-validation-round2/27.log"
+  },
+  {
+    "command": [
+      "dotnet",
+      "run",
+      "--project",
+      "/workspace/DolphinDotNet.Samples/tests/SnakeRulesSmoke/SnakeRulesSmoke.csproj",
+      "-c",
+      "Release"
+    ],
+    "exit_code": 0,
+    "log": "/workspace/scratch/ipl-validation-round2/28.log"
+  },
+  {
+    "command": [
+      "dotnet",
+      "run",
+      "--project",
+      "/workspace/DolphinDotNet.Samples/tests/VideoModeMenuTests/VideoModeMenuTests.csproj",
+      "-c",
+      "Release"
+    ],
+    "exit_code": 0,
+    "log": "/workspace/scratch/ipl-validation-round2/29.log"
+  }
+]

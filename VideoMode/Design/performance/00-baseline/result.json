@@ -1,0 +1,88 @@
+{
+  "variant": "baseline",
+  "environment": "cloud Dolphin 2503 / Mesa llvmpipe, NOT physical hardware",
+  "clock": "native guest monotonic microseconds; emulated CPU/GPU timing does not establish hardware performance",
+  "method": "30 warmup + 96 recorded frames, fixed Options pose, no interrupts or dumps during measurement; Y logger uses the same buffer",
+  "dol_sha256": "e1bb74fc5760228615cdfcffb96061c495452e6a162bbda36730ea9bf20d716a",
+  "frames": 96,
+  "summary": {
+    "frame_us": {
+      "mean": 150147.63541666666,
+      "median": 150148.0,
+      "p95": 150148,
+      "max": 150150
+    },
+    "prepare_us": {
+      "mean": 87471.63541666667,
+      "median": 87469.5,
+      "p95": 87492,
+      "max": 87492
+    },
+    "submit_us": {
+      "mean": 60288.354166666664,
+      "median": 60288.5,
+      "p95": 60303,
+      "max": 60304
+    },
+    "end_us": {
+      "mean": 2360.7708333333335,
+      "median": 2362.0,
+      "p95": 2388,
+      "max": 2393
+    },
+    "gpu_wait_us": {
+      "mean": 3.1354166666666665,
+      "median": 3.0,
+      "p95": 4,
+      "max": 4
+    },
+    "retrace_us": {
+      "mean": 2344.8854166666665,
+      "median": 2346.0,
+      "p95": 2372,
+      "max": 2377
+    },
+    "capture_us": {
+      "mean": 616.1458333333334,
+      "median": 616.0,
+      "p95": 618,
+      "max": 618
+    },
+    "blur_us": {
+      "mean": 1104.2395833333333,
+      "median": 1104.0,
+      "p95": 1106,
+      "max": 1106
+    },
+    "draws": {
+      "mean": 128,
+      "median": 128.0,
+      "p95": 128,
+      "max": 128
+    },
+    "triangles": {
+      "mean": 31300,
+      "median": 31300.0,
+      "p95": 31300,
+      "max": 31300
+    },
+    "begin_copy_us": {
+      "mean": 3,
+      "median": 3.0,
+      "p95": 3,
+      "max": 3
+    },
+    "gate_us": {
+      "mean": 0,
+      "median": 0.0,
+      "p95": 0,
+      "max": 0
+    },
+    "active_us": {
+      "mean": 147802.75,
+      "median": 147801.5,
+      "p95": 147831,
+      "max": 147838
+    }
+  }
+}

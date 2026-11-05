@@ -1,0 +1,11 @@
+{
+  "target_kind": "gamecube",
+  "console_address": "192.168.1.80",
+  "launcher_port": 4299,
+  "api_port": 6280,
+  "callback_port": 6281,
+  "capture_timeout": 120,
+  "ready_timeout": 30,
+  "api_token_file": "api-token.txt",
+  "artifacts": "results"
+}

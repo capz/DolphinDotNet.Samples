@@ -1,0 +1,19 @@
+{
+  "launcher_revision": "6ea774fdf377324e587ee19b48ebc426207bb001",
+  "toolchain_image": "ghcr.io/extremscorner/libogc2@sha256:13bb658d3f18903816617223f5d7c6f776d3db3ea806aae67f8d35a7a69d4c85",
+  "validation": "Native DOL in Dolphin emulated BBA and production C receiver protocol fixture; NOT physical hardware or live Microsoft tunnel activation.",
+  "sdk": "0.1.0-preview.217.1",
+  "native_builds": {
+    "initial": {
+      "dol": "aaeec8a6a19bf436402c392681cf5a0d9e714fa36fc846b9ef40ee8b2d0aa0ab",
+      "elf": "5ef43c414ed6a7f4ab3d69348945ababc58a33e51a9ea18c635ee9727a3c6708"
+    },
+    "network_preinitialized": {
+      "dol": "85300545964ba11a45e11e1058e6c7994176ffab726d45180e887ef4d43d4ac1",
+      "elf": "325a9031f173026e5f1a46b7d1536088105125e679188b76b3c71766729df8f2"
+    }
+  },
+  "historical_wire_version": 1,
+  "current_wire_version": 2,
+  "note": "DNDP v2 additionally authenticates/checks resolved output height independently of EFB dimensions."
+}

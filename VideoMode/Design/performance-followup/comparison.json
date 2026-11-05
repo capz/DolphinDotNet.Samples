@@ -1,0 +1,37 @@
+{
+  "01-view-space": {
+    "reference": "00-current",
+    "changed_pixels": 0,
+    "max_channel_error": 0
+  },
+  "02-static-curves": {
+    "reference": "00-current",
+    "changed_pixels": 0,
+    "max_channel_error": 0
+  },
+  "03-direct-rectangles": {
+    "reference": "00-current",
+    "changed_pixels": 0,
+    "max_channel_error": 0
+  },
+  "05-editor-after": {
+    "reference": "04-editor-before",
+    "changed_pixels": 0,
+    "max_channel_error": 0
+  },
+  "07-canonical": {
+    "reference": "00-current",
+    "changed_pixels": 0,
+    "max_channel_error": 0
+  },
+  "08-angle-after": {
+    "reference": "06-angle-before",
+    "changed_pixels": 5,
+    "max_channel_error": 1
+  },
+  "09-editor-final": {
+    "reference": "04-editor-before",
+    "changed_pixels": 0,
+    "max_channel_error": 0
+  }
+}

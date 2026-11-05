@@ -1,0 +1,91 @@
+{
+  "variant": "skip-transparent-triangles-oblique",
+  "environment": "cloud Dolphin 2503 / Mesa llvmpipe, NOT physical hardware",
+  "clock": "native guest monotonic microseconds; emulated CPU/GPU timing does not establish hardware performance",
+  "method": "30 warmup + 96 recorded frames, fixed Options pose, no interrupts or dumps during measurement; Y logger uses the same buffer",
+  "dol_sha256": "a1ac8323877e309fca3c5bbd3068bb290b3b6470a74a2be162302aa00f02da1f",
+  "frames": 96,
+  "summary": {
+    "frame_us": {
+      "mean": 100098.02083333333,
+      "median": 100098.0,
+      "p95": 100098,
+      "max": 100100
+    },
+    "prepare_us": {
+      "mean": 20901.916666666668,
+      "median": 20902.0,
+      "p95": 20902,
+      "max": 20902
+    },
+    "submit_us": {
+      "mean": 74664.72916666667,
+      "median": 74665.0,
+      "p95": 74677,
+      "max": 74680
+    },
+    "end_us": {
+      "mean": 4510.802083333333,
+      "median": 4510.5,
+      "p95": 4523,
+      "max": 4527
+    },
+    "gpu_wait_us": {
+      "mean": 3.2604166666666665,
+      "median": 3.0,
+      "p95": 4,
+      "max": 4
+    },
+    "retrace_us": {
+      "mean": 4494.458333333333,
+      "median": 4494.0,
+      "p95": 4507,
+      "max": 4511
+    },
+    "capture_us": {
+      "mean": 615.7916666666666,
+      "median": 616.0,
+      "p95": 618,
+      "max": 618
+    },
+    "blur_us": {
+      "mean": 1690.1458333333333,
+      "median": 1690.0,
+      "p95": 1691,
+      "max": 1691
+    },
+    "draws": {
+      "mean": 122,
+      "median": 122.0,
+      "p95": 122,
+      "max": 122
+    },
+    "triangles": {
+      "mean": 24836,
+      "median": 24836.0,
+      "p95": 24836,
+      "max": 24836
+    },
+    "begin_copy_us": {
+      "mean": 3,
+      "median": 3.0,
+      "p95": 3,
+      "max": 3
+    },
+    "gate_us": {
+      "mean": 0,
+      "median": 0.0,
+      "p95": 0,
+      "max": 0
+    },
+    "active_us": {
+      "mean": 95603.5625,
+      "median": 95604.0,
+      "p95": 95616,
+      "max": 95619
+    }
+  },
+  "native_status": "Captured in RAM; SD export disabled in this build",
+  "native_summary": "Frame mean 100098 us | p95 100098 us",
+  "completion_pc": "8008E1B0"
+}

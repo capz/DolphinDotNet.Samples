@@ -1,0 +1,87 @@
+{
+  "resolution": 480,
+  "native_fields": true,
+  "success": false,
+  "error": "Missing native phases: [1, 4, 5, 7, 10, 12, 18]",
+  "sdk_version": "0.1.0-preview.217.1",
+  "dol_sha256": "6f5ff5f91bb6366387ccf30256efb7ea73b04b5e34bf75c07da04edfe2de73fc",
+  "phases": [
+    {
+      "caption": "SCAN 02 PREVIEW P ACTUAL 480P",
+      "resolved_mode": "480P",
+      "frame": 32,
+      "native_png": "scan-02-480p-native.png",
+      "sha256": "59154755836413c82e358fed27c03294ca01cce0c603238968ae7e7e863929a7"
+    },
+    {
+      "caption": "SCAN 03 KEEP P ACTUAL 480P",
+      "resolved_mode": "480P",
+      "frame": 48,
+      "native_png": "scan-03-480p-native.png",
+      "sha256": "638e0fb0a82513a1f68f1907ea1dacb081d1fdb2e1d6bcf4839cfbb3e000930b"
+    },
+    {
+      "caption": "SCAN 06 PREVIEW P ACTUAL 480P",
+      "resolved_mode": "480P",
+      "frame": 96,
+      "native_png": "scan-06-480p-native.png",
+      "sha256": "208527cf06e5eafd8e15d0d343984ed412d532bae4be2834ba523a013e93bf8c"
+    },
+    {
+      "caption": "SCAN 08 PREVIEW P ACTUAL 480P",
+      "resolved_mode": "480P",
+      "frame": 128,
+      "native_png": "scan-08-480p-native.png",
+      "sha256": "5e3d0165270e3d3df8949ce9cdf3d09c132d2a0923cf76578b3bf8c51193f721"
+    },
+    {
+      "caption": "SCAN 09 KEEP P ACTUAL 480P",
+      "resolved_mode": "480P",
+      "frame": 144,
+      "native_png": "scan-09-480p-native.png",
+      "sha256": "e2e99e86a687b66997096fc84c28142169d6d0f2bc422a1cc0b255ed41e9c7d1"
+    },
+    {
+      "caption": "SCAN 11 BACK TO P ACTUAL 480P",
+      "resolved_mode": "480P",
+      "frame": 176,
+      "native_png": "scan-11-480p-native.png",
+      "sha256": "57e64f37f7878e8d174e250eb6c3a621d80ab6041b223c5df39402641ef7ccf0"
+    },
+    {
+      "caption": "SCAN 13 TIMEOUT TO P ACTUAL 480P",
+      "resolved_mode": "480P",
+      "frame": 208,
+      "native_png": "scan-13-480p-native.png",
+      "sha256": "270b38c00e12953322dcb4f9f63683a75885f96568734e7484ae331507ecaf6c"
+    },
+    {
+      "caption": "SCAN 14 PREVIEW OTHER P ACTUAL 576P",
+      "resolved_mode": "576P",
+      "frame": 224,
+      "native_png": "scan-14-576p-native.png",
+      "sha256": "db195d51d7fe2d5280609a6f8afb4d3f754ca0f099f722761ee6090530faa387"
+    },
+    {
+      "caption": "SCAN 15 KEEP OTHER P ACTUAL 576P",
+      "resolved_mode": "576P",
+      "frame": 240,
+      "native_png": "scan-15-576p-native.png",
+      "sha256": "760935689de377257a2866a377f6c8b89ed7529af333ec2aef1189284af19d72"
+    },
+    {
+      "caption": "SCAN 16 PREVIEW ORIGINAL P ACTUAL 480P",
+      "resolved_mode": "480P",
+      "frame": 256,
+      "native_png": "scan-16-480p-native.png",
+      "sha256": "ce7808fc6cc102c347eddff1bc843ecfb8cde705e97ab6c8d15d9d45417c3638"
+    },
+    {
+      "caption": "SCAN 17 BACK OTHER P ACTUAL 576P",
+      "resolved_mode": "576P",
+      "frame": 272,
+      "native_png": "scan-17-576p-native.png",
+      "sha256": "b25d963454e5bf5743bb0d0c203467d314510df8aa955fddfbdc7c0ca21d9d6b"
+    }
+  ]
+}

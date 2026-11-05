@@ -62,6 +62,18 @@ internal static class Program
         Check(output.Current.Scan==1,"Rollback restores resolved scan mode");
         Console.WriteLine("Video mode menu: navigation, apply/keep/revert, timeout, invalid modes, allocation rollback and safe mode passed.");
         IplShellTests.Run();
+        IplPerformanceStatsTests.Run();
+        IplRimCommandsTests.Run();
+        float last=1;
+        for(int i=0;i<=160000;i++)
+        {
+            float x=i/10000f,value=IplLighting.ExpNegative(x);
+            Check(value>=0&&value<=last,"Lighting lookup must stay positive and monotonic");
+            Check(Math.Abs(value-Math.Exp(-x))<.000123,"Lighting approximation exceeds its error bound");
+            last=value;
+        }
+        Check(IplLighting.ExpNegative(100)==0,"Negligible light tails must be bounded");
+        Console.WriteLine("Lighting lookup: monotonicity and absolute error bound passed.");
         if(args.Length==2&&args[0]=="--proof") IplProof.Write(args[1]);
     }
 }

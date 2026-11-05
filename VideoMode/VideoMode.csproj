@@ -3,19 +3,55 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
+    <IplRunnerScene Condition="'$(IplRunnerScene)' == ''">Options</IplRunnerScene>
+    <IplRunnerVideo Condition="'$(IplRunnerVideo)' == ''">480i</IplRunnerVideo>
+    <IplRunnerPort Condition="'$(IplRunnerPort)' == ''">6281</IplRunnerPort>
+    <DefineConstants Condition="'$(IplHardwareRunner)' == 'true'">$(DefineConstants);IPL_HARDWARE_RUNNER</DefineConstants>
+    <DefineConstants Condition="'$(IplHardwareRunner)' == 'true' and '$(IplRunnerScene)' == 'Cube'">$(DefineConstants);IPL_RUNNER_CUBE</DefineConstants>
+    <DefineConstants Condition="'$(IplHardwareRunner)' == 'true' and '$(IplRunnerScene)' == 'Detail'">$(DefineConstants);IPL_RUNNER_DETAIL</DefineConstants>
+    <DefineConstants Condition="'$(IplHardwareRunner)' == 'true' and '$(IplRunnerScene)' == 'Oblique'">$(DefineConstants);IPL_VISUAL_REVIEW_ANGLE</DefineConstants>
+    <DefineConstants Condition="'$(IplHardwareRunner)' == 'true' and ('$(IplRunnerVideo)' == '576i' or '$(IplRunnerVideo)' == '576p')">$(DefineConstants);IPL_RUNNER_576</DefineConstants>
+    <DefineConstants Condition="'$(IplHardwareRunner)' == 'true' and ('$(IplRunnerVideo)' == '480p' or '$(IplRunnerVideo)' == '576p')">$(DefineConstants);IPL_RUNNER_PROGRESSIVE</DefineConstants>
+    <IplFrameLogDevice Condition="'$(IplFrameLogDevice)' == ''">None</IplFrameLogDevice>
+    <DefineConstants Condition="'$(IplFrameLogDevice)' == 'Sd2Sp2'">$(DefineConstants);IPL_LOG_SD2SP2</DefineConstants>
+    <DefineConstants Condition="'$(IplFrameLogDevice)' == 'SdSlotA'">$(DefineConstants);IPL_LOG_SDA</DefineConstants>
+    <DefineConstants Condition="'$(IplFrameLogDevice)' == 'SdSlotB'">$(DefineConstants);IPL_LOG_SDB</DefineConstants>
+    <DefineConstants Condition="'$(IplFrameLogDevice)' == 'GcLoader'">$(DefineConstants);IPL_LOG_GCLOADER</DefineConstants>
+    <DefineConstants Condition="'$(IplPerformanceReview)' == 'true'">$(DefineConstants);IPL_PERFORMANCE_REVIEW</DefineConstants>
+    <IplPerformanceReviewScene Condition="'$(IplPerformanceReviewScene)' == ''">Options</IplPerformanceReviewScene>
+    <DefineConstants Condition="'$(IplPerformanceReview)' == 'true' and '$(IplPerformanceReviewScene)' == 'Cube'">$(DefineConstants);IPL_REVIEW_CUBE</DefineConstants>
+    <DefineConstants Condition="'$(IplPerformanceReview)' == 'true' and '$(IplPerformanceReviewScene)' == 'Detail'">$(DefineConstants);IPL_REVIEW_DETAIL</DefineConstants>
+    <DefineConstants Condition="'$(IplPerformanceReview)' == 'true' and '$(IplPerformanceReviewScene)' == 'Oblique'">$(DefineConstants);IPL_VISUAL_REVIEW_ANGLE</DefineConstants>
     <IplHardwareAntialiasing Condition="'$(IplHardwareAntialiasing)' == ''">false</IplHardwareAntialiasing>
     <DefineConstants Condition="'$(IplHardwareAntialiasing)' == 'true'">$(DefineConstants);IPL_HARDWARE_AA</DefineConstants>
     <DefineConstants Condition="'$(IplAntialiasingBenchmark)' == 'true'">$(DefineConstants);IPL_AA_BENCHMARK</DefineConstants>
     <DefineConstants Condition="'$(IplVideoModeReview)' == 'true' and '$(IplVideoModeReviewResolution)' == '576'">$(DefineConstants);IPL_VIDEO_MODE_REVIEW_PAL</DefineConstants>
     <DefineConstants Condition="'$(IplVideoModeReview)' == 'true'">$(DefineConstants);IPL_VIDEO_MODE_REVIEW</DefineConstants>
     <DefineConstants Condition="'$(IplVisualReview)' == 'true'">$(DefineConstants);IPL_VISUAL_REVIEW</DefineConstants>
-    <DefineConstants Condition="'$(IplVisualReview)' == 'true' and '$(IplVisualReviewAngle)' == 'true'">$(DefineConstants);IPL_VISUAL_REVIEW_ANGLE</DefineConstants>
+    <DefineConstants Condition="('$(IplVisualReview)' == 'true' or '$(IplPerformanceReview)' == 'true') and '$(IplVisualReviewAngle)' == 'true'">$(DefineConstants);IPL_VISUAL_REVIEW_ANGLE</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(IntermediateOutputPath)IplHardwareRunConfig.g.cs" Condition="'$(IplHardwareRunner)' == 'true'" />
     <DndEffect Include="gloss.dndfx.json" GeneratedSource="IplGlossEffect.g.cs" ClassName="IplGlossEffect" />
     <PackageReference Include="DolphinDotNet.GameCube" Version="$(DndPackageVersion)" />
   </ItemGroup>
   <Target Name="ValidateIplReviewModes" BeforeTargets="CoreCompile">
+    <Error Condition="'$(IplHardwareRunner)' == 'true' and ('$(Configuration)' != 'Release' or '$(DndDebugSymbols)' == 'true' or ('$(DndGdbTransport)' != '' and '$(DndGdbTransport)' != 'Off'))"
+           Text="Hardware performance runs require Release, DndDebugSymbols=false and DndGdbTransport=Off. A hardware GDB stub forces debug compiler flags." />
+    <Error Condition="'$(IplHardwareRunner)' == 'true' and ('$(IplVisualReview)' == 'true' or '$(IplPerformanceReview)' == 'true' or '$(IplVideoModeReview)' == 'true' or '$(IplFrameLogDevice)' != 'None')"
+           Text="Hardware runner owns the measurement window; disable other review modes and SD export." />
+    <Error Condition="'$(IplHardwareRunner)' == 'true' and '$(IplRunnerScene)' != 'Options' and '$(IplRunnerScene)' != 'Cube' and '$(IplRunnerScene)' != 'Detail' and '$(IplRunnerScene)' != 'Oblique'" Text="IplRunnerScene must be Options, Cube, Detail or Oblique." />
+    <Error Condition="'$(IplHardwareRunner)' == 'true' and '$(IplRunnerVideo)' != '480i' and '$(IplRunnerVideo)' != '480p' and '$(IplRunnerVideo)' != '576i' and '$(IplRunnerVideo)' != '576p'" Text="IplRunnerVideo must be 480i, 480p, 576i or 576p." />
+    <Error Condition="'$(IplHardwareRunner)' == 'true' and !$([System.Text.RegularExpressions.Regex]::IsMatch('$(IplRunnerHost)', '^([0-9]{1,3}\.){3}[0-9]{1,3}$'))" Text="IplRunnerHost must be the Windows bridge LAN IPv4 address." />
+    <Error Condition="'$(IplHardwareRunner)' == 'true' and !$([System.Text.RegularExpressions.Regex]::IsMatch('$(IplRunnerToken)', '^[a-f0-9]{32}$'))" Text="IplRunnerToken must be a per-job 128-bit lowercase hex token supplied through the environment." />
+    <Error Condition="'$(IplHardwareRunner)' == 'true' and !$([System.Text.RegularExpressions.Regex]::IsMatch('$(IplRunnerPort)', '^[0-9]{1,5}$'))" Text="IplRunnerPort must be a valid TCP port." />
+    <Error Condition="'$(IplHardwareRunner)' == 'true' and ('$(IplRunnerPort)' &lt; '1' or '$(IplRunnerPort)' &gt; '65535')" Text="IplRunnerPort must be between 1 and 65535." />
+    <Error Condition="'$(IplFrameLogDevice)' != 'None' and '$(IplFrameLogDevice)' != 'Sd2Sp2' and '$(IplFrameLogDevice)' != 'SdSlotA' and '$(IplFrameLogDevice)' != 'SdSlotB' and '$(IplFrameLogDevice)' != 'GcLoader'"
+           Text="IplFrameLogDevice must be None, Sd2Sp2, SdSlotA, SdSlotB or GcLoader. Select only an attached adapter; no absent-device probing is performed by default." />
+    <Error Condition="'$(IplPerformanceReview)' == 'true' and ('$(IplVisualReview)' == 'true' or '$(IplVideoModeReview)' == 'true')"
+           Text="Choose one deterministic review: performance, visual or scan." />
+    <Error Condition="'$(IplPerformanceReview)' == 'true' and '$(IplPerformanceReviewScene)' != 'Options' and '$(IplPerformanceReviewScene)' != 'Oblique' and '$(IplPerformanceReviewScene)' != 'Cube' and '$(IplPerformanceReviewScene)' != 'Detail'"
+           Text="IplPerformanceReviewScene must be Options, Oblique, Cube or Detail." />
     <Error Condition="'$(IplHardwareAntialiasing)' == 'true' and '$(IplVisualReview)' != 'true' and '$(IplVideoModeReview)' != 'true'"
            Text="Hardware AA remains experimental after a native transition stall. Use an explicit visual/scan review build; normal builds use the measured Dolphin edge-AA profile." />
     <Error Condition="'$(IplAntialiasingBenchmark)' == 'true' and '$(IplVisualReview)' != 'true'"
@@ -24,6 +60,10 @@
            Text="Choose either IplVideoModeReview or IplVisualReview for a deterministic native review." />
     <Error Condition="'$(IplVideoModeReview)' == 'true' and '$(IplVideoModeReviewResolution)' != '' and '$(IplVideoModeReviewResolution)' != '480' and '$(IplVideoModeReviewResolution)' != '576'"
            Text="IplVideoModeReviewResolution must be 480 or 576." />
+  </Target>
+  <Target Name="GenerateIplHardwareConfig" BeforeTargets="CoreCompile" DependsOnTargets="ValidateIplReviewModes" Condition="'$(IplHardwareRunner)' == 'true'">
+    <WriteLinesToFile File="$(IntermediateOutputPath)IplHardwareRunConfig.g.cs" Overwrite="true" WriteOnlyWhenDifferent="true"
+      Lines="internal static class IplHardwareRunConfig { internal const string Host=&quot;$(IplRunnerHost)&quot;%3B internal const int Port=$(IplRunnerPort)%3B internal const string Token=&quot;$(IplRunnerToken)&quot;%3B }" />
   </Target>
   <Import Project="DolphinGraphics.targets" />
 </Project>

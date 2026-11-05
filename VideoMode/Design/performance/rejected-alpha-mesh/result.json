@@ -1,0 +1,90 @@
+{
+  "variant": "batched-alpha-rims",
+  "environment": "cloud Dolphin 2503 / Mesa llvmpipe, NOT physical hardware",
+  "clock": "native guest monotonic microseconds; emulated CPU/GPU timing does not establish hardware performance",
+  "method": "30 warmup + 96 recorded frames, fixed Options pose, no interrupts or dumps during measurement; Y logger uses the same buffer",
+  "dol_sha256": "4d5d9e5b1c902d8ed2e26a6c72aad7d6ea39438a90a6ebecc8567faae56d5275",
+  "frames": 96,
+  "summary": {
+    "frame_us": {
+      "mean": 83413.90625,
+      "median": 83414.0,
+      "p95": 83417,
+      "max": 83417
+    },
+    "prepare_us": {
+      "mean": 49681.0625,
+      "median": 49681.0,
+      "p95": 49683,
+      "max": 49683
+    },
+    "submit_us": {
+      "mean": 20228.34375,
+      "median": 20228.0,
+      "p95": 20242,
+      "max": 20244
+    },
+    "end_us": {
+      "mean": 13478.552083333334,
+      "median": 13479.0,
+      "p95": 13493,
+      "max": 13495
+    },
+    "gpu_wait_us": {
+      "mean": 3.125,
+      "median": 3.0,
+      "p95": 4,
+      "max": 4
+    },
+    "retrace_us": {
+      "mean": 13462.28125,
+      "median": 13462.5,
+      "p95": 13476,
+      "max": 13479
+    },
+    "capture_us": {
+      "mean": 616.09375,
+      "median": 616.0,
+      "p95": 618,
+      "max": 618
+    },
+    "blur_us": {
+      "mean": 1698.125,
+      "median": 1698.0,
+      "p95": 1699,
+      "max": 1699
+    },
+    "draws": {
+      "mean": 128,
+      "median": 128.0,
+      "p95": 128,
+      "max": 128
+    },
+    "triangles": {
+      "mean": 19936,
+      "median": 19936.0,
+      "p95": 19936,
+      "max": 19936
+    },
+    "begin_copy_us": {
+      "mean": 3,
+      "median": 3.0,
+      "p95": 3,
+      "max": 3
+    },
+    "gate_us": {
+      "mean": 0,
+      "median": 0.0,
+      "p95": 0,
+      "max": 0
+    },
+    "active_us": {
+      "mean": 69951.625,
+      "median": 69951.0,
+      "p95": 69967,
+      "max": 69969
+    }
+  },
+  "accepted": false,
+  "rejection": "Alpha rim chunks require costly per-frame mesh uploads; active time regressed from 60.72 to 69.95 ms. Reverted."
+}

@@ -1,11 +1,13 @@
 using System;
 using Dolphin.Graphics;
+using Dolphin.Timing;
 
 internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
 {
     private const int GlassVertices=25*25, PanelVertices=3*36*3,BlurAxis=9,BlurTaps=BlurAxis*BlurAxis;
     private readonly GraphicsDevice device;
     private readonly Draw2D draw;
+    private readonly IndexedRims rims=new IndexedRims();
     private readonly Texture2D atlas=Texture2D.FromPng(IplFontData.Png,true);
     private readonly Renderer renderer;
     private readonly Texture2D glossMap=Texture2D.FromPng(IplGlossData.Png,true);
@@ -21,10 +23,13 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
     private readonly Color32[] glossColors=new Color32[GlassVertices];
     private readonly IplPoint[] panelPoints=new IplPoint[PanelVertices];
     private readonly VertexPositionColorTexture[] panelVertices=new VertexPositionColorTexture[PanelVertices];
-    private readonly DynamicMesh[] panelMeshes=new DynamicMesh[BlurTaps];
+    private readonly DynamicMesh panelMesh;
+    private readonly UvTransform[] blurOffsets=new UvTransform[BlurTaps];
+    private readonly Color32[] blurColors=new Color32[BlurTaps];
     private SceneCapture? capture;
     private int glassCount,panelCount,captureWidth,captureHeight,copyWidth,copyHeight;
     private float scale=1,offset,logicalWidth=640,logicalHeight=480;
+    private float blurScaleX,blurScaleY;
     internal GameCubeCanvas(GraphicsDevice device)
     {
         this.device=device;renderer=new Renderer(device);
@@ -39,13 +44,23 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
             indices[at++]=(ushort)(a+1);indices[at++]=(ushort)(a+26);indices[at++]=(ushort)(a+25);
         }
         for(int i=0;i<6;i++){glassMeshes[i]=DynamicMesh.Create(glass,indices);glossMeshes[i]=DynamicMesh.Create(glass,indices);}
-        for(int i=0;i<BlurTaps;i++)panelMeshes[i]=DynamicMesh.Create(panelVertices);
+        panelMesh=DynamicMesh.Create(panelVertices);
+        // Allocate the optional native material options between frames, once.
+        frostMaterial.TextureTransform=UvTransform.Identity;
+        float accumulated=0;
+        for(int tap=0;tap<BlurTaps;tap++)
+        {
+            float x=tap%BlurAxis-BlurAxis/2,y=tap/BlurAxis-BlurAxis/2;
+            float weight=(float)Math.Exp(-(x*x+y*y)*.0555556f);accumulated+=weight;
+            blurColors[tap]=new Color32(255,255,255,(byte)(255*weight/accumulated+.5f));
+        }
         camera.LookAt(new Vector3(0,0,1),new Vector3(0,0,0),new Vector3(0,1,0));
     }
     internal void Prepare()
     {
         var size=draw.LogicalSize;logicalWidth=size.X;logicalHeight=size.Y;
         scale=size.Y/480f;offset=(size.X-640*scale)/2;
+        rims.Prepare(size.X,size.Y,scale,offset);
         camera.SetOrthographic(size.X,size.Y,.1f,10);
         if(captureWidth!=device.Width||captureHeight!=device.Height)
         {
@@ -56,9 +71,17 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
             capture?.Dispose();capture=replacement;
             captureWidth=device.Width;captureHeight=device.Height;frostMaterial.Texture=capture.Texture;
         }
+        float sx=scale/logicalWidth*device.Width/copyWidth,sy=scale/logicalHeight*device.Height/copyHeight;
+        if(sx!=blurScaleX||sy!=blurScaleY)
+        {
+            blurScaleX=sx;blurScaleY=sy;
+            for(int tap=0;tap<BlurTaps;tap++)
+                blurOffsets[tap]=new UvTransform(new Vector2((tap%BlurAxis-BlurAxis/2)*3*sx,(tap/BlurAxis-BlurAxis/2)*3*sy),new Vector2(1,1));
+        }
     }
     internal void Begin()=>draw.Begin();
     internal void End()=>draw.End();
+    public void Section(IplRenderPhase phase)=>IplPerformanceOverlay.Section(phase);
     private static Color32 Color(uint c)=>new Color32((byte)(c>>24),(byte)(c>>16),(byte)(c>>8),(byte)c);
     private Vector3 World(IplPoint p)=>new Vector3((p.X-320)*scale,(240-p.Y)*scale,0);
     public void BeginGlass(){glassCount=0;}
@@ -78,63 +101,66 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
     }
     public void EndGlass()
     {
-        if(glassCount!=6)throw new InvalidOperationException("Incomplete glass geometry.");
+        if(glassCount<1||glassCount>3)throw new InvalidOperationException("Incomplete glass geometry.");
     }
     public void DrawGlass()
     {
         draw.End();renderer.Begin3D(camera);
-        for(int i=0;i<6;i++)renderer.DrawMesh(glassMeshes[i],glassMaterial,identity);
+        for(int i=0;i<glassCount;i++)renderer.DrawMesh(glassMeshes[i],glassMaterial,identity);
         renderer.End3D();draw.Begin();
     }
     public void DrawReflections()
     {
         draw.End();renderer.Begin3D(camera);
-        for(int i=0;i<6;i++)renderer.DrawMesh(glossMeshes[i],glossMaterial,identity);
+        for(int i=0;i<glassCount;i++)renderer.DrawMesh(glossMeshes[i],glossMaterial,identity);
         renderer.End3D();draw.Begin();
     }
+    public void BeginRims()=>rims.Begin();
+    public void RimQuad(IplPoint a,IplPoint b,IplPoint c,IplPoint d,uint color)=>rims.Quad(a,b,c,d,color);
+    public void EndRims()=>rims.End();
+    public void DrawRims(){draw.End();rims.Draw(device);draw.Begin();}
     public void BeginPanels(){panelCount=0;}
     public void PanelTriangle(IplPoint a,IplPoint b,IplPoint d)
     {panelPoints[panelCount++]=a;panelPoints[panelCount++]=b;panelPoints[panelCount++]=d;}
     public void EndPanels()
     {
         if(panelCount==0)return;
-        // All blur meshes sample one immutable snapshot. Offsetting only UVs
-        // keeps the rounded silhouette fixed while averaging the backdrop.
-        for(int tap=0;tap<BlurTaps;tap++)
+        // Upload the rounded mask once. GX texture coordinates supply each
+        // sampling offset, instead of rebuilding 81 copies of identical geometry.
+        for(int i=0;i<PanelVertices;i++)
         {
-            float dx=(tap%BlurAxis-BlurAxis/2)*3,dy=(tap/BlurAxis-BlurAxis/2)*3;
-            for(int i=0;i<PanelVertices;i++)
-            {
-                if(i>=panelCount){panelVertices[i]=default;continue;}
-                var p=panelPoints[i];
-                var uv=new Vector2((offset+(p.X+dx)*scale)/logicalWidth*device.Width/copyWidth,(p.Y+dy)*scale/logicalHeight*device.Height/copyHeight);
-                panelVertices[i]=new VertexPositionColorTexture(World(p),Color32.White,uv);
-            }
-            panelMeshes[tap].SetVertices(panelVertices);
+            if(i>=panelCount){panelVertices[i]=default;continue;}
+            var p=panelPoints[i];
+            var uv=new Vector2((offset+p.X*scale)/logicalWidth*device.Width/copyWidth,p.Y*scale/logicalHeight*device.Height/copyHeight);
+            panelVertices[i]=new VertexPositionColorTexture(World(p),Color32.White,uv);
         }
+        panelMesh.SetVertices(panelVertices);
     }
     public void CaptureBackdrop()
     {
+        long start=IplFrameProfiler.Active?Clock.Timestamp:0;
         draw.End();capture!.Capture(new Viewport(0,0,copyWidth,copyHeight));draw.Begin();
+        if(IplFrameProfiler.Active)IplFrameProfiler.CaptureUs=IplFrameProfiler.Since(start);
     }
     public void DrawFrostedPanels()
     {
         if(panelCount==0)return;
+        long start=IplFrameProfiler.Active?Clock.Timestamp:0;
         draw.End();renderer.Begin3D(camera);
-        float accumulated=0;
         for(int tap=0;tap<BlurTaps;tap++)
         {
             // Incremental Gaussian average of the immutable captured backdrop.
             // Pass zero replaces the row; later taps normalize by running weight.
-            float x=tap%BlurAxis-BlurAxis/2,y=tap/BlurAxis-BlurAxis/2;
-            float weight=(float)Math.Exp(-(x*x+y*y)*.0555556f);accumulated+=weight;
-            frostMaterial.Color=new Color32(255,255,255,(byte)(255*weight/accumulated+.5f));
-            renderer.DrawMesh(panelMeshes[tap],frostMaterial,identity);
+            frostMaterial.Color=blurColors[tap];frostMaterial.TextureTransform=blurOffsets[tap];
+            renderer.DrawMesh(panelMesh,frostMaterial,identity);
         }
         renderer.End3D();draw.Begin();
+        if(IplFrameProfiler.Active)IplFrameProfiler.BlurUs=IplFrameProfiler.Since(start);
     }
     public void Triangle(float ax,float ay,float bx,float by,float cx,float cy,uint color)
-    {draw.FillTriangle(new Vector2(offset+ax*scale,ay*scale),new Vector2(offset+bx*scale,by*scale),new Vector2(offset+cx*scale,cy*scale),Color(color));}
+    {if((color&255)!=0)draw.FillTriangle(new Vector2(offset+ax*scale,ay*scale),new Vector2(offset+bx*scale,by*scale),new Vector2(offset+cx*scale,cy*scale),Color(color));}
+    public void Rectangle(float x,float y,float width,float height,uint color)
+    {if((color&255)!=0)draw.FillRectangle(new RectF(offset+x*scale,y*scale,width*scale,height*scale),Color(color));}
     public void Text(string value,float x,float y,float size,uint color,float angle,float stretch=1)
     {
         float factor=size/28,co=(float)Math.Cos(angle*.017453293f),si=(float)Math.Sin(angle*.017453293f),advance=0;
@@ -146,9 +172,23 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
             advance+=IplFontData.Widths[ch]*factor*stretch;
         }
     }
+    internal void TextAscii(byte[] value,int length,float right,float y,float size,uint color)
+    {
+        float factor=size/28,width=0;
+        for(int i=0;i<length;i++)width+=IplFontData.Widths[value[i]-32]*factor;
+        float x=right-width;
+        for(int i=0;i<length;i++)
+        {
+            int ch=value[i]-32;
+            draw.DrawTexture(atlas,new RectF(ch%16*32,ch/16*40,32,40),
+                new RectF(offset+x*scale,y*scale,32*factor*scale,40*factor*scale),Color(color),0,new Vector2(0,0));
+            x+=IplFontData.Widths[ch]*factor;
+        }
+    }
     public void Dispose()
     {
-        capture?.Dispose();for(int i=0;i<panelMeshes.Length;i++)panelMeshes[i].Dispose();
+        rims.Dispose();
+        capture?.Dispose();panelMesh.Dispose();
         for(int i=0;i<glassMeshes.Length;i++){glassMeshes[i].Dispose();glossMeshes[i].Dispose();}draw.Dispose();atlas.Dispose();glossMap.Dispose();glossEffect.Dispose();
     }
 }
