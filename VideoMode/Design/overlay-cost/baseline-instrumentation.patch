@@ -44,7 +44,7 @@ index 4347a94..a665c96 100644
 +#if IPL_PERFORMANCE_REVIEW
 +    internal static int LabelsUs,NumbersUs,FormatUs,FlushUs,PublishUs;
 +#endif
- 
+
      internal static void BeginFrame()
 -    {if(Stats.Visible){Stats.BeginFrame();phase=IplRenderPhase.None;}}
 +    {
