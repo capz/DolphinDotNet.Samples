@@ -18,5 +18,15 @@
     "reference": "04-editor-before",
     "changed_pixels": 0,
     "max_channel_error": 0
+  },
+  "07-canonical": {
+    "reference": "00-current",
+    "changed_pixels": 0,
+    "max_channel_error": 0
+  },
+  "08-angle-after": {
+    "reference": "06-angle-before",
+    "changed_pixels": 5,
+    "max_channel_error": 1
   }
 }

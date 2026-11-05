@@ -30,7 +30,11 @@ internal sealed class IplRenderer
     private float yaw,pitch,cy,scale,rimVisibility;
     private float cosYaw,sinYaw,cosPitch,sinPitch;
     private const uint White=0xf3f4faff, Green=0x15f88cff, Block=0x60db18ff;
-    private readonly IplPoint[] points=new IplPoint[6*25*25];
+    // Cube faces are signed permutations of one grid. Cache its invariant unit
+    // normals and curvature, rather than renormalizing every moving vertex.
+    // Together these use 17,500 data bytes, versus 45,000 for six position grids.
+    private readonly IplPoint[] points=new IplPoint[25*25],normals=new IplPoint[25*25];
+    private readonly float[] curvatures=new float[25*25];
     private readonly int[] faceOrder=new int[6];
     private readonly float[] depth=new float[6];
     private readonly uint[] wallTints=new uint[16];
@@ -42,8 +46,15 @@ internal sealed class IplRenderer
     internal IplRenderer(IIplCanvas canvas)
     {
         c=canvas;
-        for(int f=0;f<6;f++) for(int y=0;y<=24;y++) for(int x=0;x<=24;x++)
-            points[f*625+y*25+x]=Rounded(Surface(f,Coordinate(x),Coordinate(y)));
+        for(int y=0;y<=24;y++)for(int x=0;x<=24;x++)
+        {
+            int at=y*25+x;var point=Rounded(Surface(0,Coordinate(x),Coordinate(y)));
+            points[at]=point;
+            var local=new IplPoint(point.X-Clamp(point.X,-Core,Core),point.Y-Clamp(point.Y,-Core,Core),point.Z-Clamp(point.Z,-Core,Core));
+            float length=(float)Math.Sqrt(local.X*local.X+local.Y*local.Y+local.Z*local.Z);
+            normals[at]=new IplPoint(local.X/length,local.Y/length,local.Z/length);
+            curvatures[at]=Clamp((1-Math.Max(Math.Max(Math.Abs(local.X),Math.Abs(local.Y)),Math.Abs(local.Z))/length)*3,0,1);
+        }
         for(int corner=0;corner<4;corner++)for(int j=0;j<=12;j++)
         {
             float a=(180-corner*90-j*90f/12)*.017453293f;
@@ -80,6 +91,15 @@ internal sealed class IplRenderer
         if(f==3)return new IplPoint(u,1,-v);
         if(f==4)return new IplPoint(u,-1,v);
         return new IplPoint(-u,v,-1);
+    }
+    private static IplPoint Orient(int face,IplPoint p)
+    {
+        if(face==0)return p;
+        if(face==1)return new IplPoint(p.Z,p.Y,-p.X);
+        if(face==2)return new IplPoint(-p.Z,p.Y,p.X);
+        if(face==3)return new IplPoint(p.X,p.Z,-p.Y);
+        if(face==4)return new IplPoint(p.X,-p.Z,p.Y);
+        return new IplPoint(-p.X,p.Y,-p.Z);
     }
     private static IplPoint Rounded(IplPoint p)
     {
@@ -204,37 +224,28 @@ internal sealed class IplRenderer
             facing=facing*facing*(3-2*facing);
             for(int i=0;i<625;i++)
             {
-                int at=face*625+i;var uv=ReflectionUv(points[at]);
-                uint color=GlassColor(points[at]);
+                var p=Rotate(Orient(face,points[i]));var normal=Rotate(Orient(face,normals[i]));
+                var uv=ReflectionUv(p,normal,curvatures[i]);
+                uint color=GlassColor(p,normal);
                 color=(color&0xffffff00)|(uint)((color&255)*facing);
-                c.GlassVertex(i,Project(points[at]),color,uv.X,uv.Y,uv.Z);
+                c.GlassVertex(i,ProjectView(p),color,uv.X,uv.Y,uv.Z);
             }
             c.EndGlassFace();
         }
         c.EndGlass();
     }
-    private IplPoint ReflectionUv(IplPoint point)
+    private static IplPoint ReflectionUv(IplPoint p,IplPoint n,float curvature)
     {
-        var p=Rotate(point);
-        var local=new IplPoint(point.X-Clamp(point.X,-Core,Core),point.Y-Clamp(point.Y,-Core,Core),point.Z-Clamp(point.Z,-Core,Core));
-        float length=(float)Math.Sqrt(local.X*local.X+local.Y*local.Y+local.Z*local.Z);
-        float curvature=Clamp((1-Math.Max(Math.Max(Math.Abs(local.X),Math.Abs(local.Y)),Math.Abs(local.Z))/length)*3,0,1);
-        var n=Rotate(local);
-        n=new IplPoint(n.X/length,n.Y/length,n.Z/length);
         var eye=new IplPoint(-p.X,-p.Y,3.8f-p.Z);
-        length=(float)Math.Sqrt(eye.X*eye.X+eye.Y*eye.Y+eye.Z*eye.Z);
+        float length=(float)Math.Sqrt(eye.X*eye.X+eye.Y*eye.Y+eye.Z*eye.Z);
         eye=new IplPoint(eye.X/length,eye.Y/length,eye.Z/length);
         float dot=n.X*eye.X+n.Y*eye.Y+n.Z*eye.Z;
         float grazing=Clamp(1-dot,0,1);
         return new IplPoint(Clamp(.5f+(2*dot*n.X-eye.X)*.5f,.002f,.998f),Clamp(.5f+(2*dot*n.Y-eye.Y)*.5f,.002f,.998f),Clamp(.04f+1.8f*grazing,0,1)*(.12f+.88f*curvature));
     }
-    private uint GlassColor(IplPoint point)
+    private static uint GlassColor(IplPoint p,IplPoint normal)
     {
-        float nx=point.X-Clamp(point.X,-Core,Core),ny=point.Y-Clamp(point.Y,-Core,Core),nz=point.Z-Clamp(point.Z,-Core,Core);
-        float len=(float)Math.Sqrt(nx*nx+ny*ny+nz*nz);
-        var normal=Rotate(new IplPoint(nx/len,ny/len,nz/len));
         if(normal.Z<=0)return 0;
-        var p=Rotate(point);
         // Soft environment lobes, anchored in world space, move across the glass
         // during the idle float. These are light, not an opaque blue coating.
         float teal=Light(p.X-.70f,p.Y-.65f,.68f);
