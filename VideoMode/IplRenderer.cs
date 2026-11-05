@@ -83,7 +83,11 @@ internal sealed class IplRenderer
     }
     private IplPoint Project(IplPoint p)
     {
-        p=Rotate(p);float f=3.8f/(3.8f-p.Z);
+        return ProjectView(Rotate(p));
+    }
+    private IplPoint ProjectView(IplPoint p)
+    {
+        float f=3.8f/(3.8f-p.Z);
         return new IplPoint(322+p.X*scale*.975f*f,cy-p.Y*scale*f,p.Z);
     }
     private void Tri(IplPoint a,IplPoint b,IplPoint d,uint color)
@@ -282,22 +286,24 @@ internal sealed class IplRenderer
     private static IplPoint Lerp(IplPoint a,IplPoint b,float t)=>new IplPoint(a.X+(b.X-a.X)*t,a.Y+(b.Y-a.Y)*t,a.Z+(b.Z-a.Z)*t);
     private void WallSegment(IplPoint a,IplPoint b,IplPoint innerA,IplPoint innerB,uint color)
     {
-        var start=Project(a);var end=Project(b);
+        // Rotation is linear: transform four endpoints once, then interpolate
+        // in view space. Projection and lighting share each interpolated point.
+        a=Rotate(a);b=Rotate(b);innerA=Rotate(innerA);innerB=Rotate(innerB);
+        var start=ProjectView(a);var end=ProjectView(b);
         float dx=end.X-start.X,dy=end.Y-start.Y;
         int steps=Math.Max(1,(int)Math.Ceiling(Math.Sqrt(dx*dx+dy*dy)/5));
-        var previousOuter=start;var previousInner=Project(innerA);
+        var previousOuter=start;var previousInner=ProjectView(innerA);
         for(int i=1;i<=steps;i++)
         {
-            var p=Lerp(a,b,i/(float)steps);var outer=Project(p);
-            var inner=Project(Lerp(innerA,innerB,i/(float)steps));
+            var p=Lerp(a,b,i/(float)steps);var outer=ProjectView(p);
+            var inner=ProjectView(Lerp(innerA,innerB,i/(float)steps));
             uint shade=RimColor(p,color);
             Tri(previousOuter,outer,previousInner,shade);Tri(outer,inner,previousInner,shade);
             previousOuter=outer;previousInner=inner;
         }
     }
-    private uint RimColor(IplPoint point,uint color)
+    private uint RimColor(IplPoint p,uint color)
     {
-        var p=Rotate(point);
         float top=Light(p.X-.55f,(p.Y-1)*2,.28f);
         float corner=Light(p.X+.91f,(p.Y-.92f)*1.4f,.17f);
         // Localized reflected lights reveal each curved return. Avoid a uniform
