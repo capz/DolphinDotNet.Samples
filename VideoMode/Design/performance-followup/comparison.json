@@ -8,5 +8,15 @@
     "reference": "00-current",
     "changed_pixels": 0,
     "max_channel_error": 0
+  },
+  "03-direct-rectangles": {
+    "reference": "00-current",
+    "changed_pixels": 0,
+    "max_channel_error": 0
+  },
+  "05-editor-after": {
+    "reference": "04-editor-before",
+    "changed_pixels": 0,
+    "max_channel_error": 0
   }
 }

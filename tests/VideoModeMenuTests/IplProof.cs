@@ -7,6 +7,8 @@ using System.Text;
 internal sealed class IplProof : IIplCanvas
 {
     public void Section(IplRenderPhase phase) { }
+    public void Rectangle(float x,float y,float width,float height,uint color)
+    {Triangle(x,y,x+width,y,x,y+height,color);Triangle(x+width,y,x+width,y+height,x,y+height,color);}
     private readonly StringBuilder shapes=new StringBuilder();
     private readonly StringBuilder glass=new StringBuilder(),panels=new StringBuilder();
     private string backdrop="";

@@ -5,6 +5,7 @@ internal interface IIplCanvas
 {
     void Section(IplRenderPhase phase);
     void Triangle(float ax,float ay,float bx,float by,float cx,float cy,uint color);
+    void Rectangle(float x,float y,float width,float height,uint color);
     void Text(string value,float x,float y,float size,uint color,float angle,float stretch=1);
     void BeginGlass();
     void GlassVertex(int index,IplPoint point,uint color,float u,float v,float reflection);
@@ -108,7 +109,7 @@ internal sealed class IplRenderer
         if((color&255)!=0)c.Triangle(a.X,a.Y,b.X,b.Y,d.X,d.Y,color);
     }
     private void Rect(float x,float y,float w,float h,uint color)
-    {c.Triangle(x,y,x+w,y,x,y+h,color);c.Triangle(x+w,y,x+w,y+h,x,y+h,color);}
+    {if((color&255)!=0)c.Rectangle(x,y,w,h,color);}
     private void Line(float x,float y,float xx,float yy,float width,uint color)
     {
         float dx=xx-x,dy=yy-y, d=(float)Math.Sqrt(dx*dx+dy*dy);if(d<.001f)return;
@@ -445,7 +446,7 @@ internal sealed class IplRenderer
         {
             float fade=Clamp(1-(float)Math.Sqrt((x-320)*(x-320)/115600f+(y-240)*(y-240)/78400f),0,1);
             uint color=Rgba(61,65,67,(int)(fade*165));
-            Line(x,y,x,y+16,1,color);Line(x,y,x+16,y,1,color);
+            Rect(x-.5f,y,1,16,color);Rect(x,y-.5f,16,1,color);
         }
     }
     private void Detail(IplShell s)

@@ -153,6 +153,8 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
     }
     public void Triangle(float ax,float ay,float bx,float by,float cx,float cy,uint color)
     {if((color&255)!=0)draw.FillTriangle(new Vector2(offset+ax*scale,ay*scale),new Vector2(offset+bx*scale,by*scale),new Vector2(offset+cx*scale,cy*scale),Color(color));}
+    public void Rectangle(float x,float y,float width,float height,uint color)
+    {if((color&255)!=0)draw.FillRectangle(new RectF(offset+x*scale,y*scale,width*scale,height*scale),Color(color));}
     public void Text(string value,float x,float y,float size,uint color,float angle,float stretch=1)
     {
         float factor=size/28,co=(float)Math.Cos(angle*.017453293f),si=(float)Math.Sin(angle*.017453293f),advance=0;
