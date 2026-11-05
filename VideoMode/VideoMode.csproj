@@ -19,6 +19,9 @@
     <DefineConstants Condition="'$(IplFrameLogDevice)' == 'GcLoader'">$(DefineConstants);IPL_LOG_GCLOADER</DefineConstants>
     <DefineConstants Condition="'$(IplPerformanceReview)' == 'true'">$(DefineConstants);IPL_PERFORMANCE_REVIEW</DefineConstants>
     <IplPerformanceReviewScene Condition="'$(IplPerformanceReviewScene)' == ''">Options</IplPerformanceReviewScene>
+    <IplPerformanceReviewOverlay Condition="'$(IplPerformanceReviewOverlay)' == ''">Off</IplPerformanceReviewOverlay>
+    <DefineConstants Condition="'$(IplPerformanceReview)' == 'true' and '$(IplPerformanceReviewOverlay)' != 'Off'">$(DefineConstants);IPL_OVERLAY_REVIEW</DefineConstants>
+    <DefineConstants Condition="'$(IplPerformanceReview)' == 'true' and '$(IplPerformanceReviewOverlay)' == 'Timers'">$(DefineConstants);IPL_OVERLAY_TIMERS_ONLY</DefineConstants>
     <DefineConstants Condition="'$(IplPerformanceReview)' == 'true' and '$(IplPerformanceReviewScene)' == 'Cube'">$(DefineConstants);IPL_REVIEW_CUBE</DefineConstants>
     <DefineConstants Condition="'$(IplPerformanceReview)' == 'true' and '$(IplPerformanceReviewScene)' == 'Detail'">$(DefineConstants);IPL_REVIEW_DETAIL</DefineConstants>
     <DefineConstants Condition="'$(IplPerformanceReview)' == 'true' and '$(IplPerformanceReviewScene)' == 'Oblique'">$(DefineConstants);IPL_VISUAL_REVIEW_ANGLE</DefineConstants>
@@ -36,6 +39,8 @@
     <PackageReference Include="DolphinDotNet.GameCube" Version="$(DndPackageVersion)" />
   </ItemGroup>
   <Target Name="ValidateIplReviewModes" BeforeTargets="CoreCompile">
+    <Error Condition="'$(IplPerformanceReviewOverlay)' != 'Off' and ('$(IplPerformanceReview)' != 'true' or ('$(IplPerformanceReviewOverlay)' != 'Timers' and '$(IplPerformanceReviewOverlay)' != 'Full'))"
+           Text="IplPerformanceReviewOverlay must be Off, or Timers/Full with IplPerformanceReview=true." />
     <Error Condition="'$(IplHardwareRunner)' == 'true' and ('$(Configuration)' != 'Release' or '$(DndDebugSymbols)' == 'true' or ('$(DndGdbTransport)' != '' and '$(DndGdbTransport)' != 'Off'))"
            Text="Hardware performance runs require Release, DndDebugSymbols=false and DndGdbTransport=Off. A hardware GDB stub forces debug compiler flags." />
     <Error Condition="'$(IplHardwareRunner)' == 'true' and ('$(IplVisualReview)' == 'true' or '$(IplPerformanceReview)' == 'true' or '$(IplVideoModeReview)' == 'true' or '$(IplFrameLogDevice)' != 'None')"

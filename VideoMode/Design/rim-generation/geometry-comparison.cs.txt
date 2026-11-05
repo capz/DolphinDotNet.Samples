@@ -1,0 +1,27 @@
+using System;
+using System.Collections.Generic;
+class Output:IVideoModeOutput {public VideoModeSettings Read()=>new(1,1,false);public void Configure(VideoModeSettings s){}}
+class Canvas:IIplCanvas {
+ public List<(IplPoint,IplPoint,IplPoint,IplPoint,uint)> Quads=new();
+ public void Section(IplRenderPhase p){} public void Triangle(float a,float b,float c,float d,float e,float f,uint color){}
+ public void Rectangle(float a,float b,float c,float d,uint color){} public void Text(string a,float b,float c,float d,uint color,float e,float f=1){}
+ public void BeginGlass(){} public void GlassVertex(int i,IplPoint p,uint color,float u,float v,float r){}
+ public void EndGlassFace(){} public void EndGlass(){} public void DrawGlass(){} public void DrawReflections(){}
+ public void BeginRims()=>Quads.Clear(); public void RimQuad(IplPoint a,IplPoint b,IplPoint c,IplPoint d,uint color)=>Quads.Add((a,b,c,d,color));
+ public void EndRims(){} public void DrawRims(){} public void BeginPanels(){} public void PanelTriangle(IplPoint a,IplPoint b,IplPoint c){}
+ public void EndPanels(){} public void CaptureBackdrop(){} public void DrawFrostedPanels(){}
+}
+class Program {
+ static bool Point(IplPoint a,IplPoint b)=>a.X==b.X&&a.Y==b.Y&&a.Z==b.Z;
+ static void Main(){var a=new Canvas();var b=new Canvas();var old=new BaselineRenderer(a);var now=new IplRenderer(b);int cases=0;long quads=0;
+ foreach(ShellFace from in Enum.GetValues<ShellFace>())foreach(ShellFace to in Enum.GetValues<ShellFace>())
+ foreach(float turn in new[]{0f,.25f,.6f,1f})foreach(float time in new[]{0f,1f,13f})foreach(bool reduced in new[]{false,true}){
+ var state=new IplShell(new Output()){PreviousFace=from,Face=to,Page=to==ShellFace.Menu?ShellPage.Cube:ShellPage.Face,Turn=turn,Time=time,ReducedMotion=reduced};
+ old.Prepare(state);now.Prepare(state);
+ if(a.Quads.Count!=b.Quads.Count)throw new Exception($"Count mismatch {from}/{to}/{turn}/{time}/{reduced}: {a.Quads.Count} != {b.Quads.Count}");
+ for(int i=0;i<a.Quads.Count;i++){var x=a.Quads[i];var y=b.Quads[i];if(x.Item5!=y.Item5||!Point(x.Item1,y.Item1)||!Point(x.Item2,y.Item2)||!Point(x.Item3,y.Item3)||!Point(x.Item4,y.Item4))throw new Exception($"Quad mismatch {from}/{to}/{turn}/{time}/{reduced}, {i}");}
+ cases++;quads+=a.Quads.Count;
+ }
+ Console.WriteLine($"{{\"cases\":{cases},\"quads_compared\":{quads},\"different_coordinates_or_colors\":0,\"baseline\":\"9f0d1d3\",\"scope\":\"host geometry only, not native performance or screenshot evidence\"}}");
+ }
+}

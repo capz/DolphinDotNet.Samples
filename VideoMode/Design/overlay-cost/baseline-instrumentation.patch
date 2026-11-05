@@ -1,0 +1,197 @@
+diff --git a/VideoMode/IplFrameProfiler.cs b/VideoMode/IplFrameProfiler.cs
+index 286d5c0..135124c 100644
+--- a/VideoMode/IplFrameProfiler.cs
++++ b/VideoMode/IplFrameProfiler.cs
+@@ -12,6 +12,10 @@ internal static class IplFrameProfiler
+     internal const string Variant="skip-transparent-triangles";
+     internal const int Frames=96, Columns=17;
+     internal static readonly int[] Samples=new int[Frames*Columns];
++#if IPL_PERFORMANCE_REVIEW
++    // Review-only breakdown; the Y/BBA 17-column format remains unchanged.
++    internal static readonly int[] OverlaySamples=new int[Frames*6];
++#endif
+     private static readonly byte[] line=new byte[256];
+     private static readonly int[] ordered=new int[Frames];
+     internal static int Count;
+@@ -36,6 +40,15 @@ internal static class IplFrameProfiler
+         Samples[at+10]=GpuProfiler.BeginFrameCopyMicroseconds;Samples[at+11]=GpuProfiler.GateReacquireMicroseconds;
+         Samples[at+12]=device.Width;Samples[at+13]=device.Height;Samples[at+14]=(int)device.Display.Scan;
+         Samples[at+15]=(int)shell.Face;Samples[at+16]=shell.Editing?1:0;
++#if IPL_PERFORMANCE_REVIEW
++        int detail=Count*6;
++        OverlaySamples[detail]=IplPerformanceOverlay.LabelsUs;
++        OverlaySamples[detail+1]=IplPerformanceOverlay.NumbersUs;
++        OverlaySamples[detail+2]=IplPerformanceOverlay.FormatUs;
++        OverlaySamples[detail+3]=IplPerformanceOverlay.FlushUs;
++        OverlaySamples[detail+4]=IplPerformanceOverlay.Stats.Current[IplPerformanceStats.Overlay];
++        OverlaySamples[detail+5]=IplPerformanceOverlay.PublishUs;
++#endif
+         if(++Count==Frames)
+         {
+             Active=false;Ready=NeedsExport=true;Status="Frame times captured";
+diff --git a/VideoMode/IplPerformanceOverlay.cs b/VideoMode/IplPerformanceOverlay.cs
+index 4347a94..a665c96 100644
+--- a/VideoMode/IplPerformanceOverlay.cs
++++ b/VideoMode/IplPerformanceOverlay.cs
+@@ -4,12 +4,21 @@ using Dolphin.Timing;
+ internal static class IplPerformanceOverlay
+ {
+     internal static readonly IplPerformanceStats Stats=new IplPerformanceStats();
++    internal static bool DrawEnabled=true;
+     private static readonly byte[] number=new byte[16];
+     private static IplRenderPhase phase;
+     private static long phaseStart;
++#if IPL_PERFORMANCE_REVIEW
++    internal static int LabelsUs,NumbersUs,FormatUs,FlushUs,PublishUs;
++#endif
+
+     internal static void BeginFrame()
+-    {if(Stats.Visible){Stats.BeginFrame();phase=IplRenderPhase.None;}}
++    {
++#if IPL_PERFORMANCE_REVIEW
++        LabelsUs=NumbersUs=FormatUs=FlushUs=PublishUs=0;
++#endif
++        if(Stats.Visible){Stats.BeginFrame();phase=IplRenderPhase.None;}
++    }
+     internal static void Section(IplRenderPhase next)
+     {
+         if(!Stats.Visible)return;
+@@ -20,6 +29,9 @@ internal static class IplPerformanceOverlay
+     internal static void CompleteFrame(long start,int prepare,int submit,int finish)
+     {
+         if(!Stats.Visible)return;
++#if IPL_PERFORMANCE_REVIEW
++        long publishStart=Clock.Timestamp;
++#endif
+         Stats.Current[IplPerformanceStats.Frame]=IplFrameProfiler.Since(start);
+         Stats.Current[IplPerformanceStats.Prepare]=prepare;
+         Stats.Current[IplPerformanceStats.Submit]=submit;
+@@ -27,22 +39,47 @@ internal static class IplPerformanceOverlay
+         Stats.Current[IplPerformanceStats.GpuWait]=GpuProfiler.GpuWaitMicroseconds;
+         Stats.Current[IplPerformanceStats.Retrace]=GpuProfiler.RetraceWaitMicroseconds;
+         Stats.CompleteFrame();
++#if IPL_PERFORMANCE_REVIEW
++        PublishUs=IplFrameProfiler.Since(publishStart);
++#endif
+     }
+ #if !IPL_HARDWARE_RUNNER
++    private static void Label(GameCubeCanvas canvas,string value,float x,float y,float size,uint color)
++    {
++#if IPL_PERFORMANCE_REVIEW
++        long start=Clock.Timestamp;
++#endif
++        canvas.Text(value,x,y,size,color,0);
++#if IPL_PERFORMANCE_REVIEW
++        LabelsUs+=IplFrameProfiler.Since(start);
++#endif
++    }
+     private static void Row(GameCubeCanvas canvas,string label,int metric,float y,bool total=false)
+     {
+         uint color=total?0x9ce7dcffu:0xd6dde7ffu;
+-        canvas.Text(label,22,y,13,color,0);
++        Label(canvas,label,22,y,13,color);
+         if(Stats.HasSample)
+-            canvas.TextAscii(number,IplPerformanceStats.FormatMilliseconds(Stats.Display[metric],number),264,y,13,color);
++        {
++#if IPL_PERFORMANCE_REVIEW
++            long start=Clock.Timestamp;
++#endif
++            int length=IplPerformanceStats.FormatMilliseconds(Stats.Display[metric],number);
++#if IPL_PERFORMANCE_REVIEW
++            FormatUs+=IplFrameProfiler.Since(start);start=Clock.Timestamp;
++#endif
++            canvas.TextAscii(number,length,264,y,13,color);
++#if IPL_PERFORMANCE_REVIEW
++            NumbersUs+=IplFrameProfiler.Since(start);
++#endif
++        }
+         else canvas.Text("...",232,y,13,color,0);
+     }
+     internal static void Draw(GameCubeCanvas canvas)
+     {
+         canvas.Triangle(12,12,278,12,12,453,0x07111bf5u);
+         canvas.Triangle(278,12,278,453,12,453,0x07111bf5u);
+-        canvas.Text("PERFORMANCE / Z to hide",22,20,15,0xc7f8efffu,0);
+-        canvas.Text("Mean ~250 ms / CPU submission",22,43,11,0x9eaebfffu,0);
++        Label(canvas,"PERFORMANCE / Z to hide",22,20,15,0xc7f8efffu);
++        Label(canvas,"Mean ~250 ms / CPU submission",22,43,11,0x9eaebfffu);
+         Row(canvas,"Frame (with overlay)",IplPerformanceStats.Frame,65,true);
+         Row(canvas,"Prepare total",IplPerformanceStats.Prepare,83,true);
+         Row(canvas,"  Glass geometry",(int)IplRenderPhase.GlassGeometry,101);
+@@ -63,7 +100,7 @@ internal static class IplPerformanceOverlay
+         Row(canvas,"  GX completion wait",IplPerformanceStats.GpuWait,371);
+         Row(canvas,"  VSync wait",IplPerformanceStats.Retrace,389);
+         Row(canvas,"Overlay CPU",IplPerformanceStats.Overlay,407,true);
+-        canvas.Text("GX wait != full GPU time. Waits include overlay.",22,432,10,0x9eaebfffu,0);
++        Label(canvas,"GX wait != full GPU time. Waits include overlay.",22,432,10,0x9eaebfffu);
+     }
+ #endif
+ }
+diff --git a/VideoMode/Program.cs b/VideoMode/Program.cs
+index 01d69ad..3f60b68 100644
+--- a/VideoMode/Program.cs
++++ b/VideoMode/Program.cs
+@@ -104,6 +104,12 @@ internal static class Program
+ #if IPL_PERFORMANCE_REVIEW || IPL_HARDWARE_RUNNER
+         IplFrameProfiler.Start();
+ #endif
++#if IPL_OVERLAY_REVIEW
++        IplPerformanceOverlay.Stats.Toggle();
++#endif
++#if IPL_OVERLAY_TIMERS_ONLY
++        IplPerformanceOverlay.DrawEnabled=false;
++#endif
+ #if IPL_VISUAL_REVIEW && !IPL_AA_BENCHMARK
+         int reviewFrames=0;
+ #endif
+@@ -126,6 +132,7 @@ internal static class Program
+                 // The SDK also toggles its generic panel in Controller.Update.
+                 // Use the app's detailed panel instead of drawing both.
+                 DebugOverlay.PerformanceVisible=false;
++                IplPerformanceOverlay.DrawEnabled=true;
+                 IplPerformanceOverlay.Stats.Toggle();
+             }
+             if(pad.Y.WasPressed&&!IplFrameProfiler.Active)IplFrameProfiler.Start();
+@@ -162,10 +169,17 @@ internal static class Program
+             canvas.End();
+             int submit=timing?IplFrameProfiler.Since(phaseStart):0;
+ #if !IPL_HARDWARE_RUNNER
+-            if(IplPerformanceOverlay.Stats.Visible)
++            if(IplPerformanceOverlay.Stats.Visible&&IplPerformanceOverlay.DrawEnabled)
+             {
+                 long overlayStart=Clock.Timestamp;
+-                canvas.Begin();IplPerformanceOverlay.Draw(canvas);canvas.End();
++                canvas.Begin();IplPerformanceOverlay.Draw(canvas);
++#if IPL_PERFORMANCE_REVIEW
++                long overlayFlushStart=Clock.Timestamp;
++#endif
++                canvas.End();
++#if IPL_PERFORMANCE_REVIEW
++                IplPerformanceOverlay.FlushUs=IplFrameProfiler.Since(overlayFlushStart);
++#endif
+                 IplPerformanceOverlay.Stats.Current[IplPerformanceStats.Overlay]=IplFrameProfiler.Since(overlayStart);
+             }
+ #endif
+diff --git a/VideoMode/VideoMode.csproj b/VideoMode/VideoMode.csproj
+index 5ce6876..d9d3fcc 100644
+--- a/VideoMode/VideoMode.csproj
++++ b/VideoMode/VideoMode.csproj
+@@ -19,6 +19,9 @@
+     <DefineConstants Condition="'$(IplFrameLogDevice)' == 'GcLoader'">$(DefineConstants);IPL_LOG_GCLOADER</DefineConstants>
+     <DefineConstants Condition="'$(IplPerformanceReview)' == 'true'">$(DefineConstants);IPL_PERFORMANCE_REVIEW</DefineConstants>
+     <IplPerformanceReviewScene Condition="'$(IplPerformanceReviewScene)' == ''">Options</IplPerformanceReviewScene>
++    <IplPerformanceReviewOverlay Condition="'$(IplPerformanceReviewOverlay)' == ''">Off</IplPerformanceReviewOverlay>
++    <DefineConstants Condition="'$(IplPerformanceReview)' == 'true' and '$(IplPerformanceReviewOverlay)' != 'Off'">$(DefineConstants);IPL_OVERLAY_REVIEW</DefineConstants>
++    <DefineConstants Condition="'$(IplPerformanceReview)' == 'true' and '$(IplPerformanceReviewOverlay)' == 'Timers'">$(DefineConstants);IPL_OVERLAY_TIMERS_ONLY</DefineConstants>
+     <DefineConstants Condition="'$(IplPerformanceReview)' == 'true' and '$(IplPerformanceReviewScene)' == 'Cube'">$(DefineConstants);IPL_REVIEW_CUBE</DefineConstants>
+     <DefineConstants Condition="'$(IplPerformanceReview)' == 'true' and '$(IplPerformanceReviewScene)' == 'Detail'">$(DefineConstants);IPL_REVIEW_DETAIL</DefineConstants>
+     <DefineConstants Condition="'$(IplPerformanceReview)' == 'true' and '$(IplPerformanceReviewScene)' == 'Oblique'">$(DefineConstants);IPL_VISUAL_REVIEW_ANGLE</DefineConstants>
+@@ -36,6 +39,8 @@
+     <PackageReference Include="DolphinDotNet.GameCube" Version="$(DndPackageVersion)" />
+   </ItemGroup>
+   <Target Name="ValidateIplReviewModes" BeforeTargets="CoreCompile">
++    <Error Condition="'$(IplPerformanceReviewOverlay)' != 'Off' and ('$(IplPerformanceReview)' != 'true' or ('$(IplPerformanceReviewOverlay)' != 'Timers' and '$(IplPerformanceReviewOverlay)' != 'Full'))"
++           Text="IplPerformanceReviewOverlay must be Off, or Timers/Full with IplPerformanceReview=true." />
+     <Error Condition="'$(IplHardwareRunner)' == 'true' and ('$(Configuration)' != 'Release' or '$(DndDebugSymbols)' == 'true' or ('$(DndGdbTransport)' != '' and '$(DndGdbTransport)' != 'Off'))"
+            Text="Hardware performance runs require Release, DndDebugSymbols=false and DndGdbTransport=Off. A hardware GDB stub forces debug compiler flags." />
+     <Error Condition="'$(IplHardwareRunner)' == 'true' and ('$(IplVisualReview)' == 'true' or '$(IplPerformanceReview)' == 'true' or '$(IplVideoModeReview)' == 'true' or '$(IplFrameLogDevice)' != 'None')"

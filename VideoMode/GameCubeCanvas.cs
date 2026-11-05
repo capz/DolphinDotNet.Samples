@@ -15,6 +15,14 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
     private readonly Material glossMaterial=new Material {Blend=BlendMode.Additive,Cull=CullMode.None,DepthTest=false,DepthWrite=false};
     private readonly Camera camera=new Camera(60,4f/3,.1f,10);
     private readonly Transform identity=new Transform();
+#if !IPL_HARDWARE_RUNNER
+    private readonly Mesh[] overlayLabels=new Mesh[8];
+    private readonly ushort[] overlayIndices=new ushort[156*6];
+    private readonly Material overlayMaterial=new Material {Blend=BlendMode.Alpha,Cull=CullMode.None,DepthTest=false,DepthWrite=false};
+    private readonly Transform overlayTransform=new Transform();
+    private int overlayMeshCount,overlayVertices;
+    private uint overlayColor;
+#endif
     private readonly Material glassMaterial=new Material {Blend=BlendMode.Alpha,Cull=CullMode.None,DepthTest=false,DepthWrite=false};
     private readonly Material frostMaterial=new Material {Blend=BlendMode.Alpha,Cull=CullMode.None,DepthTest=false,DepthWrite=false};
     private readonly VertexPositionColorTexture[] glass=new VertexPositionColorTexture[GlassVertices];
@@ -55,6 +63,24 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
             blurColors[tap]=new Color32(255,255,255,(byte)(255*weight/accumulated+.5f));
         }
         camera.LookAt(new Vector3(0,0,1),new Vector3(0,0,0),new Vector3(0,1,0));
+#if !IPL_HARDWARE_RUNNER
+        // Immutable labels are warmed during setup, using the existing shared
+        // vertex grid. No per-toggle allocation or giant managed text buffer.
+        for(int i=0;i<156;i++)
+        {
+            int index=i*6,vertex=i*4;
+            overlayIndices[index]=(ushort)vertex;overlayIndices[index+1]=(ushort)(vertex+1);overlayIndices[index+2]=(ushort)(vertex+2);
+            overlayIndices[index+3]=(ushort)vertex;overlayIndices[index+4]=(ushort)(vertex+2);overlayIndices[index+5]=(ushort)(vertex+3);
+        }
+        overlayMaterial.Texture=atlas;
+#if IPL_PERFORMANCE_REVIEW
+        long overlaySetupStart=Clock.Timestamp;
+#endif
+        IplPerformanceOverlay.PrepareLabels(this);
+#if IPL_PERFORMANCE_REVIEW
+        IplFrameProfiler.OverlaySetupUs=IplFrameProfiler.Since(overlaySetupStart);
+#endif
+#endif
     }
     internal void Prepare()
     {
@@ -161,6 +187,45 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
     {if((color&255)!=0)draw.FillTriangle(new Vector2(offset+ax*scale,ay*scale),new Vector2(offset+bx*scale,by*scale),new Vector2(offset+cx*scale,cy*scale),Color(color));}
     public void Rectangle(float x,float y,float width,float height,uint color)
     {if((color&255)!=0)draw.FillRectangle(new RectF(offset+x*scale,y*scale,width*scale,height*scale),Color(color));}
+#if !IPL_HARDWARE_RUNNER
+    internal void OverlayLabel(string text,float x,float y,float size,uint color)
+    {
+        if(overlayVertices>0&&color!=overlayColor)FlushOverlayLabels();
+        overlayColor=color;float factor=size/28,advance=0,du=32f/atlas.Width,dv=40f/atlas.Height;
+        for(int i=0;i<text.Length;i++)
+        {
+            int ch=text[i]-32;if(ch<0||ch>=96)continue;
+            if(overlayVertices+4>624)FlushOverlayLabels();
+            float left=x+advance,right=left+32*factor,bottom=y+40*factor;
+            float u=ch%16*32f/atlas.Width,v=ch/16*40f/atlas.Height;var tint=Color(color);
+            glass[overlayVertices++]=new VertexPositionColorTexture(new Vector3(left-320,240-y,0),tint,new Vector2(u,v));
+            glass[overlayVertices++]=new VertexPositionColorTexture(new Vector3(right-320,240-y,0),tint,new Vector2(u+du,v));
+            glass[overlayVertices++]=new VertexPositionColorTexture(new Vector3(right-320,240-bottom,0),tint,new Vector2(u+du,v+dv));
+            glass[overlayVertices++]=new VertexPositionColorTexture(new Vector3(left-320,240-bottom,0),tint,new Vector2(u,v+dv));
+            advance+=IplFontData.Widths[ch]*factor;
+        }
+    }
+    internal void FlushOverlayLabels()
+    {
+        if(overlayVertices==0)return;
+        if(overlayMeshCount==overlayLabels.Length)throw new InvalidOperationException("Overlay label capacity exceeded.");
+        // Uniform colors enable the SDK's fast indexed glyph path, including
+        // unused staging vertices. Copy a short index prefix only during setup
+        // so replay transforms exactly the real glyphs, with no padded draws.
+        var tint=Color(overlayColor);
+        for(int i=overlayVertices;i<glass.Length;i++)glass[i]=new VertexPositionColorTexture(default,tint,default);
+        int count=overlayVertices/4*6;var indices=overlayIndices;
+        if(count!=indices.Length){indices=new ushort[count];Array.Copy(overlayIndices,indices,count);}
+        overlayLabels[overlayMeshCount++]=Mesh.Create(glass,indices);overlayVertices=0;
+    }
+    internal void DrawOverlayLabels()
+    {
+        draw.End();renderer.Begin3D(camera);
+        overlayTransform.LocalScale=new Vector3(scale,scale,1);
+        for(int i=0;i<overlayMeshCount;i++)renderer.DrawMesh(overlayLabels[i],overlayMaterial,overlayTransform);
+        renderer.End3D();draw.Begin();
+    }
+#endif
     public void Text(string value,float x,float y,float size,uint color,float angle,float stretch=1)
     {
         float factor=size/28,co=(float)Math.Cos(angle*.017453293f),si=(float)Math.Sin(angle*.017453293f),advance=0;
@@ -188,6 +253,9 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
     public void Dispose()
     {
         rims.Dispose();
+#if !IPL_HARDWARE_RUNNER
+        for(int i=0;i<overlayMeshCount;i++)overlayLabels[i].Dispose();
+#endif
         capture?.Dispose();panelMesh.Dispose();
         for(int i=0;i<glassMeshes.Length;i++){glassMeshes[i].Dispose();glossMeshes[i].Dispose();}draw.Dispose();atlas.Dispose();glossMap.Dispose();glossEffect.Dispose();
     }

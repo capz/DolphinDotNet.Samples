@@ -12,6 +12,11 @@ internal static class IplFrameProfiler
     internal const string Variant="skip-transparent-triangles";
     internal const int Frames=96, Columns=17;
     internal static readonly int[] Samples=new int[Frames*Columns];
+#if IPL_PERFORMANCE_REVIEW
+    // Review-only breakdown; the Y/BBA 17-column format remains unchanged.
+    internal static readonly int[] OverlaySamples=new int[Frames*6];
+    internal static int OverlaySetupUs;
+#endif
     private static readonly byte[] line=new byte[256];
     private static readonly int[] ordered=new int[Frames];
     internal static int Count;
@@ -36,6 +41,15 @@ internal static class IplFrameProfiler
         Samples[at+10]=GpuProfiler.BeginFrameCopyMicroseconds;Samples[at+11]=GpuProfiler.GateReacquireMicroseconds;
         Samples[at+12]=device.Width;Samples[at+13]=device.Height;Samples[at+14]=(int)device.Display.Scan;
         Samples[at+15]=(int)shell.Face;Samples[at+16]=shell.Editing?1:0;
+#if IPL_PERFORMANCE_REVIEW
+        int detail=Count*6;
+        OverlaySamples[detail]=IplPerformanceOverlay.LabelsUs;
+        OverlaySamples[detail+1]=IplPerformanceOverlay.NumbersUs;
+        OverlaySamples[detail+2]=IplPerformanceOverlay.FormatUs;
+        OverlaySamples[detail+3]=IplPerformanceOverlay.FlushUs;
+        OverlaySamples[detail+4]=IplPerformanceOverlay.Stats.Current[IplPerformanceStats.Overlay];
+        OverlaySamples[detail+5]=IplPerformanceOverlay.PublishUs;
+#endif
         if(++Count==Frames)
         {
             Active=false;Ready=NeedsExport=true;Status="Frame times captured";

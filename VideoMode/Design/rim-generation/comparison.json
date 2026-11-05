@@ -1,0 +1,57 @@
+[
+  {
+    "trial": "01-shared-boundary",
+    "baseline": "../overlay-cost/04-cached/native.png",
+    "excluded_numeric_rectangle": [
+      185,
+      62,
+      277,
+      427
+    ],
+    "changed_pixels_outside_numeric_rectangle": 0,
+    "maximum_channel_error_outside_numeric_rectangle": 0
+  },
+  {
+    "trial": "02-light-cutoff",
+    "baseline": "../overlay-cost/04-cached/native.png",
+    "excluded_numeric_rectangle": [
+      185,
+      62,
+      277,
+      427
+    ],
+    "changed_pixels_outside_numeric_rectangle": 0,
+    "maximum_channel_error_outside_numeric_rectangle": 0
+  },
+  {
+    "trial": "03-visible-work",
+    "baseline": "../overlay-cost/04-cached/native.png",
+    "excluded_numeric_rectangle": [
+      185,
+      62,
+      277,
+      427
+    ],
+    "changed_pixels_outside_numeric_rectangle": 0,
+    "maximum_channel_error_outside_numeric_rectangle": 0
+  },
+  {
+    "trial": "04-oblique",
+    "baseline": "00-oblique/native.png",
+    "excluded_numeric_rectangle": [
+      185,
+      62,
+      277,
+      427
+    ],
+    "changed_pixels_outside_numeric_rectangle": 0,
+    "maximum_channel_error_outside_numeric_rectangle": 0
+  },
+  {
+    "trial": "05-hidden",
+    "baseline": "../overlay-cost/05-cached-off/native.png",
+    "excluded_numeric_rectangle": null,
+    "changed_pixels": 0,
+    "maximum_channel_error": 0
+  }
+]

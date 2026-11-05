@@ -1,0 +1,131 @@
+{
+  "variant": "visible-rim-work-oblique",
+  "environment": "cloud Dolphin 2503 / Mesa llvmpipe, NOT physical hardware",
+  "clock": "native guest monotonic microseconds; emulated CPU/GPU timing does not establish hardware performance",
+  "method": "30 warmup + 96 recorded frames, fixed Oblique pose, no interrupts or dumps during measurement; Y logger uses the same buffer",
+  "scene": "Oblique",
+  "overlay_mode": "Full",
+  "dol_sha256": "38822af558e0741e03c86dfc1147d77b5648ffc943f834ca9936e19d27cfcda9",
+  "frames": 96,
+  "summary": {
+    "frame_us": {
+      "mean": 66731.03125,
+      "median": 66731.0,
+      "p95": 66740,
+      "max": 66741
+    },
+    "prepare_us": {
+      "mean": 41001.385416666664,
+      "median": 41001.0,
+      "p95": 41002,
+      "max": 41002
+    },
+    "submit_us": {
+      "mean": 16371.104166666666,
+      "median": 16371.0,
+      "p95": 16373,
+      "max": 16374
+    },
+    "end_us": {
+      "mean": 8225.916666666666,
+      "median": 8228.0,
+      "p95": 8230,
+      "max": 8231
+    },
+    "gpu_wait_us": {
+      "mean": 22.864583333333332,
+      "median": 23.0,
+      "p95": 23,
+      "max": 23
+    },
+    "retrace_us": {
+      "mean": 8190.5,
+      "median": 8192.0,
+      "p95": 8194,
+      "max": 8195
+    },
+    "capture_us": {
+      "mean": 615.84375,
+      "median": 616.0,
+      "p95": 618,
+      "max": 618
+    },
+    "blur_us": {
+      "mean": 1689.9791666666667,
+      "median": 1690.0,
+      "p95": 1691,
+      "max": 1691
+    },
+    "draws": {
+      "mean": 157,
+      "median": 157.0,
+      "p95": 157,
+      "max": 157
+    },
+    "triangles": {
+      "mean": 26134,
+      "median": 26134.0,
+      "p95": 26134,
+      "max": 26134
+    },
+    "begin_copy_us": {
+      "mean": 3,
+      "median": 3.0,
+      "p95": 3,
+      "max": 3
+    },
+    "gate_us": {
+      "mean": 0,
+      "median": 0.0,
+      "p95": 0,
+      "max": 0
+    },
+    "active_us": {
+      "mean": 58540.53125,
+      "median": 58539.0,
+      "p95": 58548,
+      "max": 58549
+    }
+  },
+  "overlay_summary": {
+    "labels_us": {
+      "mean": 81.05208333333333,
+      "median": 81.0,
+      "p95": 82,
+      "max": 83
+    },
+    "numbers_us": {
+      "mean": 797.53125,
+      "median": 797.0,
+      "p95": 800,
+      "max": 801
+    },
+    "format_us": {
+      "mean": 26.041666666666668,
+      "median": 26.0,
+      "p95": 28,
+      "max": 29
+    },
+    "flush_us": {
+      "mean": 156.80208333333334,
+      "median": 157.0,
+      "p95": 158,
+      "max": 158
+    },
+    "overlay_us": {
+      "mean": 1103.6875,
+      "median": 1104.0,
+      "p95": 1105,
+      "max": 1105
+    },
+    "publish_us": {
+      "mean": 5.9375,
+      "median": 4.0,
+      "p95": 13,
+      "max": 14
+    }
+  },
+  "native_status": "Captured in RAM; SD export disabled in this build",
+  "native_summary": "Frame mean 66731 us | p95 66740 us",
+  "completion_pc": "800A1EB4"
+}
