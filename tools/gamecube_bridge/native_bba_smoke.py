@@ -33,13 +33,14 @@ def main(args):
                 stream, peer = listener.accept()
                 with stream:
                     stream.settimeout(15)
-                    token, rows, digest = protocol.telemetry(stream)
+                    token, rows, digest, output_height = protocol.telemetry(stream)
                     if token != FIXTURE_TOKEN:
                         raise ValueError('Unexpected smoke-test fixture token')
                     summary, csv = protocol.results(rows)
                     (root / 'frames.csv').write_text(csv)
                     report = {'target': 'Dolphin emulated BBA, NOT physical GameCube', 'frames': len(rows),
                               'peer': peer, 'summary': summary, 'payload_sha256': digest,
+                              'native_output_height':output_height,
                               'dol_sha256': hashlib.sha256(args.dol.read_bytes()).hexdigest(),
                               'note': 'No debugger, frame dumps or host interrupts during sampling. Callback only after the full native window.'}
                     (root / 'result.json').write_text(json.dumps(report, indent=2) + '\n')

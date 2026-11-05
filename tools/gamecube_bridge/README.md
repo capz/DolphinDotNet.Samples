@@ -129,7 +129,7 @@ Each request prepares a single-use job, compiles its callback endpoint/nonce int
 an optimized native build, binds the exact ELF hash to that job, negotiates a fresh
 DNDL session, verifies the receiver's image-size/CRC acknowledgement, and commits
 execution once. The console renders 30 warmup plus 96 sampled frames, sends a
-64-byte DNDP header and bounded 6528-byte payload, awaits a persisted-result ACK,
+64-byte DNDP v2 header and bounded 6528-byte payload, awaits a persisted-result ACK,
 then returns to the resident receiver. The host waits for receiver readiness
 before marking the job complete. Status polling touches Windows job state only.
 
@@ -171,3 +171,24 @@ python3 -m unittest discover -s tools/gamecube_bridge/tests -v
 The `GameCube hardware bridge validation` workflow runs host tests on Windows and
 Linux, parses/provisions the Windows config in an isolated runner directory, and
 AOT-compiles release callback scene/mode variants without contacting hardware.
+
+Matched native BBA smoke results (Dolphin guest clock, not console hardware):
+
+| Same reporting build | Median frame | p95 frame | Max frame |
+|---|---:|---:|---:|
+| Baseline renderer | 150.147 ms | 150.149 ms | 150.149 ms |
+| Optimized renderer, network ready before warmup | 66.731 ms | 66.732 ms | 66.733 ms |
+
+The evidence directory retains every raw frame, including the earlier startup
+outlier. These runner-build numbers differ from the standalone no-network DOL;
+compare the same transport/build configuration when making hardware decisions.
+
+DNDP v2 reads the resolved output resolution separately from EFB dimensions.
+For example 576p can render through a 640x480 EFB; `native_output_height=576`
+in job metadata, scan=progressive in all rows and the requested scene are checked
+independently. EFB `height` in the CSV is not treated as video-output height.
+The initial v1 transport evidence is retained as historical data.
+
+The v2 native retest confirms 576p output with a 640x480 EFB, scan=progressive,
+face=Video and editing=true for all 96 samples (39.998 ms median in Dolphin).
+This is a mode/transport check, not an optimization comparison.

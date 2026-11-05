@@ -3,8 +3,9 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Dolphin.Network;
+using Dolphin.Graphics;
 
-// DNDP v1: post-window binary telemetry. No socket/file/debugger operation is
+// DNDP v2: post-window binary telemetry. No socket/file/debugger operation is
 // called while sampling. Keep payload and async allocations below the SDK heap.
 internal static class IplHardwareReporter
 {
@@ -24,10 +25,14 @@ internal static class IplHardwareReporter
         var payload=new byte[length];var header=new byte[64];var ack=new byte[4];
         for(int i=0;i<length/4;i++)U32(payload,i*4,(uint)IplFrameProfiler.Samples[i]);
         header[0]=68;header[1]=78;header[2]=68;header[3]=80; // DNDP
-        header[5]=1;header[7]=64;
+        header[5]=2;header[7]=64;
         for(int i=0;i<32;i++)header[8+i]=(byte)IplHardwareRunConfig.Token[i];
         U32(header,40,IplFrameProfiler.Columns);U32(header,44,(uint)IplFrameProfiler.Count);
-        U32(header,48,(uint)length);U32(header,52,Crc(payload,length));U32(header,56,Crc(header,56));
+        U32(header,48,(uint)length);U32(header,52,Crc(payload,length));
+        // PAL output can use a 480-line EFB. Validate resolved output separately.
+        var display=GraphicsDevice.Default.Display;
+        U32(header,56,display.Resolution==GraphicsResolution.R640x576?576u:display.Resolution==GraphicsResolution.R320x240?240u:480u);
+        U32(header,60,Crc(header,60));
         try
         {
             using var client=new TcpClient();

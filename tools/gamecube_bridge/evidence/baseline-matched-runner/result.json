@@ -1,0 +1,91 @@
+{
+  "target": "Dolphin emulated BBA, NOT physical GameCube",
+  "frames": 96,
+  "peer": [
+    "10.0.2.2",
+    52400
+  ],
+  "summary": {
+    "frame_us": {
+      "mean": 150147.05208333334,
+      "median": 150147.0,
+      "p95": 150149,
+      "max": 150149
+    },
+    "prepare_us": {
+      "mean": 87432.0625,
+      "median": 87431.0,
+      "p95": 87451,
+      "max": 87454
+    },
+    "submit_us": {
+      "mean": 60301.541666666664,
+      "median": 60302.0,
+      "p95": 60316,
+      "max": 60320
+    },
+    "end_us": {
+      "mean": 2393.3958333333335,
+      "median": 2395.0,
+      "p95": 2420,
+      "max": 2425
+    },
+    "gpu_wait_us": {
+      "mean": 3.125,
+      "median": 3.0,
+      "p95": 4,
+      "max": 4
+    },
+    "retrace_us": {
+      "mean": 2376.9895833333335,
+      "median": 2378.5,
+      "p95": 2404,
+      "max": 2409
+    },
+    "capture_us": {
+      "mean": 616.21875,
+      "median": 616.0,
+      "p95": 618,
+      "max": 618
+    },
+    "blur_us": {
+      "mean": 1104.0625,
+      "median": 1104.0,
+      "p95": 1105,
+      "max": 1106
+    },
+    "draws": {
+      "mean": 128,
+      "median": 128.0,
+      "p95": 128,
+      "max": 128
+    },
+    "triangles": {
+      "mean": 31300,
+      "median": 31300.0,
+      "p95": 31300,
+      "max": 31300
+    },
+    "begin_copy_us": {
+      "mean": 3,
+      "median": 3.0,
+      "p95": 3,
+      "max": 3
+    },
+    "gate_us": {
+      "mean": 0,
+      "median": 0.0,
+      "p95": 0,
+      "max": 0
+    },
+    "active_us": {
+      "mean": 147770.0625,
+      "median": 147769.0,
+      "p95": 147798,
+      "max": 147806
+    }
+  },
+  "payload_sha256": "8b9ee5594dfe28d90c4aa5b0635d6aa85fefbc19af157e3ea1518a0de487f8c5",
+  "dol_sha256": "3cc06afca9179e7c954ed6670a50394a38499358fd833da2d3fd37e22edb2d40",
+  "note": "No debugger, frame dumps or host interrupts during sampling. Callback only after the full native window."
+}

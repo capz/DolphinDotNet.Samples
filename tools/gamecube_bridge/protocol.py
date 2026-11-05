@@ -1,4 +1,4 @@
-"""DNDL v1 ELF launch and DNDP v1 post-window telemetry (stdlib only).
+"""DNDL v1 ELF launch and DNDP v2 post-window telemetry (stdlib only).
 
 Interoperates with capz/DolphinDotNet.Debuggers' documented resident receiver.
 This independent client does not use a hardware debugger or mutate target RAM.
@@ -141,13 +141,13 @@ def launch(address, port, image, ready_timeout=30, upload_timeout=60, progress=N
 def telemetry(stream):
     header = exact(stream, 64)
     magic, version, size = struct.unpack_from('>4sHH', header)
-    if (magic, version, size) != (b'DNDP', 1, 64):
+    if (magic, version, size) != (b'DNDP', 2, 64):
         raise ValueError('Invalid DNDP telemetry header')
     token = header[8:40].decode('ascii')
-    columns, rows, length, checksum, header_crc, reserved = struct.unpack_from('>6I', header, 40)
-    if columns != len(FIELDS) or rows != 96 or length != rows * columns * 4 or reserved:
+    columns, rows, length, checksum, output_height, header_crc = struct.unpack_from('>6I', header, 40)
+    if columns != len(FIELDS) or rows != 96 or length != rows * columns * 4 or output_height not in (480,576):
         raise ValueError('Unexpected telemetry schema or bounds')
-    if zlib.crc32(header[:56]) & 0xffffffff != header_crc:
+    if zlib.crc32(header[:60]) & 0xffffffff != header_crc:
         raise ValueError('Telemetry header checksum mismatch')
     payload = exact(stream, length)
     if zlib.crc32(payload) & 0xffffffff != checksum:
@@ -157,13 +157,13 @@ def telemetry(stream):
     for record in records:
         if any(value < 0 for value in record.values()) or not 0 < record['frame_us'] <= 10000000:
             raise ValueError('Invalid frame duration/counter')
-        if record['width'] != 640 or record['height'] not in (480, 576) or record['scan'] not in (1, 2):
+        if record['width'] != 640 or not 240<=record['height']<=576 or record['scan'] not in (1, 2):
             raise ValueError('Unexpected native video mode')
         if record['face'] > 5 or record['editing'] not in (0, 1):
             raise ValueError('Unexpected native scene state')
         if record['retrace_us'] > record['frame_us']:
             raise ValueError('Retrace exceeds total frame time')
-    return token, records, hashlib.sha256(payload).hexdigest()
+    return token, records, hashlib.sha256(payload).hexdigest(), output_height
 
 
 def results(records):

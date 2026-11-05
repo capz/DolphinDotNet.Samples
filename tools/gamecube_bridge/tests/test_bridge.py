@@ -29,16 +29,16 @@ def elf(token=TOKEN):
     return bytes(image)
 
 
-def packet(token=TOKEN, scene='Options', video='480i'):
+def packet(token=TOKEN, scene='Options', video='480i', efb_height=None):
     height, scan = service.VIDEOS[video]
     face, editing = service.SCENES[scene]
-    row = [50048, 7528, 41362, 1137, 3, 1121, 616, 1690, 102, 17504, 3, 0, 640, height, scan, face, editing]
+    row = [50048, 7528, 41362, 1137, 3, 1121, 616, 1690, 102, 17504, 3, 0, 640, height if efb_height is None else efb_height, scan, face, editing]
     payload = struct.pack('>17i', *row) * 96
     header = bytearray(64)
-    struct.pack_into('>4sHH', header, 0, b'DNDP', 1, 64)
+    struct.pack_into('>4sHH', header, 0, b'DNDP', 2, 64)
     header[8:40] = token.encode()
-    struct.pack_into('>6I', header, 40, 17, 96, len(payload), zlib.crc32(payload), 0, 0)
-    struct.pack_into('>I', header, 56, zlib.crc32(header[:56]))
+    struct.pack_into('>6I', header, 40, 17, 96, len(payload), zlib.crc32(payload), height, 0)
+    struct.pack_into('>I', header, 60, zlib.crc32(header[:60]))
     return bytes(header) + payload
 
 
@@ -181,8 +181,9 @@ class ProtocolTests(unittest.TestCase):
         a, b = socket.socketpair()
         try:
             a.sendall(packet())
-            token, rows, digest = protocol.telemetry(b)
+            token, rows, digest, output_height = protocol.telemetry(b)
             self.assertEqual(token, TOKEN)
+            self.assertEqual(output_height,480)
             self.assertEqual(len(rows), 96)
             summary, csv = protocol.results(rows)
             self.assertEqual(summary['frame_us']['p95'], 50048)
@@ -202,6 +203,16 @@ class ProtocolTests(unittest.TestCase):
                     protocol.telemetry(b)
             finally:
                 a.close(); b.close()
+
+    def test_pal_output_and_efb_height_are_independent(self):
+        a,b=socket.socketpair()
+        try:
+            a.sendall(packet(video='576p',efb_height=480))
+            _,rows,_,output_height=protocol.telemetry(b)
+            self.assertEqual(output_height,576)
+            self.assertEqual(rows[0]['height'],480)
+        finally:
+            a.close();b.close()
 
 
 class BridgeTests(unittest.TestCase):
@@ -290,6 +301,19 @@ class BridgeTests(unittest.TestCase):
         with patch.dict('os.environ', {'DND_BRIDGE_API_TOKEN': 'a' * 64}):
             with self.assertRaises(ValueError):
                 client.Client('http://192.168.1.2:6280')
+
+    def test_restart_preserves_history_and_never_replays(self):
+        prepared=self.bridge.prepare(spec())
+        job=self.bridge.get(prepared['id'])
+        self.bridge.save(job)
+        self.assertNotIn(prepared['callback_token'],(Path(self.temp.name)/job.id/'job.json').read_text())
+        self.bridge.close()
+        self.bridge=service.Bridge(settings(Path(self.temp.name),self.receiver.port))
+        self.api.bridge=self.bridge
+        restored=self.bridge.get(job.id)
+        self.assertEqual(restored.state,'failed')
+        self.assertIn('not replayed',restored.error)
+        self.assertEqual(self.receiver.commits,0)
 
 # Optional interoperability check against the pinned production C receiver.
 # The executable validates bytes/ELF and NEVER executes PowerPC machine code.

@@ -16,6 +16,22 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - uses: actions/checkout@v4
+        if: runner.os == 'Linux'
+        with:
+          repository: capz/DolphinDotNet.Debuggers
+          ref: 6ea774fdf377324e587ee19b48ebc426207bb001
+          path: out/launcher-source
+      - name: Build the production C wire-protocol fixture (never executes an ELF)
+        if: runner.os == 'Linux'
+        run: |
+          cc -std=c11 -O2 -Wall -Wextra -Werror -Iout/launcher-source/tools/DolphinDotNet.Launcher \
+            out/launcher-source/tools/DolphinDotNet.Launcher/tests/stdio_receiver.c \
+            out/launcher-source/tools/DolphinDotNet.Launcher/elf.c \
+            out/launcher-source/tools/DolphinDotNet.Launcher/protocol.c \
+            out/launcher-source/tools/DolphinDotNet.Launcher/zlib_decode.c \
+            out/launcher-source/tools/DolphinDotNet.Launcher/puff.c -o "$RUNNER_TEMP/dnd-stdio-receiver"
+          echo "DND_LAUNCHER_STDIO_FIXTURE=$RUNNER_TEMP/dnd-stdio-receiver" >> "$GITHUB_ENV"
       - name: Test authenticated API, launcher wire protocol and telemetry
         run: python -m unittest discover -s tools/gamecube_bridge/tests -v
       - name: Parse Windows provisioning scripts

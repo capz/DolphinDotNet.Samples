@@ -236,7 +236,7 @@ class Bridge:
                 try:
                     if address[0] != self.settings['console_address']:
                         raise ValueError('Callback did not originate from the configured target')
-                    token, rows, digest = protocol.telemetry(stream)
+                    token, rows, digest, output_height = protocol.telemetry(stream)
                     with self.lock:
                         job = self.active
                         if job is None or job.state not in ('launching', 'measuring') or not hmac.compare_digest(job.token, token):
@@ -245,7 +245,7 @@ class Bridge:
                             raise ValueError('Duplicate callback')
                         height, scan = VIDEOS[job.spec['video']]
                         face, editing = SCENES[job.spec['scene']]
-                        if any((r['height'], r['scan'], r['face'], r['editing']) != (height, scan, face, editing) for r in rows):
+                        if output_height!=height or any((r['scan'], r['face'], r['editing']) != (scan, face, editing) for r in rows):
                             raise ValueError('Native scene/mode differs from the prepared job')
                         summary, csv = protocol.results(rows)
                         directory = self.settings['artifacts'] / job.id
@@ -254,6 +254,7 @@ class Bridge:
                                       'payload_sha256': digest, 'received_at': time.time(), 'target': self.target(),
                                       'measurement_origin': 'native-clock-over-BBA' if self.settings['target_kind'] == 'gamecube' else 'simulated-target-not-hardware',
                                       'callback_peer':list(address),
+                                      'native_output_height':output_height,
                                       'capture_note': 'Raw timing only; no hardware screenshot/capture card is claimed.'}
                         self.save(job)
                         stream.sendall(b'OKAY')

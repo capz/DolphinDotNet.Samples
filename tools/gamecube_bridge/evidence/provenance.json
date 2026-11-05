@@ -12,5 +12,8 @@
       "dol": "85300545964ba11a45e11e1058e6c7994176ffab726d45180e887ef4d43d4ac1",
       "elf": "325a9031f173026e5f1a46b7d1536088105125e679188b76b3c71766729df8f2"
     }
-  }
+  },
+  "historical_wire_version": 1,
+  "current_wire_version": 2,
+  "note": "DNDP v2 additionally authenticates/checks resolved output height independently of EFB dimensions."
 }
