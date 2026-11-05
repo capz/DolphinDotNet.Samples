@@ -41,7 +41,7 @@ internal sealed class IplRenderer
     private readonly float[] curvatures=new float[25*25];
     private readonly int[] faceOrder=new int[6];
     private readonly float[] depth=new float[6];
-    private readonly uint[] wallTints=new uint[16];
+    private readonly uint[] wallTints=new uint[OuterRimBands];
     private readonly IplPoint[] wallDirections=new IplPoint[4*13];
     // Adjacent bands share a boundary. Retain its rotated endpoints in a small
     // scratch ring rather than rebuilding it and rotating both ends per segment.
@@ -50,6 +50,7 @@ internal sealed class IplRenderer
     // A broad corner arc must remain visible at native resolution. The optical
     // wall uses the same radius family as the underlying rounded solid.
     private const float Round=.24f,Core=1-Round,WallCorner=.28f;
+    private const int WallBandDivisions=16,OuterRimBands=3;
     internal IplRenderer(IIplCanvas canvas)
     {
         c=canvas;
@@ -77,15 +78,15 @@ internal sealed class IplRenderer
             float a=(180-corner*90-j*90f/8)*.017453293f;
             panelDirections[corner*9+j]=new IplPoint((float)Math.Cos(a),(float)Math.Sin(a));
         }
-        for(int band=0;band<16;band++)
+        // Retain only the outer polish. The former middle and inset returns,
+        // including their ambient wall tint, made separate interior contours.
+        for(int band=0;band<OuterRimBands;band++)
         {
-            float t=(band+.5f)/16;
+            float t=(band+.5f)/WallBandDivisions;
             float polish=(float)Math.Exp(-Math.Pow((t-.10f)/.035f,2));
-            float exit=(float)Math.Exp(-Math.Pow((t-.90f)/.035f,2));
-            float secondary=(float)Math.Exp(-Math.Pow((t-.42f)/.035f,2));
             float spectrum=(float)Math.Sin(t*12.56637f),envelope=(float)Math.Sin(t*3.1415926f);
-            int alpha=(int)((4+polish*205+secondary*110+exit*130)*Math.Sqrt(envelope));
-            wallTints[band]=Rgba((int)(35+polish*150+secondary*90+exit*70+spectrum*20),(int)(52+polish*160+secondary*80+exit*70),(int)(72+polish*170+secondary*120+exit*85-spectrum*20),alpha);
+            int alpha=(int)(polish*205*Math.Sqrt(envelope));
+            wallTints[band]=Rgba((int)(35+polish*150+spectrum*20),(int)(52+polish*160),(int)(72+polish*170-spectrum*20),alpha);
         }
     }
     private static float Coordinate(int i) => i<6 ? -1+Round*(1-(float)Math.Cos(i/6f*1.5707963f)) : i>18 ? -Coordinate(24-i) : -Core+(i-6)*2*Core/12;
@@ -286,11 +287,11 @@ internal sealed class IplRenderer
             rimVisibility=Clamp((facing-.08f)/.20f,0,1);
             if(rimVisibility<=0)continue;
             rimVisibility=rimVisibility*rimVisibility*(3-2*rimVisibility);
-            // A continuous optical cross-section replaces nested stroked rings.
-            // Broad transmission and two soft polish lobes have no hard seam.
-            for(int band=0;band<16;band++)
+            // Keep the original outer-bevel width and rounded silhouette.
+            // No bands extend to the former middle or inset inner boundary.
+            for(int band=0;band<OuterRimBands;band++)
             {
-                float outside=band/16f,inside=(band+1)/16f;
+                float outside=band/(float)WallBandDivisions,inside=(band+1)/(float)WallBandDivisions;
                 GlassWall(face,band,.997f-outside*.147f,.997f-inside*.147f,1-outside*.050f,1-inside*.050f,wallTints[band]);
             }
         }
@@ -316,8 +317,7 @@ internal sealed class IplRenderer
     {
         float x=corner==0||corner==3?-extent+radius:extent-radius;
         float y=corner<2?extent-radius:-extent+radius;
-        // Offset the transmitted inner boundary inside the glass: the mockup
-        // shows more optical depth on the left than on the right.
+        // Shift samples through the outer bevel to retain its polished depth.
         float refraction=(1-depth)/.050f*.105f;
         var p=Surface(face,x+direction.X*radius+refraction,y+direction.Y*radius);
         return new IplPoint(p.X*depth,p.Y*depth,p.Z*depth);

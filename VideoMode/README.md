@@ -119,6 +119,10 @@ explain the original 50.05 ms VSync step and the restored 33.36 ms visible-overl
 further increments saving 2.00 ms frontally and 5.72 ms obliquely, with native
 images unchanged outside timing values; these gains add headroom within the same
 presentation intervals.
+[The current outer-rim-only rendering](Design/outer-rim-only-review.md) removes
+the middle and inset inner returns entirely while retaining the rounded outer
+polish. Its native frontal/angled screenshots and updated timings supersede the
+earlier full-wall appearance.
 
 For an uninterrupted native benchmark, build with `IplPerformanceReview=true`
 and `IplPerformanceReviewScene=Options`, `Oblique`, `Cube` or `Detail`, then run

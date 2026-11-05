@@ -1,5 +1,9 @@
 # Optical-wall generation follow-up
 
+This is the full-wall optimization checkpoint at `7ab3681`. The subsequent
+[outer-rim-only change](outer-rim-only-review.md) intentionally removes the inset
+appearance shown here.
+
 Three incremental native experiments reduce duplicate optical-wall construction
 and work for transparent segments. The frontal Options scene saves **2.00 ms**
 of work per frame; the fixed oblique scene saves **5.72 ms**. Neither crosses the
@@ -86,7 +90,7 @@ XYZ coordinates. [Result](rim-generation/geometry-comparison.json) and
 [comparison harness](rim-generation/geometry-comparison.cs.txt). This checks shared
 geometry and cache reuse, and is not native performance or screenshot evidence.
 To reproduce, compile that harness in a temporary .NET 8 console project linking
-the current renderer/shell/menu/stats/lighting/font sources. Extract only the
+the renderer/shell/menu/stats/lighting/font sources at `7ab3681`. Extract only the
 `IplRenderer` class from `git show 9f0d1d3:VideoMode/IplRenderer.cs`, rename it and
 its constructor to `BaselineRenderer`, and add that reference class to the project.
 
