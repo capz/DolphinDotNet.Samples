@@ -1,0 +1,55 @@
+{
+  "source_revision": "e81955370b66091a80939ea82db2444ea70c2592",
+  "build": "Normal interactive native Release; SDK 0.1.0-preview.217.1; no review flags",
+  "dol_sha256": "ddd6720fd6a55665318f0927299baaaa190adc9d2a24d312d89601443d6be412",
+  "environment": "Cloud Dolphin 2503 / Mesa llvmpipe, Xvfb; NOT physical hardware",
+  "method": "Real XTest input through emulated GameCube controller; full unscaled 640x480 X11 windows captured after SIGSTOP; all nine PNGs visually inspected",
+  "note": "Interactive captures include frame dumping/idle motion and are not controlled timing windows; Dolphin window forces 4:3 even when native aspect setting is 16:9",
+  "events": [
+    {
+      "capture": "01-default-hidden",
+      "completed_frames": 429,
+      "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)"
+    },
+    {
+      "capture": "02-z-held-visible",
+      "completed_frames": 552,
+      "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)"
+    },
+    {
+      "capture": "03-options-visible",
+      "completed_frames": 595,
+      "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)"
+    },
+    {
+      "capture": "04-editor-visible",
+      "completed_frames": 695,
+      "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)"
+    },
+    {
+      "capture": "05-z-hidden-editor",
+      "completed_frames": 854,
+      "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)"
+    },
+    {
+      "capture": "06-reopened-options",
+      "completed_frames": 1057,
+      "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)"
+    },
+    {
+      "capture": "07-widescreen-kept",
+      "completed_frames": 1586,
+      "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)"
+    },
+    {
+      "capture": "08-widescreen-hidden",
+      "completed_frames": 1630,
+      "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)"
+    },
+    {
+      "capture": "09-safe-mode",
+      "completed_frames": 1679,
+      "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)"
+    }
+  ]
+}

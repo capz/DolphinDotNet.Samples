@@ -19,6 +19,7 @@ from capture_x11 import capture
 parser=argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--logs',type=Path,required=True)
 parser.add_argument('--dol',type=Path,required=True)
+parser.add_argument('--widescreen',action='store_true',help='Also preview/keep 16:9, hide Z, and return through X safe mode')
 args=parser.parse_args()
 root=args.logs.resolve()
 if root.exists() and any(root.iterdir()):raise ValueError('Use a fresh capture directory')
@@ -26,7 +27,7 @@ root.mkdir(parents=True,exist_ok=True)
 config=root/'user/Config';config.mkdir(parents=True)
 (config/'Dolphin.ini').write_text('[Core]\nGFXBackend = OGL\nCPUCore = 1\nCPUThread = False\nSIDevice0 = 6\n[DSP]\nBackend = No Audio Output\n[Display]\nRenderWindowXPos = 0\nRenderWindowYPos = 0\nRenderWindowWidth = 640\nRenderWindowHeight = 480\n[Interface]\nOnScreenDisplayMessages = False\n[Movie]\nDumpFrames = True\nDumpFramesSilent = True\n')
 (config/'GFX.ini').write_text('[Settings]\nDumpFramesAsImages = True\nInternalResolution = 1\nMSAA = 1\nSSAA = False\nAspectRatio = 2\n[Enhancements]\nPostProcessingShader = IplEdgeAA\n[Hacks]\nForceProgressive = True\n')
-(config/'GCPadNew.ini').write_text('[GCPad1]\nDevice = XInput2/0/Virtual core pointer\nButtons/Z = Z\nButtons/A = A\nButtons/B = B\nD-Pad/Left = Left\nD-Pad/Right = Right\n')
+(config/'GCPadNew.ini').write_text('[GCPad1]\nDevice = XInput2/0/Virtual core pointer\nButtons/Z = Z\nButtons/A = A\nButtons/B = B\nButtons/X = X\nD-Pad/Left = Left\nD-Pad/Right = Right\nD-Pad/Up = Up\nD-Pad/Down = Down\n')
 shaders=root/'user/Shaders';shaders.mkdir()
 shutil.copyfile(Path(__file__).parents[1]/'VideoMode/Assets/IplEdgeAA.glsl',shaders/'IplEdgeAA.glsl')
 x=C.CDLL('libX11.so.6');xt=C.CDLL('libXtst.so.6')
@@ -61,6 +62,11 @@ try:
     key('a');shot('04-editor-visible')
     key('z',1);shot('05-z-hidden-editor')
     key('b');key('z');time.sleep(12);shot('06-reopened-options')
+    if args.widescreen:
+        key('b');key('Right');key('Down');key('Down')
+        key('a');key('Up');key('a');key('a');shot('07-widescreen-kept')
+        key('z');shot('08-widescreen-hidden')
+        key('x');shot('09-safe-mode')
     (root/'events.json').write_text(json.dumps(events,indent=2)+'\n')
 finally:
     if p.poll() is None:

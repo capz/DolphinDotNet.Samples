@@ -97,6 +97,9 @@ must not be claimed without a captured native run against the reference images.
 
 ## Antialiasing and performance
 
+[Indexed optical-rim submission, timings and native checks](Design/indexed-rims-review.md)
+include the current frontal/oblique results and 36 scan-mode acceptance phases.
+
 [Latest incremental timings and native comparisons](Design/performance-followup.md)
 cover the frontal menu, flat editor and oblique stress pose.
 

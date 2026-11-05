@@ -5,5 +5,6 @@
     640,
     528
   ],
-  "pixel_differences": null
+  "changed_pixels": 0,
+  "max_channel_error": 0
 }

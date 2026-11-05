@@ -1,21 +1,21 @@
 {
   "01-indexed": {
-    "reference": "00-baseline",
+    "reference": "00-baseline/native.png",
     "changed_pixels": 0,
     "max_channel_error": 0
   },
   "02-angle": {
-    "reference": "../../performance-followup/08-angle-after/native.png",
+    "reference": "../performance-followup/08-angle-after/native.png",
     "changed_pixels": 0,
     "max_channel_error": 0
   },
   "03-final": {
-    "reference": "00-baseline",
+    "reference": "00-baseline/native.png",
     "changed_pixels": 0,
     "max_channel_error": 0
   },
   "04-angle-final": {
-    "reference": "../../performance-followup/08-angle-after/native.png",
+    "reference": "../performance-followup/08-angle-after/native.png",
     "changed_pixels": 0,
     "max_channel_error": 0
   }

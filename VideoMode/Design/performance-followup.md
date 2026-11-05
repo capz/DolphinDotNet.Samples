@@ -1,5 +1,9 @@
 # Further native performance improvements
 
+[The later indexed-rim pass](indexed-rims-review.md) improves frontal presentation
+to 33.365 ms and oblique presentation to 66.731 ms in the same Dolphin setup.
+This page retains the preceding baseline and incremental checkpoints.
+
 These measurements use cloud Dolphin 2503, Mesa llvmpipe and the native guest
 clock. They are **not physical GameCube frame-rate measurements**. The baseline
 is the Z-overlay build, revision `9269a00`, with the overlay hidden. The BBA
