@@ -6,6 +6,10 @@ using System.Text;
 // Geometry inspection aid, not a Dolphin screenshot. Native reflection textures are not exported.
 internal sealed class IplProof : IIplCanvas
 {
+    public bool BeginSelectorCache(int part,string value,float cell,uint color)=>false;
+    public void EndSelectorCache(){}
+    public void PrepareSelector(int part,IplSelectorPose pose,float centerX,float centerY){}
+    public bool DrawSelectorCache(int part)=>false;
     public bool BeginGridCache()=>false;
     public void EndGridCache(){}
     public bool DrawGridCache()=>false;

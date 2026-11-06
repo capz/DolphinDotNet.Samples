@@ -25,6 +25,7 @@ def main():
     parser.add_argument('--numbers', action='store_true')
     parser.add_argument('--footer-text', action='store_true')
     parser.add_argument('--grid', action='store_true')
+    parser.add_argument('--selectors', action='store_true')
     parser.add_argument('--hypercube', type=Path,
                         help='Link OrderedMeshPasses from this engine checkout with its native backend')
     args = parser.parse_args()
@@ -53,6 +54,7 @@ def main():
         'IplCachedNumbers': str(args.numbers).lower(),
         'IplCachedFooterText': str(args.footer_text).lower(),
         'IplCachedGrid': str(args.grid).lower(),
+        'IplCachedSelectors': str(args.selectors).lower(),
         'IplNextSdk': 'true', 'DndSampleControls': 'true', 'DndBuildBackend': 'Docker',
     }
     for key, value in settings.items():

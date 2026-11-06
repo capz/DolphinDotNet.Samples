@@ -4,6 +4,10 @@ using System;
 internal interface IIplCanvas
 {
     void Section(IplRenderPhase phase);
+    bool BeginSelectorCache(int part,string value,float cell,uint color);
+    void EndSelectorCache();
+    void PrepareSelector(int part,IplSelectorPose pose,float centerX,float centerY);
+    bool DrawSelectorCache(int part);
     bool BeginGridCache();
     void EndGridCache();
     bool DrawGridCache();
@@ -49,6 +53,10 @@ internal sealed class IplRenderer
     private readonly IIplCanvas c;
     private float yaw,pitch,cy,scale,rimVisibility;
     private float cosYaw,sinYaw,cosPitch,sinPitch;
+    private IplSelectorPose selectorPose;
+    private readonly string[] selectorValues=new string[3];
+    private float selectorX,selectorY;
+    private bool transformingSelector;
     private bool footerReady,iconReady,iconBuilding;
 #if IPL_CACHED_GRID
     private bool gridReady;
@@ -158,7 +166,13 @@ internal sealed class IplRenderer
         if((color&255)!=0)c.Triangle(a.X,a.Y,b.X,b.Y,d.X,d.Y,color);
     }
     private void Rect(float x,float y,float w,float h,uint color)
-    {if((color&255)!=0)c.Rectangle(x,y,w,h,color);}
+    {
+        if((color&255)==0)return;
+        if(!transformingSelector){c.Rectangle(x,y,w,h,color);return;}
+        var a=selectorPose.Project(x,y,selectorX,selectorY);var b=selectorPose.Project(x+w,y,selectorX,selectorY);
+        var d=selectorPose.Project(x,y+h,selectorX,selectorY);var e=selectorPose.Project(x+w,y+h,selectorX,selectorY);
+        Tri(a,b,d,color);Tri(b,e,d,color);
+    }
     private void Line(float x,float y,float xx,float yy,float width,uint color)
     {
         float dx=xx-x,dy=yy-y, d=(float)Math.Sqrt(dx*dx+dy*dy);if(d<.001f)return;
@@ -208,6 +222,7 @@ internal sealed class IplRenderer
 #if IPL_CACHED_GRID
             if(!gridReady&&c.BeginGridCache()){Grid();c.EndGridCache();gridReady=true;}
 #endif
+            Selectors(shell,true);
             return;
         }
         c.Section(IplRenderPhase.GlassGeometry);
@@ -563,34 +578,57 @@ internal sealed class IplRenderer
             Center(s.Video.Reverting?"Unable to restore. Retrying.":((int)Math.Ceiling(s.Video.Remaining)).ToString()+" seconds to confirm",320,357,18,White);
         }
         Center(s.Label(s.Row),320,104,23,Green);
+        Selectors(s,false);
+        if(s.Face==ShellFace.Calendar)
+            Center("Calendar demonstration. Changes last for this session.",320,351,14,0xc4c9deff);
+        else if(s.Face==ShellFace.Video&&!s.Video.Pending)
+        {
+            string status=s.Video.Status;
+            if(status=="UNSUPPORTED MODE OR CABLE"||status=="NOT ENOUGH MEMORY FOR MODE")Banner(status=="UNSUPPORTED MODE OR CABLE"?"Unsupported mode or cable.":"Not enough memory for this mode.",true);
+            else Center("A previews the mode. B discards changes.",320,350,16,White);
+        }
+        else if(s.Face==ShellFace.Options)Center("Sound demonstration. Changes last for this session.",320,351,14,0xc4c9deff);
+    }
+    private void Selectors(IplShell s,bool preparing)
+    {
         if(s.Face==ShellFace.Calendar)
         {
             int count=s.Row==0?2:3;
             float total=s.Row==0?214:352,start=320-total/2;
             for(int i=0;i<count;i++)
             {
-                string value=s.Segment(i);float w=i==2?126:84;
+                string value=preparing?s.Segment(i):selectorValues[i];if(preparing)selectorValues[i]=value;
+                float w=i==2?126:84;
                 float x=start+w/2;
-                BlockText(value,x,180,i==s.Part?6:5,i==s.Part?Block:0x246b14ff);
-                if(i==s.Part)Arrows(x,151,263);
-                Center(s.Row==0?(i==0?"Hour":"Minute"):(i==0?"Day":i==1?"Month":"Year"),x,285,16,White);
+                Selector(s,i,value,x,180,i==s.Part?6:5,i==s.Part?Block:0x246b14ff,preparing);
+                if(!preparing){
+                    if(i==s.Part)Arrows(x,151,263);
+                    Center(s.Row==0?(i==0?"Hour":"Minute"):(i==0?"Day":i==1?"Month":"Year"),x,285,16,White);
+                }
                 start+=w+28;
             }
-            Center("Calendar demonstration. Changes last for this session.",320,351,14,0xc4c9deff);
         }
         else
         {
-            string value=s.Value(s.Row).ToUpperInvariant();
+            string value=preparing?s.Value(s.Row).ToUpperInvariant():selectorValues[0];if(preparing)selectorValues[0]=value;
             float cell=Math.Min(8,510f/Math.Max(1,value.Length*6-1));
-            BlockText(value,320,182,cell,Block);Arrows(320,148,267);
-            if(s.Face==ShellFace.Video&&!s.Video.Pending)
-            {
-                string status=s.Video.Status;
-                if(status=="UNSUPPORTED MODE OR CABLE"||status=="NOT ENOUGH MEMORY FOR MODE")Banner(status=="UNSUPPORTED MODE OR CABLE"?"Unsupported mode or cable.":"Not enough memory for this mode.",true);
-                else Center("A previews the mode. B discards changes.",320,350,16,White);
-            }
-            else if(s.Face==ShellFace.Options)Center("Sound demonstration. Changes last for this session.",320,351,14,0xc4c9deff);
+            Selector(s,0,value,320,182,cell,Block,preparing);
+            if(!preparing)Arrows(320,148,267);
         }
+    }
+    private void Selector(IplShell s,int part,string value,float x,float y,float cell,uint color,bool preparing)
+    {
+        float centerY=y+3.5f*cell;
+        if(preparing){
+            if(c.BeginSelectorCache(part,value,cell,color)){BlockText(value,0,-3.5f*cell,cell,color);c.EndSelectorCache();}
+            c.PrepareSelector(part,IplSelectorPose.For(s,part,(value.Length*6-1)*cell),x,centerY);
+            return;
+        }
+        if(c.DrawSelectorCache(part))return;
+        selectorPose=IplSelectorPose.For(s,part,(value.Length*6-1)*cell);
+        if(!selectorPose.Moving){BlockText(value,x,y,cell,color);return;}
+        selectorX=x;selectorY=centerY;transformingSelector=true;
+        BlockText(value,0,-3.5f*cell,cell,color);transformingSelector=false;
     }
     private void Banner(string value,bool alert)
     {

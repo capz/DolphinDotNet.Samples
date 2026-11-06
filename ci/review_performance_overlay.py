@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Drive a normal interactive DOL through a native Z-overlay review in Xvfb.
+"""Drive a normal DOL through native overlay, selector and scan reviews in Xvfb.
 
 Requires Dolphin NoGUI, XInput2 and libXtst. Saves full unscaled X11 PPMs and
 the last completed native EFB PNG at each step. Inspect the saved images;
@@ -22,8 +22,10 @@ parser.add_argument('--logs',type=Path,required=True)
 parser.add_argument('--dol',type=Path,required=True)
 parser.add_argument('--widescreen',action='store_true',help='Also preview/keep 16:9, hide Z, and return through X safe mode')
 parser.add_argument('--calendar',action='store_true',help='Review two-row blur and independent time/date editing instead of the overlay sequence')
+parser.add_argument('--selector-motion',action='store_true',help='Record active hour/minute/month/year motion, A/B and Reduced Motion')
+parser.add_argument('--selector-scan',action='store_true',help='Exercise animated scan values across progressive/interlaced preview, keep, rollback and safe mode')
 args=parser.parse_args()
-if args.calendar and args.widescreen:parser.error('Choose calendar or widescreen review')
+if sum([args.calendar,args.widescreen,args.selector_motion,args.selector_scan])>1:parser.error('Choose one review sequence')
 root=args.logs.resolve()
 if root.exists() and any(root.iterdir()):raise ValueError('Use a fresh capture directory')
 root.mkdir(parents=True,exist_ok=True)
@@ -78,7 +80,26 @@ def shot(name):
     p.send_signal(signal.SIGCONT)
 try:
     time.sleep(15);capture(root/'unused.ppm',True);time.sleep(2)
-    if args.calendar:
+    if args.selector_scan:
+        key('Right');key('Down');key('a');shot('01-interlaced-editor')
+        key('Up');shot('02-progressive-editor')
+        key('a');shot('03-progressive-preview')
+        key('a');shot('04-progressive-kept')
+        key('a');key('Down');key('a');shot('05-interlaced-preview')
+        key('b');shot('06-progressive-restored')
+        key('x');shot('07-safe-interlaced')
+    elif args.selector_motion:
+        key('Down');shot('01-calendar')
+        key('a');shot('02-hour-a');wait_frames(frame_count(),45);shot('03-hour-b')
+        key('Up');shot('04-hour-edited')
+        key('Right');key('Up');shot('05-minute-edited')
+        key('a');shot('06-time-committed')
+        key('Down');key('a');key('Right');key('Up');shot('07-month-edited')
+        key('Right');key('Up');shot('08-year-edited')
+        key('b');shot('09-date-cancelled')
+        key('b');key('Left');key('Down');key('a');key('b');key('Down');key('a')
+        shot('10-reduced-a');wait_frames(frame_count(),45);shot('11-reduced-b')
+    elif args.calendar:
         key('Down');shot('01-calendar-two-rows')
         key('a');key('Up');key('Right');key('Up');shot('02-time-parts')
         key('b');key('Down');key('a');key('Right');key('Up');shot('03-date-parts')

@@ -1,6 +1,8 @@
 <Project Sdk="DolphinDotNet.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <IplCachedSelectors Condition="'$(IplCachedSelectors)' == ''">true</IplCachedSelectors>
+    <DefineConstants Condition="'$(IplCachedSelectors)' == 'true'">$(DefineConstants);IPL_CACHED_SELECTORS</DefineConstants>
     <IplCachedGrid Condition="'$(IplCachedGrid)' == ''">true</IplCachedGrid>
     <IplCachedFooterText Condition="'$(IplCachedFooterText)' == ''">true</IplCachedFooterText>
     <IplCachedNumbers Condition="'$(IplCachedNumbers)' == ''">true</IplCachedNumbers>
