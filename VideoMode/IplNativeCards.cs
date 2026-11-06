@@ -57,7 +57,7 @@ internal sealed class IplNativeCards : IIplBrowserSource,IIplCardOperations,IIpl
     {
 #if IPL_MEMORY_CARD_SERVICES
         if(transfer!=null){try{transfer.Step();Progress=transfer.Progress;Status="Transfer: "+Progress.ToString()+"%";if(transfer.Complete){transfer.Dispose();transfer=null;Busy=false;Status="Transfer verified and complete.";RefreshCards();}}
-            catch(Exception e){try{transfer?.Dispose();}catch(Exception){}transfer=null;Busy=false;Status=e.Message??"Card transfer failed. Check both slots.";RefreshCards();}return;}
+            catch(Exception e){bool completed=transfer?.Complete==true;try{transfer?.Dispose();}catch(Exception){}transfer=null;Busy=false;if(completed)Progress=100;Status=completed?"Transfer completed. Refresh the slots before another action.":e.Message??"Card transfer failed. Check both slots.";RefreshCards();}return;}
         if(Clock.Timestamp>=nextProbe){nextProbe=Clock.Timestamp+500000;Probe(0);Probe(1);UpdateTotal();}
 #endif
     }
@@ -125,9 +125,9 @@ internal sealed class IplNativeCards : IIplBrowserSource,IIplCardOperations,IIpl
     {
 #if IPL_MEMORY_CARD_SERVICES
         var card=cards[slot];if(card==null)throw new InvalidOperationException("Reinsert the card and select again.");
-        if(action==IplCardAction.Format){if(!format[slot])throw new InvalidOperationException("Card status changed. Select it again.");try{card.Format();Status="Memory card formatted.";}catch(MemoryCardCommittedException e){Status=e.Message;}RefreshCards();return;}
+        if(action==IplCardAction.Format){if(!format[slot])throw new InvalidOperationException("Card status changed. Select it again.");try{card.Format();Status="Memory card formatted.";}catch(MemoryCardCommittedException e){Status=e.Message??"Operation completed. Refresh the slot before another action.";}RefreshCards();return;}
         if(!(item?.Handle is ManagedCardSave save))throw new InvalidOperationException("Select a saved file again.");
-        if(action==IplCardAction.Delete){try{card.Delete(save);Status="Saved file deleted.";}catch(MemoryCardCommittedException e){Status=e.Message;}RefreshCards();return;}
+        if(action==IplCardAction.Delete){try{card.Delete(save);Status="Saved file deleted.";}catch(MemoryCardCommittedException e){Status=e.Message??"Operation completed. Refresh the slot before another action.";}RefreshCards();return;}
         Probe(1-slot);var destination=cards[1-slot];if(destination==null||!ready[1-slot])throw new InvalidOperationException("The other slot needs a ready memory card.");
         transfer=card.BeginCopy(save,destination,action==IplCardAction.Move);Busy=true;Progress=0;Status="Copying and verifying the saved file...";
 #else

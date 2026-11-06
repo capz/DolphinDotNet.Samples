@@ -674,7 +674,7 @@ internal sealed partial class IplRenderer
     private void Footer(IplShell s)
     {
         const float y=428;
-        int style=s.Page==ShellPage.Cube?0:s.Video.Reverting?2:1;
+        int style=s.Page==ShellPage.Cube?0:s.Video.Reverting||s.Page==ShellPage.Browser&&s.Browser?.Busy==true?2:1;
         if(!c.DrawFooterCache(style))FooterShapes(style);
 #if IPL_CACHED_FOOTER_TEXT
         if(c.DrawFooterTextCache())return;
@@ -682,8 +682,10 @@ internal sealed partial class IplRenderer
         float stick=style==0?214:111;
         Text(s.Page==ShellPage.Cube?"... Menu Selection":s.Face==ShellFace.Calendar&&s.Editing?"... Part / Value":"... Select",stick+24,y-13,s.Page==ShellPage.Cube?20:17,White);
         if(s.Page==ShellPage.Cube){Text("R  Storage",486,y-12,16,0xb4ccd4ffu);return;}
-        Center("B",320,y-14,20,White);Text(s.Editing?"... Cancel":"... Back",340,y-13,17,White);
-        if(s.Video.Reverting)return;
-        Center("A",470,y-14,20,White);Text(s.Editing?"... Confirm":"... Open",492,y-13,17,White);
+        bool modal=s.Page==ShellPage.Browser&&s.Browser?.Panel!=IplBrowserPanel.Grid;
+        Center("B",320,y-14,20,White);Text(s.Editing||modal?"... Cancel":"... Back",340,y-13,17,White);
+        if(style==2)return;
+        string action=s.Page==ShellPage.Browser&&s.Browser?.Panel==IplBrowserPanel.Info?"... Close":s.Editing||modal?"... Confirm":"... Open";
+        Center("A",470,y-14,20,White);Text(action,492,y-13,17,White);
     }
 }

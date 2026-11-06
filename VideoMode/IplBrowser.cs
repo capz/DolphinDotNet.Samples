@@ -32,7 +32,7 @@ internal sealed class IplBrowser : IDisposable
     internal IplBrowserKind Kind {get;private set;}
     internal IplBrowserPanel Panel {get;private set;}
     internal string Path {get;private set;}="";
-    internal string Status=>error.Length>0?error:source.Status;
+    internal string Status=>error.Length>0?error:source.Status??"";
     internal string Information {get;private set;}="";
     internal int Slot {get;private set;}
     internal int PageStart {get;private set;}
@@ -68,7 +68,7 @@ internal sealed class IplBrowser : IDisposable
     internal void Direction(int x,int y)
     {
         if(Busy)return;
-        if(Panel==IplBrowserPanel.Launch||Panel==IplBrowserPanel.CardConfirm){if(x!=0||y!=0)Choice=1-Choice;return;}
+        if(Panel==IplBrowserPanel.Launch||Panel==IplBrowserPanel.CardConfirm){if(x!=0||y!=0)Choice=x!=0?(x>0?1:0):(y<0?1:0);return;}
         if(Panel==IplBrowserPanel.CardActions){int choice=Choice+(x!=0?x:-y);Choice=choice<0?3:choice>3?0:choice;return;}
         if(Panel!=IplBrowserPanel.Grid||Total==0)return;
         int next=PageStart+Selection+(x!=0?x:-y*3);if(next<0)next=Total-1;if(next>=Total)next=0;
