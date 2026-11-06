@@ -5,24 +5,41 @@ using static Dolphin.Graphics.Raw.GXConstants;
 
 // Dynamic positions/colors live in native memory. Only one small chunk is staged
 // on the 256 KiB managed heap; GX replays an immutable indexed command list.
+// Retained value selectors reuse this path with smaller buffers and a moving
+// perspective basis, keeping their block/bevel geometry unchanged between edits.
 internal sealed class IndexedRims : IDisposable
 {
-    private const int MaxQuads=32768;
+    private readonly int maxQuads;
     private readonly float[] positions=new float[IplRimCommands.PositionFloats];
     private readonly byte[] colors=new byte[IplRimCommands.ColorBytes];
     private readonly float[] projection=new float[16],transform=new float[12];
-    private readonly NativeBuffer positionBuffer=NativeBuffer.Allocate(MaxQuads*32);
-    private readonly NativeBuffer colorBuffer=NativeBuffer.Allocate(MaxQuads*4);
+    private readonly NativeBuffer positionBuffer,colorBuffer;
     private readonly NativeBuffer projectionBuffer=NativeBuffer.Allocate(64),transformBuffer=NativeBuffer.Allocate(48);
     private readonly NativeBuffer commands;
     private readonly int commandBytes;
     private int pending,chunks;
     private float previousWidth,previousHeight,previousScale,previousOffset;
-    internal IndexedRims()
+    private bool perspective;
+    internal IndexedRims(int maxQuads=32768)
     {
+        this.maxQuads=maxQuads;
+        positionBuffer=NativeBuffer.Allocate(maxQuads*32);colorBuffer=NativeBuffer.Allocate(maxQuads*4);
         var data=IplRimCommands.Create();commandBytes=data.Length;
         commands=NativeBuffer.Allocate(data.Length);commands.Write(data);commands.Flush();
     }
+    internal void PrepareSelector(IplSelectorPose pose,float centerX,float centerY,float width,float height,float scale,float offset)
+    {
+        perspective=true;
+        float distance=IplSelectorPose.Distance;
+        projection[0]=2*distance*scale/width;projection[2]=1-2*(offset+centerX*scale)/width;
+        projection[5]=2*distance*scale/height;projection[6]=2*centerY*scale/height-1;
+        projection[11]=-1;projection[14]=-1;
+        transform[0]=pose.Right.X;transform[1]=pose.Down.X;transform[3]=pose.X;
+        transform[4]=pose.Right.Y;transform[5]=pose.Down.Y;transform[7]=-pose.Y;
+        transform[8]=pose.Right.Z;transform[9]=pose.Down.Z;transform[11]=-distance;
+        projectionBuffer.Write(projection);transformBuffer.Write(transform);projectionBuffer.Flush();transformBuffer.Flush();
+    }
+    internal bool Ready=>chunks>0;
     internal void Prepare(float width,float height,float scale,float offset)
     {
         if(width==previousWidth&&height==previousHeight&&scale==previousScale&&offset==previousOffset)return;
@@ -38,7 +55,7 @@ internal sealed class IndexedRims : IDisposable
     internal void Quad(IplPoint a,IplPoint b,IplPoint c,IplPoint d,uint color)
     {
         if((color&255)==0)return;
-        if(chunks*IplRimCommands.Quads+pending>=MaxQuads)throw new InvalidOperationException("Optical rim capacity exceeded.");
+        if(chunks*IplRimCommands.Quads+pending>=maxQuads)throw new InvalidOperationException("Indexed quad capacity exceeded.");
         int at=pending*8;
         positions[at]=a.X;positions[at+1]=a.Y;positions[at+2]=b.X;positions[at+3]=b.Y;
         positions[at+4]=c.X;positions[at+5]=c.Y;positions[at+6]=d.X;positions[at+7]=d.Y;
@@ -70,7 +87,7 @@ internal sealed class IndexedRims : IDisposable
         device.BeginRaw();
         GX.GX_SetViewport(0,0,device.Width,device.Height,0,1);
         GX.GX_SetScissor(0,0,(uint)device.Width,(uint)device.Height);
-        GX.GX_LoadProjectionMtx(projectionBuffer.Address,GX_ORTHOGRAPHIC);
+        GX.GX_LoadProjectionMtx(projectionBuffer.Address,(byte)(perspective?GX_PERSPECTIVE:GX_ORTHOGRAPHIC));
         GX.GX_LoadPosMtxImm(transformBuffer.Address,GX_PNMTX0);GX.GX_SetCurrentMtx(GX_PNMTX0);
         GX.GX_ClearVtxDesc();GX.GX_SetVtxDesc(GX_VA_POS,GX_INDEX16);GX.GX_SetVtxDesc(GX_VA_CLR0,GX_INDEX16);
         GX.GX_SetVtxAttrFmt(0,GX_VA_POS,GX_POS_XY,GX_F32,0);GX.GX_SetVtxAttrFmt(0,GX_VA_CLR0,GX_CLR_RGBA,GX_RGBA8,0);

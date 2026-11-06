@@ -1,0 +1,5 @@
+{
+  "dol_sha256": "e6c0b320993af27b113ba0b7fb49ef6b7ced1ecbdec3bba94a2b0195a9dda458",
+  "build": "normal interactive source SDK, all integration flags and --selectors; no fixed review clock",
+  "images": "Completed 640x528 native Dolphin EFB PNGs copied byte-for-byte; no crop, resizing, or generated imagery"
+}

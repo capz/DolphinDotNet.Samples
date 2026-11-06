@@ -1,0 +1,17 @@
+{
+  "hour_frames": {
+    "changed_pixels": 1203,
+    "difference_bounds_exclusive": [
+      224,
+      197,
+      286,
+      249
+    ],
+    "note": "Only the active hour changes; minute, arrows, labels, grid and footer match."
+  },
+  "reduced_motion_frames": {
+    "changed_pixels": 0,
+    "difference_bounds_exclusive": null,
+    "note": "Identical native frames at different times with Reduced Motion enabled."
+  }
+}

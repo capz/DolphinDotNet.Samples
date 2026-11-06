@@ -1,0 +1,14 @@
+{
+  "control": "VideoMode/Design/submission-round-4/05-grid.png",
+  "native_capture": "VideoMode/Design/selector-motion/native-editor.png",
+  "control_sha256": "87893f3d6299edb0ada71ef714ac04e97ee70767337f4e0234a28a515e0c309a",
+  "native_sha256": "4b425301378b38cef8f9b2c6bf38c7418dad14c358e373b9c8294caae7d51561",
+  "masked_overlay_inclusive": [
+    40,
+    12,
+    282,
+    453
+  ],
+  "changed_uncovered_pixels": 0,
+  "maximum_channel_difference": 0
+}
