@@ -29,7 +29,9 @@ internal sealed class GameCubeCanvas : IIplCanvas, IIplBrowserCanvas, IDisposabl
     private readonly Mesh browserBannerQuad,browserIconQuad;
     private readonly Material browserArtworkMaterial=new Material{Blend=BlendMode.Alpha,Cull=CullMode.None,DepthTest=false,DepthWrite=false};
     private readonly Transform browserArtworkTransform=new Transform();
-    private readonly Texture2D?[] artwork=new Texture2D?[6];
+    private readonly Texture2D?[] artwork=new Texture2D?[48];
+    private readonly int[] artworkCounts=new int[6],artworkFrames=new int[6],artworkDurations=new int[48];
+    private readonly bool[] artworkBounces=new bool[6];
     private int artworkRevision=-1,artworkCursor;
 #if IPL_CACHED_GRID
     private readonly CachedFooter editorGrid;
@@ -417,14 +419,32 @@ internal sealed class GameCubeCanvas : IIplCanvas, IIplBrowserCanvas, IDisposabl
     internal void UpdateArtwork(IplBrowser? browser)
     {
         int revision=browser?.Revision??-1;
-        if(revision!=artworkRevision){for(int i=0;i<artwork.Length;i++){artwork[i]?.Dispose();artwork[i]=null;}artworkRevision=revision;artworkCursor=0;}
-        if(browser==null||browser.Busy||artworkCursor>=browser.Count)return;
-        int slot=artworkCursor++;var image=browser.Artwork(slot);if(image==null)return;
-        try{
-            if(image.Format==IplArtworkFormat.Rgb5A3){var texture=Texture2D.CreateNative(image.Width,image.Height,NativeTextureFormat.Rgb5A3,true);try{texture.ReplaceNative(image.Bytes);artwork[slot]=texture;}catch{texture.Dispose();throw;}}
-            else artwork[slot]=image.Format==IplArtworkFormat.Png?Texture2D.FromPng(image.Bytes,true):Texture2D.Create(image.Width,image.Height,image.Bytes,true);
-        }catch(ArgumentException){}catch(OutOfMemoryException){}
+        if(revision!=artworkRevision){
+            for(int i=0;i<artwork.Length;i++){artwork[i]?.Dispose();artwork[i]=null;}
+            Array.Clear(artworkCounts,0,6);Array.Clear(artworkFrames,0,6);artworkRevision=revision;artworkCursor=0;
+            if(browser!=null)for(int i=0;i<browser.Count;i++){artworkCounts[i]=browser.ArtworkFrames(i);artworkBounces[i]=browser.ArtworkBounces(i);for(int f=0;f<artworkCounts[i];f++)artworkDurations[i*8+f]=browser.ArtworkDuration(i,f);}
+        }
+        if(browser==null)return;
+        for(int i=0;i<browser.Count;i++){
+            int count=artworkCounts[i],period=artworkBounces[i]&&count>1?count*2-2:count,total=0;
+            for(int n=0;n<period;n++)total+=artworkDurations[i*8+(n<count?n:period-n)];
+            int time=total>0?(int)(browser.AnimationTime*60)%total:0,frame=0;
+            if(!browser.ReducedMotion)for(int n=0;n<period;n++){frame=n<count?n:period-n;if(time<artworkDurations[i*8+frame])break;time-=artworkDurations[i*8+frame];}
+            artworkFrames[i]=frame;
+        }
+        if(browser.Busy)return;
+        while(artworkCursor<48){
+            int cursor=artworkCursor++,slot=cursor%6,frame=cursor/6;
+            if(slot>=browser.Count||frame>=artworkCounts[slot])continue;
+            var image=browser.Artwork(slot,frame);if(image==null)continue;int target=slot*8+frame;
+            try{
+                if(image.Format==IplArtworkFormat.Rgb5A3){var texture=Texture2D.CreateNative(image.Width,image.Height,NativeTextureFormat.Rgb5A3,true);try{texture.ReplaceNative(image.Bytes);artwork[target]=texture;}catch{texture.Dispose();throw;}}
+                else artwork[target]=image.Format==IplArtworkFormat.Png?Texture2D.FromPng(image.Bytes,true):Texture2D.Create(image.Width,image.Height,image.Bytes,true);
+            }catch(ArgumentException){}catch(OutOfMemoryException){}
+            break; // At most one bounded image read/upload, between frames.
+        }
     }
+    private Texture2D? ArtworkTexture(int slot)=>slot<0||slot>=6?null:artwork[slot*8+artworkFrames[slot]]??artwork[slot*8];
     private Mesh BrowserArtworkMesh(float rx,float ry)
     {
         int used=0;var center=new IplPoint(.5f,.5f);IplPoint first=default,previous=default;
@@ -433,15 +453,15 @@ internal sealed class GameCubeCanvas : IIplCanvas, IIplBrowserCanvas, IDisposabl
         var indices=new ushort[used];for(int i=0;i<used;i++)indices[i]=(ushort)i;for(int i=used;i<glass.Length;i++)glass[i]=new VertexPositionColorTexture(default,Color32.White,default);return Mesh.Create(glass,indices);
     }
     private void BrowserArtVertex(IplPoint p,ref int at){glass[at++]=new VertexPositionColorTexture(new Vector3(p.X-.5f,.5f-p.Y,0),Color32.White,new Vector2(p.X,p.Y));}
-    public bool HasArtwork(int slot)=>slot>=0&&slot<artwork.Length&&artwork[slot]!=null;
+    public bool HasArtwork(int slot)=>ArtworkTexture(slot)!=null;
     private void DrawRoundedArtwork(Texture2D image,float x,float y,float width,float height)
     {
         float aspect=(float)image.Width/image.Height;if(width/height>aspect){float w=height*aspect;x+=(width-w)/2;width=w;}else{float h=width/aspect;y+=(height-h)/2;height=h;}
         browserArtworkMaterial.Texture=image;browserArtworkTransform.LocalPosition=new Vector3((x+width/2-320)*scale,(240-y-height/2)*scale,0);browserArtworkTransform.LocalScale=new Vector3(width*scale,height*scale,1);
         renderer.DrawMesh(aspect>1.5f?browserBannerQuad:browserIconQuad,browserArtworkMaterial,browserArtworkTransform);
     }
-    public void DrawArtworks(){bool began=false;for(int i=0;i<6;i++){var image=artwork[i];if(image==null)continue;if(!began){draw.End();renderer.Begin3D(camera);began=true;}DrawRoundedArtwork(image,40+i%3*192+17,100+i/3*146+16,142,48);}if(began){renderer.End3D();draw.Begin();}}
-    public bool DrawArtwork(int slot,float x,float y,float width,float height){var image=slot>=0&&slot<artwork.Length?artwork[slot]:null;if(image==null)return false;draw.End();renderer.Begin3D(camera);DrawRoundedArtwork(image,x,y,width,height);renderer.End3D();draw.Begin();return true;}
+    public void DrawArtworks(){bool began=false;for(int i=0;i<6;i++){var image=ArtworkTexture(i);if(image==null)continue;if(!began){draw.End();renderer.Begin3D(camera);began=true;}DrawRoundedArtwork(image,40+i%3*192+17,100+i/3*146+16,142,48);}if(began){renderer.End3D();draw.Begin();}}
+    public bool DrawArtwork(int slot,float x,float y,float width,float height){var image=ArtworkTexture(slot);if(image==null)return false;draw.End();renderer.Begin3D(camera);DrawRoundedArtwork(image,x,y,width,height);renderer.End3D();draw.Begin();return true;}
     public void BeginBrowserMask(){browserMaskVertices=0;}
     private void BrowserMaskVertex(IplPoint p){glass[browserMaskVertices++]=new VertexPositionColorTexture(World(p),Color32.White,new Vector2((offset+p.X*scale)/logicalWidth*device.Width/copyWidth,p.Y*scale/logicalHeight*device.Height/copyHeight));}
     public void BrowserMaskTriangle(IplPoint a,IplPoint b,IplPoint d){BrowserMaskVertex(a);BrowserMaskVertex(b);BrowserMaskVertex(d);}

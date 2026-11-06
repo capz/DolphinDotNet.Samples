@@ -27,6 +27,8 @@ def main():
     parser.add_argument('--footer-text', action='store_true')
     parser.add_argument('--grid', action='store_true')
     parser.add_argument('--selectors', action='store_true')
+    parser.add_argument('--storage-review',action='store_true')
+    parser.add_argument('--memory-cards',action='store_true')
     parser.add_argument('--browser-review',action='store_true')
     parser.add_argument('--console-services', action='store_true')
     parser.add_argument('--hypercube', type=Path,
@@ -59,6 +61,8 @@ def main():
         'IplCachedFooterText': str(args.footer_text).lower(),
         'IplCachedGrid': str(args.grid).lower(),
         'IplCachedSelectors': str(args.selectors).lower(),
+        'IplStorageReview': str(args.storage_review).lower(),
+        'IplMemoryCardServices': str(args.memory_cards).lower(),
         'IplBrowserReview': str(args.browser_review).lower(),
         'IplConsoleServices': str(args.console_services).lower(),
         'IplNextSdk': 'true', 'DndSampleControls': 'true', 'DndBuildBackend': 'Docker',

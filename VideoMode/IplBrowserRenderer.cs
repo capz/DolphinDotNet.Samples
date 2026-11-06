@@ -1,6 +1,7 @@
 using System;
 internal sealed partial class IplRenderer
 {
+    private static readonly string[] cardActionLabels={"Cancel","Copy","Move","Delete"};
     private readonly string?[] browserTitles=new string?[6];
     private readonly string[] browserFirst=new string[6],browserSecond=new string[6];
     private bool browserMaskReady;
@@ -81,7 +82,9 @@ internal sealed partial class IplRenderer
 #endif
             Grid();
         Center(browser.Title,320,24,29,White);
-        Center(browser.Kind==IplBrowserKind.Games?"GC Loader  /  games":"GC Loader SD",320,61,13,0x9bbebdccu);
+        if(browser.Kind==IplBrowserKind.MemoryCards){
+            for(int slot=0;slot<2;slot++){float x=slot==0?40:328;Bubble(x,63,272,28,11,slot==browser.Slot?0x3d999660u:0x1d334160u);Center((slot==0?"L  ":"R  ")+browser.SlotCaption(slot),x+136,68,11,slot==browser.Slot?White:0x9bbebdccu);}
+        }else Center(browser.Kind==IplBrowserKind.Games?"GC Loader  /  games":"Folders and files",320,61,13,0x9bbebdccu);
         if(c is IIplBrowserCanvas frost){c.Section(IplRenderPhase.Capture);c.CaptureBackdrop();c.Section(IplRenderPhase.Frost);frost.DrawBrowserFrost();c.Section(IplRenderPhase.Editor);}
         if(!(c is IIplBrowserCanvas cards)||!cards.DrawBrowserCache(0))BrowserCards();
         if(c is IIplBrowserCanvas artPass){artPass.DrawArtworks();if(!artPass.DrawBrowserCache(1))BrowserSheen();}
@@ -95,21 +98,40 @@ internal sealed partial class IplRenderer
             Center(item.Detail,x+88,y+113,10,0x8fb3c7ccu);
         }
         if(browser.Panel!=IplBrowserPanel.Grid)BrowserDialog(shell,browser);
-        if(browser.Busy)Center("Reading storage...",320,385,14,0x9ae6dcffu);
+        if(browser.Busy&&browser.Panel!=IplBrowserPanel.Progress)Center("Reading storage...",320,385,14,0x9ae6dcffu);
         else Center(browserStatus,320,385,11,0xa7bdc9ddu);
         c.Section(IplRenderPhase.Footer);Footer(shell);c.Section(IplRenderPhase.None);
         Center(browserCounter,320,460,11,0x8eaaaec0u);
     }
+    private void DialogLines(string text,float y,int maximum)
+    {int line=0,start=0;while(start<text.Length&&line<maximum){int end=text.IndexOf('\n',start);if(end<0)end=text.Length;Text(Fit(text.Substring(start,end-start),476,13),81,y+line*19,13,0xc5d6e4ffu);start=end+1;line++;}}
     private void BrowserDialog(IplShell shell,IplBrowser browser)
     {
         Rect(0,0,640,404,0x000000bbu);Bubble(50,95,540,272,28,0x91c7d759);Bubble(52,97,536,268,26,0x0a1524f8);
         Center(browserLaunchTitle,320,119,24,White);
         if(browser.Panel==IplBrowserPanel.Launch){
-            Center("Open with Swiss",320,173,19,0x80e6d5ffu);
-            Center(browserVideoMode,320,211,17,0xb7ccd6ffu);
-            Center("The selected game keeps your confirmed video mode.",320,244,13,0xa6b8c9ffu);
+            bool game=browser.Selected?.Kind==IplItemKind.Game;
+            Center(game?"Open with Swiss":"Open application",320,173,19,0x80e6d5ffu);
+            Center(game?browserVideoMode:"This application will replace the glass menu.",320,211,game?17:15,0xb7ccd6ffu);
+            Center(game?"The selected game keeps your confirmed video mode.":"Its own video and storage settings apply.",320,244,13,0xa6b8c9ffu);
             Bubble(111,295,184,42,17,browser.Choice==0?0x3c7b7fafu:0x223743b0u);Bubble(345,295,184,42,17,browser.Choice==1?0x3c7b7fafu:0x223743b0u);
             Center("Cancel",203,303,19,White);Center("Open",437,303,19,White);
+        }else if(browser.Panel==IplBrowserPanel.CardActions){
+            DialogLines(browser.Information,163,3);
+            for(int i=0;i<4;i++){float x=75+i*124;bool enabled=i!=1&&i!=2||i==1&&browser.CanCopy||i==2&&browser.CanMove;Bubble(x,290,118,43,15,i==browser.Choice?0x3c7b7fafu:0x223743b0u);Center(cardActionLabels[i],x+59,301,17,enabled?White:0x71818bffu);}
+        }else if(browser.Panel==IplBrowserPanel.CardConfirm){
+            bool format=browser.CardAction==IplCardAction.Format;
+            string question=format?(browser.FormatStage==1?"Format this memory card?":"Erase every saved file on this card?"):browser.CardAction==IplCardAction.Delete?"Permanently delete this saved file?":browser.CardAction==IplCardAction.Move?"Move to the other memory card?":"Copy to the other memory card?";
+            Center(question,320,174,19,0xd4e9e6ffu);
+            Center(format?"All saves on the selected card will be lost.":browser.CardAction==IplCardAction.Delete?"This cannot be undone.":"The destination copy is verified before completion.",320,218,14,0xb7ccd6ffu);
+            if(browser.CardAction==IplCardAction.Move)Center("The source is deleted only after verification.",320,243,13,0xa6b8c9ffu);
+            Bubble(111,295,184,42,17,browser.Choice==0?0x3c7b7fafu:0x223743b0u);Bubble(345,295,184,42,17,browser.Choice==1?0x865045b0u:0x223743b0u);
+            Center("Cancel",203,303,19,White);Center(format?(browser.FormatStage==1?"Continue":"Erase card"):browser.CardAction==IplCardAction.Delete?"Delete":browser.CardAction==IplCardAction.Move?"Move":"Copy",437,303,19,White);
+        }else if(browser.Panel==IplBrowserPanel.Progress){
+            Center("Copying and verifying...",320,178,21,0x80e6d5ffu);
+            Bubble(110,233,420,12,6,0x213f52ffu);float width=420*browser.TransferProgress/100f;if(width>1)Bubble(110,233,width,12,Math.Min(6,width/2),0x6ce2caffu);
+            Center(browser.TransferProgress.ToString()+"%",320,267,18,White);
+            Center("Keep both cards inserted. B cancels safely.",320,310,14,0xb7ccd6ffu);
         }else{
             string text=browser.Information;int line=0,start=0;while(start<text.Length&&line<9){int end=text.IndexOf('\n',start);if(end<0)end=text.Length;Text(Fit(text.Substring(start,end-start),476,13),81,171+line*18,13,0xc5d6e4ffu);start=end+1;line++;}
         }

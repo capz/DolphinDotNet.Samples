@@ -242,7 +242,7 @@ internal sealed partial class IplRenderer
         Cube();
         c.Section(IplRenderPhase.FrostGeometry);
         c.BeginPanels();
-        if(shell.Page==ShellPage.Face&&shell.Face!=ShellFace.Memory)
+        if(shell.Page==ShellPage.Face)
             for(int i=0;i<shell.Rows;i++)FacePanel(shell,i);
         c.EndPanels();
 #if IPL_RETAINED_TINT
@@ -279,7 +279,7 @@ internal sealed partial class IplRenderer
         if(shell.Turn>.85f)
         {
             c.Section(IplRenderPhase.Icons);FaceIcon(shell);
-            if(shell.Page==ShellPage.Face&&shell.Face!=ShellFace.Memory)
+            if(shell.Page==ShellPage.Face)
             {
                 c.Section(IplRenderPhase.Capture);c.CaptureBackdrop();
                 c.Section(IplRenderPhase.Frost);c.DrawFrostedPanels();
@@ -543,11 +543,6 @@ internal sealed partial class IplRenderer
     private void FaceMenu(IplShell s)
     {
         FaceText(s,s.Title,.045f,.79f,26,White,0,.95f);
-        if(s.Face==ShellFace.Memory)
-        {
-            FaceText(s,s.Face==ShellFace.Play?"No disc selected.":"No card selected.",0,.1f,16,White);
-            FaceText(s,"Preview only.",0,-.16f,12,0xb5b9c9ff);return;
-        }
         for(int i=0;i<s.Rows;i++)
         {
             float y=.35f-i*.43f;
@@ -686,7 +681,7 @@ internal sealed partial class IplRenderer
 #endif
         float stick=style==0?214:111;
         Text(s.Page==ShellPage.Cube?"... Menu Selection":s.Face==ShellFace.Calendar&&s.Editing?"... Part / Value":"... Select",stick+24,y-13,s.Page==ShellPage.Cube?20:17,White);
-        if(s.Page==ShellPage.Cube)return;
+        if(s.Page==ShellPage.Cube){Text("R  Storage",486,y-12,16,0xb4ccd4ffu);return;}
         Center("B",320,y-14,20,White);Text(s.Editing?"... Cancel":"... Back",340,y-13,17,White);
         if(s.Video.Reverting)return;
         Center("A",470,y-14,20,White);Text(s.Editing?"... Confirm":"... Open",492,y-13,17,White);

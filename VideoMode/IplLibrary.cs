@@ -15,11 +15,12 @@ using FsStream=Dolphin.IO.Stream;
 using TextEncoding=Dolphin.Text.Encoding;
 #endif
 
-internal enum IplItemKind { Directory, Game, Dol, File, Save }
+internal enum IplItemKind { Directory, Game, Dol, File, Save, CardFormat }
 internal sealed class IplBrowserItem
 {
     internal readonly string Path,GameId;
     internal string Title,Detail;
+    internal object? Handle;
     internal readonly IplItemKind Kind;
     internal readonly long Bytes;
     internal IplBrowserItem(string path,string title,string detail,IplItemKind kind,long bytes=0,string gameId="")

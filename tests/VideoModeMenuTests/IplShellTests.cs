@@ -42,6 +42,9 @@ internal static class IplShellTests
         }
         var calendarNav=new IplShell(new FakeOutput());Face(calendarNav,ShellFace.Calendar);
         Move(calendarNav,0,-1);Move(calendarNav,0,1);Check(calendarNav.Row==0&&calendarNav.Page==ShellPage.Face,"D-pad retains bidirectional Calendar row selection");
+        calendarNav.Direction(0,0,0,true);calendarNav.Direction(0,-1,.016f,true);
+        Check(calendarNav.Row==0&&calendarNav.Page==ShellPage.Face,"Stick face input does not select rows; D-pad selects rows");
+        calendarNav.Direction(0,0,0,true);
         calendarNav.Confirm();calendarNav.Tick(.2f);calendarNav.Direction(0,1,.016f,true);
         Check(calendarNav.Editing&&calendarNav.Segment(0)=="13","Opposite stick direction in the editor still changes its value");
         var output=new FakeOutput();var s=new IplShell(output);

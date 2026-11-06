@@ -25,17 +25,30 @@ parser.add_argument('--calendar',action='store_true',help='Review two-row blur a
 parser.add_argument('--selector-motion',action='store_true',help='Record active hour/minute/month/year motion, A/B and Reduced Motion')
 parser.add_argument('--selector-scan',action='store_true',help='Exercise animated scan values across progressive/interlaced preview, keep, rollback and safe mode')
 parser.add_argument('--directional-return',action='store_true',help='Review reverse stick return, hold latching and D-pad Calendar rows')
+parser.add_argument('--storage',action='store_true',help='Actual native card services and original DVD file fixtures')
+parser.add_argument('--disc',type=Path)
+parser.add_argument('--card-user',type=Path)
 parser.add_argument('--library',action='store_true',help='Native library layout/navigation using explicitly labeled synthetic UI data')
 parser.add_argument('--system-clock',action='store_true',help='Adjust isolated clock, inspect SRAM and Dolphin restart policy, then decrement')
 args=parser.parse_args()
-if sum([args.calendar,args.widescreen,args.selector_motion,args.selector_scan,args.directional_return,args.system_clock,args.library])>1:parser.error('Choose one review sequence')
+if sum([args.calendar,args.widescreen,args.selector_motion,args.selector_scan,args.directional_return,args.system_clock,args.library,args.storage])>1:parser.error('Choose one review sequence')
 root=args.logs.resolve()
 if root.exists() and any(root.iterdir()):raise ValueError('Use a fresh capture directory')
 root.mkdir(parents=True,exist_ok=True)
 config=root/'user/Config';config.mkdir(parents=True)
 (config/'Dolphin.ini').write_text('[Core]\nGFXBackend = OGL\nCPUCore = 1\nCPUThread = False\nSIDevice0 = 6\n[DSP]\nBackend = No Audio Output\n[Display]\nRenderWindowXPos = 0\nRenderWindowYPos = 0\nRenderWindowWidth = 640\nRenderWindowHeight = 480\n[Interface]\nOnScreenDisplayMessages = False\n[Movie]\nDumpFrames = True\nDumpFramesSilent = True\n')
+if args.storage:
+    with (config/'Dolphin.ini').open('a') as f:f.write('[Core]\nSlotA = 1\nSlotB = 1\n'+('DefaultISO = '+str(args.disc.resolve())+'\n' if args.disc else ''))
+    if args.card_user:
+        shutil.copytree(args.card_user/'GC',root/'user/GC')
+        # Original fixture DOL boots as EUR; the original data-only DVD fixture
+        # has a USA header. Both use western card encoding. Keep the seeded
+        # files under the region-specific names Dolphin actually opens.
+        for slot in ('A','B'):
+            seed=root/('user/GC/MemoryCard'+slot+'.EUR.raw')
+            if seed.exists():shutil.copyfile(seed,root/('user/GC/MemoryCard'+slot+'.USA.raw'))
 (config/'GFX.ini').write_text('[Settings]\nDumpFramesAsImages = True\nInternalResolution = 1\nMSAA = 1\nSSAA = False\nAspectRatio = 2\n[Enhancements]\nPostProcessingShader = IplEdgeAA\n[Hacks]\nForceProgressive = True\n')
-(config/'GCPadNew.ini').write_text('[GCPad1]\nDevice = XInput2/0/Virtual core pointer\nButtons/Z = Z\nButtons/A = A\nButtons/B = B\nButtons/X = X\nD-Pad/Left = Left\nD-Pad/Right = Right\nD-Pad/Up = Up\nD-Pad/Down = Down\nMain Stick/Up = I\nMain Stick/Down = K\nMain Stick/Left = J\nMain Stick/Right = L\n')
+(config/'GCPadNew.ini').write_text('[GCPad1]\nDevice = XInput2/0/Virtual core pointer\nButtons/Z = Z\nButtons/A = A\nButtons/B = B\nButtons/X = X\nButtons/Y = Y\nTriggers/L = Q\nTriggers/R = W\nD-Pad/Left = Left\nD-Pad/Right = Right\nD-Pad/Up = Up\nD-Pad/Down = Down\nMain Stick/Up = I\nMain Stick/Down = K\nMain Stick/Left = J\nMain Stick/Right = L\n')
 shaders=root/'user/Shaders';shaders.mkdir()
 shutil.copyfile(Path(__file__).parents[1]/'VideoMode/Assets/IplEdgeAA.glsl',shaders/'IplEdgeAA.glsl')
 x=C.CDLL('libX11.so.6');xt=C.CDLL('libXtst.so.6')
@@ -100,6 +113,19 @@ try:
         key('k');key('Up');shot('03-calendar-dpad-date');key('i');shot('04-up-return')
         key('l');shot('05-right-video');key('j');shot('06-left-return')
         key('j');shot('07-left-options');key('l');shot('08-right-return')
+    elif args.storage:
+        key('w');shot('01-storage-cube-face')
+        key('a');shot('02-card-slot-a')
+        key('a');shot('03-save-actions')
+        key('Right');key('a');shot('04-copy-confirm-cancel')
+        key('Right');key('a');shot('05-native-copy-complete')
+        key('w');shot('06-card-slot-b')
+        key('a');key('Left');key('a');shot('07-delete-confirm-cancel')
+        key('b');key('b');key('b');shot('08-storage-face-return')
+        key('Down');key('a');shot('09-sd-style-file-grid')
+        key('a');shot('10-folder-open')
+        key('a');shot('11-text-preview')
+        key('b');key('b');key('b');shot('12-back-to-storage')
     elif args.library:
         key('Up');shot('01-play-library')
         key('a');shot('02-six-glass-game-cards')
