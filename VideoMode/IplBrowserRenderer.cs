@@ -5,6 +5,7 @@ internal sealed partial class IplRenderer
     private readonly string?[] browserTitles=new string?[6];
     private readonly string[] browserFirst=new string[6],browserSecond=new string[6];
     private bool browserMaskReady;
+    private string browserLocation="",lastLocationPath="";private int lastLocationKind=-1;
     private int counterStart=-1,counterCount=-1,counterTotal=-1;
     private bool counterBusy;
     private string lastLaunchTitle="",lastVideoMode="";
@@ -64,6 +65,7 @@ internal sealed partial class IplRenderer
     private void PrepareBrowser(IplShell shell)
     {
         var browser=shell.Browser;if(browser==null)return;
+        if(lastLocationKind!=(int)browser.Kind||lastLocationPath!=browser.Path){lastLocationKind=(int)browser.Kind;lastLocationPath=browser.Path;browserLocation=browser.Kind==IplBrowserKind.Games?"GC Loader  /  games":Fit("SD / "+browser.Path,590,13);}
 #if IPL_CACHED_GRID
         if(!gridReady&&c.BeginGridCache()){Grid();c.EndGridCache();gridReady=true;}
 #endif
@@ -98,7 +100,7 @@ internal sealed partial class IplRenderer
         Center(browser.Title,320,24,29,White);
         if(browser.Kind==IplBrowserKind.MemoryCards){
             for(int slot=0;slot<2;slot++){float x=slot==0?40:328;Bubble(x,63,272,28,11,slot==browser.Slot?0x3d999660u:0x1d334160u);Center((slot==0?"L  ":"R  ")+browser.SlotCaption(slot),x+136,68,11,slot==browser.Slot?White:0x9bbebdccu);}
-        }else Center(browser.Kind==IplBrowserKind.Games?"GC Loader  /  games":"Folders and files",320,61,13,0x9bbebdccu);
+        }else Center(browserLocation,320,61,13,0x9bbebdccu);
         if(c is IIplBrowserCanvas frost){c.Section(IplRenderPhase.Capture);c.CaptureBackdrop();c.Section(IplRenderPhase.Frost);frost.DrawBrowserFrost();c.Section(IplRenderPhase.Editor);}
         if(!(c is IIplBrowserCanvas cards)||!cards.DrawBrowserCache(0))BrowserCards();
         if(c is IIplBrowserCanvas artPass){artPass.DrawArtworks();if(!artPass.DrawBrowserCache(1))BrowserSheen();}

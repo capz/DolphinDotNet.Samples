@@ -121,7 +121,7 @@ try:
         key('Right');key('a');shot('05-native-copy-complete')
         key('w');shot('06-card-slot-b')
         key('a');key('Left');key('a');shot('07-delete-confirm-cancel')
-        key('b');key('b');key('b');shot('08-storage-face-return')
+        key('b');key('b');shot('08-storage-face-return')
         if args.disc:
             key('Down');key('a');shot('09-sd-style-file-grid')
             key('a');shot('10-folder-open')

@@ -552,7 +552,7 @@ internal sealed partial class IplRenderer
             string value=s.Value(i);
             // Keep both edge anchors fixed as the type grows/shrinks.
             float maximum=TextWidth(s.Label(i),size)+TextWidth(value,size);
-            if(maximum>193)size*=193/maximum;
+            if(maximum>176)size*=176/maximum;
             FaceAlignedText(s,s.Label(i),-.695f,y,size,color,false);
             FaceAlignedText(s,value,.735f,y,size,color,true);
         }
