@@ -36,6 +36,9 @@ Physical hardware performance has not been measured in this cloud session.
 ## Controller flow
 
 - At the cube: right opens Video, left Options, up Game Play, down Calendar.
+- On a face: pushing the stick opposite the direction used to enter returns to
+  the cube. Recenter before entering another face. The D-pad keeps both directions
+  available for row selection, including Calendar's Time and Date rows.
 - On a face: up/down selects a row; A opens its flat configuration screen.
 - In a configuration screen: up/down changes the draft value; A confirms;
   B discards and returns to the same face and row.

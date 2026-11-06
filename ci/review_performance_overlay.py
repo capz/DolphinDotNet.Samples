@@ -24,15 +24,16 @@ parser.add_argument('--widescreen',action='store_true',help='Also preview/keep 1
 parser.add_argument('--calendar',action='store_true',help='Review two-row blur and independent time/date editing instead of the overlay sequence')
 parser.add_argument('--selector-motion',action='store_true',help='Record active hour/minute/month/year motion, A/B and Reduced Motion')
 parser.add_argument('--selector-scan',action='store_true',help='Exercise animated scan values across progressive/interlaced preview, keep, rollback and safe mode')
+parser.add_argument('--directional-return',action='store_true',help='Review reverse stick return, hold latching and D-pad Calendar rows')
 args=parser.parse_args()
-if sum([args.calendar,args.widescreen,args.selector_motion,args.selector_scan])>1:parser.error('Choose one review sequence')
+if sum([args.calendar,args.widescreen,args.selector_motion,args.selector_scan,args.directional_return])>1:parser.error('Choose one review sequence')
 root=args.logs.resolve()
 if root.exists() and any(root.iterdir()):raise ValueError('Use a fresh capture directory')
 root.mkdir(parents=True,exist_ok=True)
 config=root/'user/Config';config.mkdir(parents=True)
 (config/'Dolphin.ini').write_text('[Core]\nGFXBackend = OGL\nCPUCore = 1\nCPUThread = False\nSIDevice0 = 6\n[DSP]\nBackend = No Audio Output\n[Display]\nRenderWindowXPos = 0\nRenderWindowYPos = 0\nRenderWindowWidth = 640\nRenderWindowHeight = 480\n[Interface]\nOnScreenDisplayMessages = False\n[Movie]\nDumpFrames = True\nDumpFramesSilent = True\n')
 (config/'GFX.ini').write_text('[Settings]\nDumpFramesAsImages = True\nInternalResolution = 1\nMSAA = 1\nSSAA = False\nAspectRatio = 2\n[Enhancements]\nPostProcessingShader = IplEdgeAA\n[Hacks]\nForceProgressive = True\n')
-(config/'GCPadNew.ini').write_text('[GCPad1]\nDevice = XInput2/0/Virtual core pointer\nButtons/Z = Z\nButtons/A = A\nButtons/B = B\nButtons/X = X\nD-Pad/Left = Left\nD-Pad/Right = Right\nD-Pad/Up = Up\nD-Pad/Down = Down\n')
+(config/'GCPadNew.ini').write_text('[GCPad1]\nDevice = XInput2/0/Virtual core pointer\nButtons/Z = Z\nButtons/A = A\nButtons/B = B\nButtons/X = X\nD-Pad/Left = Left\nD-Pad/Right = Right\nD-Pad/Up = Up\nD-Pad/Down = Down\nMain Stick/Up = I\nMain Stick/Down = K\nMain Stick/Left = J\nMain Stick/Right = L\n')
 shaders=root/'user/Shaders';shaders.mkdir()
 shutil.copyfile(Path(__file__).parents[1]/'VideoMode/Assets/IplEdgeAA.glsl',shaders/'IplEdgeAA.glsl')
 x=C.CDLL('libX11.so.6');xt=C.CDLL('libXtst.so.6')
@@ -80,7 +81,12 @@ def shot(name):
     p.send_signal(signal.SIGCONT)
 try:
     time.sleep(15);capture(root/'unused.ppm',True);time.sleep(2)
-    if args.selector_scan:
+    if args.directional_return:
+        key('i');shot('01-up-play');key('k',2);shot('02-down-return-held')
+        key('k');key('Up');shot('03-calendar-dpad-date');key('i');shot('04-up-return')
+        key('l');shot('05-right-video');key('j');shot('06-left-return')
+        key('j');shot('07-left-options');key('l');shot('08-right-return')
+    elif args.selector_scan:
         key('Right');key('Down');key('a');shot('01-interlaced-editor')
         key('Up');shot('02-progressive-editor')
         key('a');shot('03-progressive-preview')

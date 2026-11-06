@@ -1,0 +1,58 @@
+[
+  {
+    "capture": "01-up-play",
+    "completed_frames": 557,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_556.png",
+    "efb_sha256": "ffea4e7928e28f382129ff3914bdd6c22e0506e53f1de0ab9cd5583e21bd2182"
+  },
+  {
+    "capture": "02-down-return-held",
+    "completed_frames": 667,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_666.png",
+    "efb_sha256": "b31dbc0e8e41f0d52db8498dbbcaf904e41d09a7094311074b1380e5ae6f3052"
+  },
+  {
+    "capture": "03-calendar-dpad-date",
+    "completed_frames": 769,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_768.png",
+    "efb_sha256": "88ebbf3bd1e5745a502c2949441d19e706a611ed2f8633f1eb3f590c0d19deee"
+  },
+  {
+    "capture": "04-up-return",
+    "completed_frames": 820,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_819.png",
+    "efb_sha256": "59769421565e9bdde31407d2c041e3fd436edfb8fdfa269605f9086bc1793fce"
+  },
+  {
+    "capture": "05-right-video",
+    "completed_frames": 872,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_871.png",
+    "efb_sha256": "caadac076bf8f9ee287a52e5aff3526dccf8a05baf6d56321165776d62c28a31"
+  },
+  {
+    "capture": "06-left-return",
+    "completed_frames": 923,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_922.png",
+    "efb_sha256": "fbc6c0f63614d3c0da13ff07799e781527f1214172ed603f2290c440c2e8e155"
+  },
+  {
+    "capture": "07-left-options",
+    "completed_frames": 974,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_973.png",
+    "efb_sha256": "5a4f0f39d304ed6df9a71882ae6550efc417b928320eebb130be550bddc66101"
+  },
+  {
+    "capture": "08-right-return",
+    "completed_frames": 1025,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_1024.png",
+    "efb_sha256": "d9e27214aabcaeee5e73ec9f8c5eefdbfbd44b4dbfc2b723f770f2dd416efb76"
+  }
+]

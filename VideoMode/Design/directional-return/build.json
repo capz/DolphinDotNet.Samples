@@ -1,0 +1,5 @@
+{
+  "dol_sha256": "89b17c4780d4fc5b7f7776ef441f398bc8e86676e91f12544089d16d016300ed",
+  "build": "normal source SDK + all existing optimization flags",
+  "review": "real Dolphin XTest analog stick + D-pad, unmodified EFB images"
+}

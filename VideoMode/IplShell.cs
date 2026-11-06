@@ -19,6 +19,9 @@ internal sealed class IplShell
     private int hour, minute, day, month, year, sound;
     private int repeatX, repeatY;
     private float repeatTime;
+    private int entryX,entryY;
+    private bool returnLatch;
+    private bool repeatStick;
     internal IplShell(IVideoModeOutput output) { Video = new VideoModeMenu(output); }
     internal int Rows => Face == ShellFace.Video ? 3 : Face == ShellFace.Calendar ? 2 : Face == ShellFace.Options ? 3 : 1;
     internal bool Editing => Page == ShellPage.Detail;
@@ -57,16 +60,21 @@ internal sealed class IplShell
         for(int i=0;i<3;i++)focus[i]=0;
         Page = face == ShellFace.Menu ? ShellPage.Cube : ShellPage.Face;
         Turn = ReducedMotion ? 1 : 0;
+        entryX=face==ShellFace.Video?1:face==ShellFace.Options?-1:0;
+        entryY=face==ShellFace.Play?1:face==ShellFace.Calendar?-1:0;
     }
     // A held direction repeats values, never confirmation or a change of screen.
-    internal void Direction(int x, int y, float dt)
+    internal void Direction(int x, int y, float dt,bool stick=false)
     {
-        if (x == 0 && y == 0) { repeatX = repeatY = 0; repeatTime = 0; return; }
-        bool fresh = x != repeatX || y != repeatY;
-        repeatX = x; repeatY = y; repeatTime -= dt;
+        if (x == 0 && y == 0) { repeatX = repeatY = 0; repeatTime = 0;returnLatch=false; return; }
+        if(stick&&returnLatch)return;
+        bool fresh = x != repeatX || y != repeatY || stick!=repeatStick;
+        repeatX = x; repeatY = y; repeatStick=stick;repeatTime -= dt;
         if (!fresh && repeatTime > 0) return;
         repeatTime = fresh ? .38f : .13f;
         if (Video.Pending || Turn < 1) return;
+        if(stick&&fresh&&Page==ShellPage.Face&&((entryX!=0&&x==-entryX)||(entryY!=0&&y==-entryY)))
+        {Back();returnLatch=true;return;}
         if (Page == ShellPage.Cube)
         {
             TurnTo(x > 0 ? ShellFace.Video : x < 0 ? ShellFace.Options : y > 0 ? ShellFace.Play : ShellFace.Calendar);

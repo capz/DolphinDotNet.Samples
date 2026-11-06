@@ -30,6 +30,20 @@ internal static class IplShellTests
     internal static void Run()
     {
         ScanRoundTrip();
+        foreach(var face in new[]{ShellFace.Video,ShellFace.Options,ShellFace.Play,ShellFace.Calendar}){
+            int x=face==ShellFace.Video?1:face==ShellFace.Options?-1:0,y=face==ShellFace.Play?1:face==ShellFace.Calendar?-1:0;
+            var nav=new IplShell(new FakeOutput());nav.Direction(x,y,.016f,true);nav.Tick(.7f);
+            nav.Direction(0,0,.016f,true);nav.Direction(-x,-y,.016f,true);
+            Check(nav.Page==ShellPage.Cube,"Opposite stick direction returns from every directly entered cube face");
+            nav.Tick(.7f);for(int i=0;i<60;i++)nav.Direction(-x,-y,.016f,true);
+            Check(nav.Page==ShellPage.Cube,"Holding return cannot immediately enter another face");
+            nav.Direction(0,0,.016f,true);nav.Direction(-x,-y,.016f,true);
+            Check(nav.Page==ShellPage.Face,"Releasing the stick rearms cube navigation");
+        }
+        var calendarNav=new IplShell(new FakeOutput());Face(calendarNav,ShellFace.Calendar);
+        Move(calendarNav,0,-1);Move(calendarNav,0,1);Check(calendarNav.Row==0&&calendarNav.Page==ShellPage.Face,"D-pad retains bidirectional Calendar row selection");
+        calendarNav.Confirm();calendarNav.Tick(.2f);calendarNav.Direction(0,1,.016f,true);
+        Check(calendarNav.Editing&&calendarNav.Segment(0)=="13","Opposite stick direction in the editor still changes its value");
         var output=new FakeOutput();var s=new IplShell(output);
         Check(s.Page==ShellPage.Cube&&output.Changes==0,"Boot preserves active display");
         Move(s,1,0);Check(s.Face==ShellFace.Video,"Right turns to video");
