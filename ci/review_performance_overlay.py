@@ -122,10 +122,13 @@ try:
         key('w');shot('06-card-slot-b')
         key('a');key('Left');key('a');shot('07-delete-confirm-cancel')
         key('b');key('b');key('b');shot('08-storage-face-return')
-        key('Down');key('a');shot('09-sd-style-file-grid')
-        key('a');shot('10-folder-open')
-        key('a');shot('11-text-preview')
-        key('b');key('b');key('b');shot('12-back-to-storage')
+        if args.disc:
+            key('Down');key('a');shot('09-sd-style-file-grid')
+            key('a');shot('10-folder-open')
+            key('a');shot('11-text-preview')
+            key('b');key('b');key('b');shot('12-back-to-storage')
+        else:
+            key('b');shot('09-storage-to-cube')
     elif args.library:
         key('Up');shot('01-play-library')
         key('a');shot('02-six-glass-game-cards')

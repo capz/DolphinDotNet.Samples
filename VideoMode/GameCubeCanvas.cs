@@ -436,7 +436,7 @@ internal sealed class GameCubeCanvas : IIplCanvas, IIplBrowserCanvas, IDisposabl
         while(artworkCursor<48){
             int cursor=artworkCursor++,slot=cursor%6,frame=cursor/6;
             if(slot>=browser.Count||frame>=artworkCounts[slot])continue;
-            var image=browser.Artwork(slot,frame);if(image==null)continue;int target=slot*8+frame;
+            var image=browser.Artwork(slot,frame);if(image==null)break;int target=slot*8+frame;
             try{
                 if(image.Format==IplArtworkFormat.Rgb5A3){var texture=Texture2D.CreateNative(image.Width,image.Height,NativeTextureFormat.Rgb5A3,true);try{texture.ReplaceNative(image.Bytes);artwork[target]=texture;}catch{texture.Dispose();throw;}}
                 else artwork[target]=image.Format==IplArtworkFormat.Png?Texture2D.FromPng(image.Bytes,true):Texture2D.Create(image.Width,image.Height,image.Bytes,true);

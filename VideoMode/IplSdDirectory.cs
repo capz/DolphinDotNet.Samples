@@ -29,6 +29,8 @@ internal sealed class IplSdDirectory : IDisposable
     internal void Begin(string path){Dispose();Full(path);Path=path;Count=0;Start(0,false);}
     private void Start(int first,bool onlyPage){Dispose();wanted=cachedStart=first;seen=0;loadingPage=onlyPage;directories=true;Array.Clear(page,0,page.Length);entries=FsDirectory.EnumerateDirectories(Full(Path)).GetEnumerator();Status="Reading SD storage...";}
     internal void Tick()
+    {try{TickEntry();}catch(Exception){Dispose();Status="Could not read this folder. Refresh or go back.";throw;}}
+    private void TickEntry()
     {
         if(entries==null)return;
         if(!entries.MoveNext()){
