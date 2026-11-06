@@ -27,7 +27,7 @@
     "capture": "03-date-parts",
     "completed_frames": 991,
     "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
-    "native_source": "framedump_990.png",
+    "native_source": "framedump_954.png",
     "native_size": [
       640,
       528
