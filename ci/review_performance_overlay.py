@@ -26,24 +26,32 @@ parser.add_argument('--selector-motion',action='store_true',help='Record active 
 parser.add_argument('--selector-scan',action='store_true',help='Exercise animated scan values across progressive/interlaced preview, keep, rollback and safe mode')
 parser.add_argument('--directional-return',action='store_true',help='Review reverse stick return, hold latching and D-pad Calendar rows')
 parser.add_argument('--flat-pages',action='store_true',help='Read-only sides, full flat option lists and single-B exit from editors/browsers/dialogs')
+parser.add_argument('--dense-storage',action='store_true',help='Compact native card/SD grid, list, paging and preserved selection')
 parser.add_argument('--storage',action='store_true',help='Actual native card services and original DVD file fixtures')
+parser.add_argument('--native-boundaries',action='store_true',help='Pause at actual native presentation boundaries; capture the complete X11 client')
+parser.add_argument('--sdk',type=Path)
+parser.add_argument('--memory-only',action='store_true',help='Skip SD review when validating a normal DOL without physical GC Loader')
 parser.add_argument('--disc',type=Path)
 parser.add_argument('--card-user',type=Path)
 parser.add_argument('--library',action='store_true',help='Native library layout/navigation using explicitly labeled synthetic UI data')
 parser.add_argument('--system-clock',action='store_true',help='Adjust isolated clock, inspect SRAM and Dolphin restart policy, then decrement')
 args=parser.parse_args()
-if sum([args.calendar,args.widescreen,args.selector_motion,args.selector_scan,args.directional_return,args.system_clock,args.library,args.storage,args.flat_pages])>1:parser.error('Choose one review sequence')
+if sum([args.calendar,args.widescreen,args.selector_motion,args.selector_scan,args.directional_return,args.system_clock,args.library,args.storage,args.flat_pages,args.dense_storage])>1:parser.error('Choose one review sequence')
+if args.native_boundaries and args.sdk is None:parser.error('--native-boundaries requires --sdk')
+if args.memory_only and not args.dense_storage:parser.error('--memory-only requires --dense-storage')
 root=args.logs.resolve()
 if root.exists() and any(root.iterdir()):raise ValueError('Use a fresh capture directory')
 root.mkdir(parents=True,exist_ok=True)
 config=root/'user/Config';config.mkdir(parents=True)
 (config/'Dolphin.ini').write_text('[Core]\nGFXBackend = OGL\nCPUCore = 1\nCPUThread = False\nSIDevice0 = 6\n[DSP]\nBackend = No Audio Output\n[Display]\nRenderWindowXPos = 0\nRenderWindowYPos = 0\nRenderWindowWidth = 640\nRenderWindowHeight = 480\n[Interface]\nOnScreenDisplayMessages = False\n[Movie]\nDumpFrames = True\nDumpFramesSilent = True\n')
-if args.storage or args.flat_pages:
+if args.storage or args.flat_pages or args.dense_storage:
     with (config/'Dolphin.ini').open('a') as f:f.write('[Core]\nSlotA = 1\nSlotB = 1\n'+('DefaultISO = '+str(args.disc.resolve())+'\n' if args.disc else ''))
     if args.card_user:
         shutil.copytree(args.card_user/'GC',root/'user/GC')
+if args.native_boundaries:
+    with (config/'Dolphin.ini').open('a') as f:f.write('[General]\nGDBPort = 2174\n[Interface]\nDebugModeEnabled = True\n[Movie]\nDumpFrames = False\n')
 (config/'GFX.ini').write_text('[Settings]\nDumpFramesAsImages = True\nInternalResolution = 1\nMSAA = 1\nSSAA = False\nAspectRatio = 2\n[Enhancements]\nPostProcessingShader = IplEdgeAA\n[Hacks]\nForceProgressive = True\n')
-(config/'GCPadNew.ini').write_text('[GCPad1]\nDevice = XInput2/0/Virtual core pointer\nButtons/Z = Z\nButtons/A = A\nButtons/B = B\nButtons/X = X\nButtons/Y = Y\nTriggers/L = Q\nTriggers/R = W\nD-Pad/Left = Left\nD-Pad/Right = Right\nD-Pad/Up = Up\nD-Pad/Down = Down\nMain Stick/Up = I\nMain Stick/Down = K\nMain Stick/Left = J\nMain Stick/Right = L\n')
+(config/'GCPadNew.ini').write_text('[GCPad1]\nDevice = XInput2/0/Virtual core pointer\nButtons/Z = Z\nButtons/A = A\nButtons/B = B\nButtons/X = X\nButtons/Y = Y\nTriggers/L = Q\nTriggers/R = W\nD-Pad/Left = Left\nD-Pad/Right = Right\nD-Pad/Up = Up\nD-Pad/Down = Down\nMain Stick/Up = I\nMain Stick/Down = K\nMain Stick/Left = J\nMain Stick/Right = L\nC-Stick/Up = U\n')
 shaders=root/'user/Shaders';shaders.mkdir()
 shutil.copyfile(Path(__file__).parents[1]/'VideoMode/Assets/IplEdgeAA.glsl',shaders/'IplEdgeAA.glsl')
 x=C.CDLL('libX11.so.6');xt=C.CDLL('libXtst.so.6')
@@ -52,10 +60,14 @@ x.XStringToKeysym.argtypes=[C.c_char_p];x.XStringToKeysym.restype=C.c_ulong
 x.XKeysymToKeycode.argtypes=[C.c_void_p,C.c_ulong];x.XKeysymToKeycode.restype=C.c_uint
 xt.XTestFakeKeyEvent.argtypes=[C.c_void_p,C.c_uint,C.c_int,C.c_ulong]
 x.XSync.argtypes=[C.c_void_p,C.c_int]
+native_frames=None
 def frame_count():
+    if native_frames is not None:return native_frames.count
     return len(list((root/'user/Dump/Frames').glob('*.png')))
 
 def wait_frames(start,count):
+    if native_frames is not None:
+        native_frames.advance(max(0,start+count-native_frames.count));return
     deadline=time.monotonic()+45
     while frame_count()<start+count:
         if p.poll() is not None:raise RuntimeError('Dolphin exited while awaiting input frames')
@@ -72,10 +84,14 @@ def key(name,held=.15):
 
 log=(root/'emulator.log').open('w')
 p=subprocess.Popen(['/usr/games/dolphin-emu-nogui','--platform','x11','-u',str(root/'user'),'-C','SYSCONF.IPL.PGS=True','-e',str(args.dol.resolve())],stdout=log,stderr=subprocess.STDOUT)
+if args.native_boundaries:
+    from native_frame_boundary import NativeFrames
+    native_frames=NativeFrames(args.sdk,args.dol,p)
 events=[]
 def shot(name):
     if p.poll() is not None:raise RuntimeError('Dolphin exited')
-    p.send_signal(signal.SIGSTOP);time.sleep(.2)
+    if native_frames is None:p.send_signal(signal.SIGSTOP)
+    time.sleep(.3)
     capture(root/(name+'.ppm'))
     frames=sorted((root/'user/Dump/Frames').glob('*.png'),key=lambda a:a.stat().st_mtime_ns)
     event={'capture':name,'completed_frames':len(frames),'input':'XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)'}
@@ -87,10 +103,13 @@ def shot(name):
             (root/(name+'-efb.png')).write_bytes(raw)
             event['efb_source']=frame.name;event['efb_sha256']=hashlib.sha256(raw).hexdigest()
             break
+    if native_frames is not None:event.update(capture_source='Complete X11 client, guest paused at VIDEO_WaitVSync after GX_CopyDisp/GX_DrawDone',native_boundaries=native_frames.count)
     events.append(event)
-    p.send_signal(signal.SIGCONT)
+    if native_frames is None:p.send_signal(signal.SIGCONT)
 try:
-    time.sleep(15);capture(root/'unused.ppm',True);time.sleep(2)
+    if native_frames is None:time.sleep(15)
+    else:wait_frames(frame_count(),60)
+    capture(root/'unused.ppm',True);time.sleep(.3)
     if args.system_clock:
         key('Down');shot('01-real-clock')
         key('a');key('a');key('Up');key('Right');key('Up');shot('02-clock-draft')
@@ -128,6 +147,33 @@ try:
         key('b');key('Up');key('a');shot('17-game-browser')
         key('b');shot('18-browser-b-to-cube')
         key('x');shot('19-safe-interlaced-preview-side')
+    elif args.dense_storage:
+        wait_frames(frame_count(),30)
+        key('w');key('a');key('a');wait_frames(frame_count(),160);shot('01-memory-dense-grid')
+        key('y');shot('02-memory-list')
+        for _ in range(6):key('Down')
+        key('y');shot('03-memory-grid-preserved-selection')
+        for _ in range(6):key('Down')
+        for _ in range(9):key('Right')
+        shot('04-memory-second-grid-page')
+        key('y');shot('05-memory-second-page-list')
+        key('w');shot('05b-memory-slot-b-list');key('q');shot('05c-memory-slot-a-list')
+        key('a');shot('06-memory-actions-default-cancel')
+        key('b');shot('07-memory-dialog-b-to-cube')
+        if not args.memory_only:
+            key('a');key('Down');key('a');wait_frames(frame_count(),160);shot('08-sd-dense-grid')
+            key('y');shot('09-sd-list')
+            key('a');shot('10-sd-folder-list')
+            key('a');shot('11-sd-bounded-file-preview')
+            key('a');key('q');wait_frames(frame_count(),160);shot('12-sd-parent-list')
+            key('y');wait_frames(frame_count(),160);shot('13-sd-grid-view-remembered')
+            for _ in range(7):key('Down')
+            wait_frames(frame_count(),160);shot('14-sd-second-grid-page')
+            for _ in range(20):key('Right')
+            shot('14b-sd-large-file-size');key('Right');shot('14c-sd-filename-not-header')
+            key('y');wait_frames(frame_count(),160);shot('15-sd-list-same-file')
+            key('u');wait_frames(frame_count(),160);shot('16-c-stick-refresh')
+            key('b');shot('17-sd-b-to-cube')
     elif args.storage:
         key('w');shot('01-storage-cube-face')
         key('a');key('a');shot('02-card-slot-a')
@@ -189,6 +235,7 @@ try:
             key('x');shot('09-safe-mode')
     (root/'events.json').write_text(json.dumps(events,indent=2)+'\n')
 finally:
+    if native_frames is not None:native_frames.close()
     if p.poll() is None:
         p.send_signal(signal.SIGCONT);p.terminate()
         try:p.wait(timeout=5)

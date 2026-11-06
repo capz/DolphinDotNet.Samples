@@ -41,13 +41,16 @@ Physical hardware performance has not been measured in this cloud session.
   available for row selection, including Calendar's Time and Date rows.
 - On a face: up/down selects a row; A opens its flat configuration screen.
 - In a configuration screen: up/down changes the draft value; A confirms;
-  B discards and returns to the same face and row.
+  B discards and returns directly to the same cube side.
 - In Time/Date: left/right selects an independent segment; up/down changes
   only that segment. Day counts follow the selected month and leap year.
-- B from a face returns to the cube. Memory Card returns to Options first.
+- B from a cube side returns to the front cube menu.
 - Both the analog stick and D-pad work, with delayed directional repeat.
 - X requests 640x480 interlaced, 4:3. Start exits after safely reverting a preview.
-- Z toggles a live performance overlay (off at startup). Y still records the
+- In memory-card/SD browsers, Y switches between a 105-icon grid and a nine-row
+  list; C-stick Up refreshes. Memory cards show game, blocks and KB. SD shows
+  filenames and file sizes. See [compact storage views](Design/dense-storage/README.md).
+- Z toggles a live performance overlay (off at startup). Outside browsers, Y records the
   bounded frame-time sample independently.
 - Options > Motion disables idle floating and turning overshoot.
 

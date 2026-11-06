@@ -4,7 +4,7 @@ internal sealed partial class IplRenderer
     private static readonly string[] cardActionLabels={"Cancel","Copy","Move","Delete"};
     private readonly string?[] browserTitles=new string?[6];
     private readonly string[] browserFirst=new string[6],browserSecond=new string[6];
-    private bool browserMaskReady;
+    private bool browserMaskReady;private bool browserMaskCompact;
     private string browserLocation="",lastLocationPath="";private int lastLocationKind=-1;
     private int counterStart=-1,counterCount=-1,counterTotal=-1;
     private bool counterBusy,counterParent;private int counterKind=-1;
@@ -61,10 +61,12 @@ internal sealed partial class IplRenderer
     private void BrowserSheen(){for(int i=0;i<6;i++){float x=CardX(i),y=CardY(i);Line(x+30,y+16.7f,x+113,y+16.7f,.8f,0xe5ffff64);Line(x+35,y+18.2f,x+135,y+18.2f,.7f,0xd5fdff18);}}
     private void BrowserCards(){for(int i=0;i<6;i++)GlassCard(i);}
     private string Fit(string text,float maximum,float size)
-    {if(TextWidth(text,size)<=maximum)return text;int n=text.Length;while(n>0&&TextWidth(text.Substring(0,n)+"...",size)>maximum)n--;return text.Substring(0,n)+"...";}
+    {if(TextWidth(text,size)<=maximum)return text;float available=maximum-TextWidth("...",size);int low=0,high=text.Length;while(low<high){int mid=(low+high+1)/2;if(TextWidth(text.Substring(0,mid),size)<=available)low=mid;else high=mid-1;}return text.Substring(0,low)+"...";}
     private void PrepareBrowser(IplShell shell)
     {
         var browser=shell.Browser;if(browser==null)return;
+        if(browserMaskCompact!=browser.Compact){browserMaskReady=false;browserMaskCompact=browser.Compact;}
+        if(browser.Compact){PrepareStorageBrowser(shell,browser);return;}
         if(lastLocationKind!=(int)browser.Kind||lastLocationPath!=browser.Path){lastLocationKind=(int)browser.Kind;lastLocationPath=browser.Path;browserLocation=browser.Kind==IplBrowserKind.Games?"GC Loader  /  games":Fit("SD / "+browser.Path,590,13);}
 #if IPL_CACHED_GRID
         if(!gridReady&&c.BeginGridCache()){Grid();c.EndGridCache();gridReady=true;}
@@ -93,6 +95,7 @@ internal sealed partial class IplRenderer
     private void PresentBrowser(IplShell shell)
     {
         var browser=shell.Browser;if(browser==null)return;
+        if(browser.Compact){PresentStorageBrowser(shell,browser);return;}
         c.Section(IplRenderPhase.Editor);
 #if IPL_CACHED_GRID
         if(!c.DrawGridCache())

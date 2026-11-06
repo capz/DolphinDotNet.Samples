@@ -23,7 +23,7 @@ internal static class IplStorageTests
     {
         internal string Path="";public int Total=>1;public bool Busy=>false;public bool LaunchRequested=>false;public string Status=>"Read-only fixture";
         public void Begin(IplBrowserKind kind,string path,int slot,bool rescan){Path=path;}
-        public void Tick(){}public int ReadPage(int start,IplBrowserItem?[] items){items[0]=new IplBrowserItem(Path==""?"folder":"folder/notes.txt",Path==""?"folder":"notes.txt","",Path==""?IplItemKind.Directory:IplItemKind.File);return 1;}
+        public void Tick(){}public int ReadPage(int start,IplBrowserItem?[] items){items[0]=new IplBrowserItem(Path==""?"folder":"notes.txt",Path==""?"folder":"notes.txt","",Path==""?IplItemKind.Directory:IplItemKind.File);return 1;}
         public IplArtwork? Artwork(IplBrowserItem item)=>null;public string Describe(IplBrowserItem item)=>"Read-only preview";public void Open(IplBrowserItem item,VideoModeSettings video){}public void Dispose(){}
     }
     private static void Finish(IplSdDirectory dir){for(int n=0;dir.Busy&&n<1000;n++)dir.Tick();Check(!dir.Busy,"Bounded fixture enumeration finished");}
@@ -36,6 +36,7 @@ internal static class IplStorageTests
             using var dir=new IplSdDirectory(root);dir.Begin("");Check(dir.Busy,"SD enumeration starts incrementally");dir.Tick();Check(dir.Busy,"A tick does not enumerate the complete directory");Finish(dir);Check(dir.Count==11,"SD directory counts all files without retaining all entries");var page=new IplBrowserItem?[6];Check(dir.ReadPage(0,page)==6&&page[0]?.Kind==IplItemKind.Directory,"Directories appear first");
             Check(dir.ReadPage(6,page)==0&&dir.Busy,"A new page is loaded incrementally");Finish(dir);Check(dir.ReadPage(6,page)==5,"Final SD page contains remaining entries");
             dir.Begin("folder");Finish(dir);Check(dir.Count==1&&dir.ReadPage(0,page)==1,"Subfolder can be browsed");string text=dir.Describe(page[0]!);Check(text.Contains("Original text preview")&&text.Contains("Second line"),"Opening text gives a bounded preview");
+            dir.Begin("");Finish(dir);
             Check(dir.Describe(new IplBrowserItem("binary.bin","binary","",IplItemKind.File)).Contains("00 01 FE FF"),"Binary files have a bounded hex preview");
             bool rejected=false;try{dir.Begin("../outside");}catch(InvalidDataException){rejected=true;}Check(rejected,"SD navigation cannot escape its mounted root");Check(File.ReadAllText(Path.Combine(root,"folder","notes.txt"))=="Original text preview\nSecond line"&&Directory.GetFiles(root).Length==10,"Browsing/opening preserves file content and directory entries");
         }finally{Directory.Delete(root,true);}

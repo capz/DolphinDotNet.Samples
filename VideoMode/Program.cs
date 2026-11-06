@@ -127,6 +127,7 @@ internal static class Program
 #if IPL_VISUAL_REVIEW && !IPL_AA_BENCHMARK
         int reviewFrames=0;
 #endif
+        bool storageRefreshHeld=false;
         while(true)
         {
             long frameStart=Clock.Timestamp;
@@ -150,7 +151,10 @@ internal static class Program
                 IplPerformanceOverlay.DrawEnabled=true;
                 IplPerformanceOverlay.Stats.Toggle();
             }
-            if(pad.Y.WasPressed){if(shell.Page==ShellPage.Browser)browser.Refresh();else if(!IplFrameProfiler.Active)IplFrameProfiler.Start();}
+            if(pad.Y.WasPressed){if(shell.Page==ShellPage.Browser){if(browser.Compact)browser.ToggleView();else browser.Refresh();}else if(!IplFrameProfiler.Active)IplFrameProfiler.Start();}
+            bool refreshHeld=pad.CStick.Y>.55f;
+            if(refreshHeld&&!storageRefreshHeld&&shell.Page==ShellPage.Browser)browser.Refresh();
+            storageRefreshHeld=refreshHeld;
             if(pad.Start.WasPressed) {shell.Video.Revert();if(!shell.Video.Pending)return 0;}
             if(pad.X.WasPressed)
             {
@@ -173,10 +177,11 @@ internal static class Program
             IplPerformanceOverlay.BeginFrame();
             bool timing=IplFrameProfiler.Active||IplPerformanceOverlay.Stats.Visible;
             long phaseStart=timing?Clock.Timestamp:0;
+            canvas.Prepare();
 #if !IPL_HARDWARE_RUNNER
             canvas.UpdateArtwork(shell.Page==ShellPage.Browser?browser:null);
 #endif
-            canvas.Prepare();renderer.Prepare(shell);
+            renderer.Prepare(shell);
 #if !IPL_HARDWARE_RUNNER
             IplPerformanceOverlay.PrepareNumbers(canvas);
 #endif

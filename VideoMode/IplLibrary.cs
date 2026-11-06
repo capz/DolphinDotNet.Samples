@@ -20,7 +20,8 @@ internal sealed class IplBrowserItem
 {
     internal readonly string Path,GameId;
     internal string Title,Detail;
-    internal object? Handle;
+    internal string GameTitle="",CompanyCode="";
+    internal int StorageIndex,StorageRevision,Attributes;
     internal readonly IplItemKind Kind;
     internal readonly long Bytes;
     internal IplBrowserItem(string path,string title,string detail,IplItemKind kind,long bytes=0,string gameId="")

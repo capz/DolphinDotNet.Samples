@@ -32,6 +32,7 @@ internal static class Program
         IplLibraryTests.Run();
         IplBrowserTests.Run();
         IplStorageTests.Run();
+        IplDenseStorageTests.Run();
         IplPreferencesDiskTests.Run();
         var output=new FakeOutput(); var menu=new VideoModeMenu(output);
         Check(output.Changes==0 && !menu.Pending,"Opening the menu must retain the boot mode");

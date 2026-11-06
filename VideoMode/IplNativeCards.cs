@@ -1,7 +1,7 @@
 using System;
 using Dolphin.Storage;
 using Dolphin.Timing;
-internal sealed class IplNativeCards : IIplBrowserSource,IIplCardOperations,IIplBrowserNotifications,IIplAnimatedArtwork
+internal sealed class IplNativeCards : IIplBrowserSource,IIplCardOperations,IIplBrowserNotifications,IIplAnimatedArtwork,IIplBrowserCatalog
 {
 #if IPL_MEMORY_CARD_SERVICES
     private readonly MemoryCardManager?[] cards=new MemoryCardManager?[2];
@@ -9,8 +9,24 @@ internal sealed class IplNativeCards : IIplBrowserSource,IIplCardOperations,IIpl
     private readonly bool[] ready=new bool[2],format=new bool[2],needsRefresh=new bool[2];
     private readonly string[] captions={"Slot A: checking...","Slot B: checking..."};
     private MemoryCardTransfer? transfer;private long nextProbe;
+    private IplBrowserItem? resolvedItem;private ManagedCardSave? resolvedSave;
+    private ManagedCardSave Resolve(IplBrowserItem item){
+        if(item.Kind!=IplItemKind.Save||item.StorageRevision!=Version||cards[slot]==null)throw new InvalidOperationException("Card changed. Select the save again.");
+        if(resolvedItem==item&&resolvedSave!=null)return resolvedSave;
+        var page=cards[slot]!.ReadPage(item.StorageIndex,1);
+        if(page.Length!=1||page[0].Filename!=item.Path||page[0].GameCode!=item.GameId||page[0].CompanyCode!=item.CompanyCode)throw new InvalidOperationException("Save changed. Refresh the slot.");
+        resolvedItem=item;return resolvedSave=page[0];
+    }
 #endif
-    private int slot;
+    private int slot,catalogStart;
+    public int ReadCatalogPage(int start,int maximum){catalogStart=start;return Math.Max(0,Math.Min(maximum,Total-start));}
+    public IplItemKind CatalogKind(int index){
+#if IPL_MEMORY_CARD_SERVICES
+        if(format[slot])return IplItemKind.CardFormat;
+#endif
+        return IplItemKind.Save;
+    }
+    public IplBrowserItem? CatalogItem(int index){var output=new IplBrowserItem?[1];return ReadPage(catalogStart+index,output)>0?output[0]:null;}
     public int Version {get;private set;}
     public int Total {get;private set;}
     public bool Busy {get;private set;}
@@ -67,42 +83,48 @@ internal sealed class IplNativeCards : IIplBrowserSource,IIplCardOperations,IIpl
 #if IPL_MEMORY_CARD_SERVICES
         if(format[slot]){if(start==0){output[0]=new IplBrowserItem("@format","Format memory card","Erases all saved data",IplItemKind.CardFormat);return 1;}return 0;}
         if(!ready[slot]||cards[slot]==null)return 0;
-        var page=cards[slot]!.ReadPage(start,6);for(int i=0;i<page.Length;i++){var save=page[i];string fallback=Display(save.Filename,save.GameCode+" save");string title=Display(save.Title,fallback);var item=new IplBrowserItem(save.Filename,title,save.Blocks.ToString()+" blocks"+(!save.CanCopy||!save.CanMove?" / protected":""),IplItemKind.Save,save.Length,save.GameCode);item.Handle=save;output[i]=item;}return page.Length;
+        resolvedItem=null;resolvedSave=null;int count=0;
+        while(count<output.Length){var page=cards[slot]!.ReadPage(start+count,Math.Min(16,output.Length-count));if(page.Length==0)break;
+            for(int i=0;i<page.Length;i++){var save=page[i];string name=save.Filename,id=save.GameCode;
+                var item=new IplBrowserItem(name,Display(name,id+" save"),IplStorageLayout.SaveSize(save.Length),IplItemKind.Save,save.Length,id);
+                item.GameTitle=Display(save.Title,id+" save");item.CompanyCode=save.CompanyCode;item.StorageIndex=start+count+i;item.StorageRevision=Version;item.Attributes=save.Attributes;output[count+i]=item;if(output.Length==1){resolvedItem=item;resolvedSave=save;}}
+            count+=page.Length;
+        }return count;
 #else
         return 0;
 #endif
     }
     public bool CanCopy(IplBrowserItem item){
 #if IPL_MEMORY_CARD_SERVICES
-        return item.Handle is ManagedCardSave save&&save.CanCopy;
+        return item.Kind==IplItemKind.Save&&item.StorageRevision==Version&&(item.Attributes&8)==0;
 #else
         return false;
 #endif
     }
     public bool CanMove(IplBrowserItem item){
 #if IPL_MEMORY_CARD_SERVICES
-        return item.Handle is ManagedCardSave save&&save.CanMove;
+        return item.Kind==IplItemKind.Save&&item.StorageRevision==Version&&(item.Attributes&16)==0;
 #else
         return false;
 #endif
     }
     public int ArtworkFrames(IplBrowserItem item){
 #if IPL_MEMORY_CARD_SERVICES
-        return item.Handle is ManagedCardSave save?save.IconFrameCount:0;
+        return item.Kind==IplItemKind.Save?Resolve(item).IconFrameCount:0;
 #else
         return 0;
 #endif
     }
     public int ArtworkDuration(IplBrowserItem item,int frame){
 #if IPL_MEMORY_CARD_SERVICES
-        return item.Handle is ManagedCardSave save?save.IconFrameDuration(frame):4;
+        return Resolve(item).IconFrameDuration(frame);
 #else
         return 4;
 #endif
     }
     public bool ArtworkBounces(IplBrowserItem item){
 #if IPL_MEMORY_CARD_SERVICES
-        return item.Handle is ManagedCardSave save&&save.IconAnimationBounces;
+        return Resolve(item).IconAnimationBounces;
 #else
         return false;
 #endif
@@ -110,13 +132,13 @@ internal sealed class IplNativeCards : IIplBrowserSource,IIplCardOperations,IIpl
     public IplArtwork? Artwork(IplBrowserItem item)=>Artwork(item,0);
     public IplArtwork? Artwork(IplBrowserItem item,int frame){
 #if IPL_MEMORY_CARD_SERVICES
-        if(item.Handle is ManagedCardSave save&&save.IconFrameCount>frame&&cards[slot]!=null)return new IplArtwork(32,32,cards[slot]!.ReadIcon(save,frame));
+        if(item.Kind==IplItemKind.Save){var save=Resolve(item);if(save.IconFrameCount>frame)return new IplArtwork(32,32,cards[slot]!.ReadIcon(save,frame));}
 #endif
         return null;
     }
     public string Describe(IplBrowserItem item){
 #if IPL_MEMORY_CARD_SERVICES
-        if(item.Handle is ManagedCardSave save)return save.Blocks.ToString()+" blocks / "+save.GameCode+" / "+save.CompanyCode+"\n"+Display(save.Comment,"")+"\n"+(save.CanCopy?"Copy allowed":"Copy protected")+" / "+(save.CanMove?"Move allowed":"Move protected");
+        if(item.Kind==IplItemKind.Save){var save=Resolve(item);return item.GameTitle+" / "+save.GameCode+"\n"+IplStorageLayout.SaveSize(save.Length)+"\n"+(save.CanCopy?"Copy allowed":"Copy protected")+" / "+(save.CanMove?"Move allowed":"Move protected");}
 #endif
         return "";
     }
@@ -126,7 +148,7 @@ internal sealed class IplNativeCards : IIplBrowserSource,IIplCardOperations,IIpl
 #if IPL_MEMORY_CARD_SERVICES
         var card=cards[slot];if(card==null)throw new InvalidOperationException("Reinsert the card and select again.");
         if(action==IplCardAction.Format){if(!format[slot])throw new InvalidOperationException("Card status changed. Select it again.");try{card.Format();Status="Memory card formatted.";}catch(MemoryCardCommittedException e){Status=e.Message??"Operation completed. Refresh the slot before another action.";}RefreshCards();return;}
-        if(!(item?.Handle is ManagedCardSave save))throw new InvalidOperationException("Select a saved file again.");
+        if(item==null)throw new InvalidOperationException("Select a saved file again.");var save=Resolve(item);
         if(action==IplCardAction.Delete){try{card.Delete(save);Status="Saved file deleted.";}catch(MemoryCardCommittedException e){Status=e.Message??"Operation completed. Refresh the slot before another action.";}RefreshCards();return;}
         Probe(1-slot);var destination=cards[1-slot];if(destination==null||!ready[1-slot])throw new InvalidOperationException("The other slot needs a ready memory card.");
         transfer=card.BeginCopy(save,destination,action==IplCardAction.Move);Busy=true;Progress=0;Status="Copying and verifying the saved file...";
@@ -141,7 +163,7 @@ internal sealed class IplNativeCards : IIplBrowserSource,IIplCardOperations,IIpl
     }
     public void Dispose(){
 #if IPL_MEMORY_CARD_SERVICES
-        try{transfer?.Dispose();}catch(Exception){}transfer=null;for(int i=0;i<2;i++){cards[i]?.Dispose();cards[i]=null;ready[i]=format[i]=false;counts[i]=free[i]=0;}
+        resolvedItem=null;resolvedSave=null;try{transfer?.Dispose();}catch(Exception){}transfer=null;for(int i=0;i<2;i++){cards[i]?.Dispose();cards[i]=null;ready[i]=format[i]=false;counts[i]=free[i]=0;}
 #endif
         Busy=false;Total=0;
     }

@@ -3,14 +3,18 @@ using System.IO;
 using Dolphin.Storage;
 using Store=Dolphin.Storage.Storage;
 using FsFile=Dolphin.IO.File;
-internal sealed class IplStorageBrowser : IIplBrowserSource,IIplCardOperations,IIplBrowserNotifications,IIplAnimatedArtwork
+internal sealed class IplStorageBrowser : IIplBrowserSource,IIplCardOperations,IIplBrowserNotifications,IIplAnimatedArtwork,IIplBrowserPageSize,IIplBrowserCatalog
 {
     private readonly StorageDevice fileDevice;
-    private IIplBrowserSource? active;
+    private IIplBrowserSource? active;private int pageSize=6;
+    public void SetPageSize(int count){pageSize=count;(active as IIplBrowserPageSize)?.SetPageSize(count);}
     internal IplStorageBrowser(StorageDevice fileDevice=StorageDevice.GcLoader){this.fileDevice=fileDevice;}
     public int Total=>active?.Total??0;public bool Busy=>active?.Busy??false;public string Status=>active?.Status??"";public bool LaunchRequested=>active?.LaunchRequested??false;
     public int Version=>(active as IIplBrowserNotifications)?.Version??0;
-    public void Begin(IplBrowserKind kind,string path,int slot,bool rescan){active?.Dispose();active=kind==IplBrowserKind.Games?new IplNativeBrowser():kind==IplBrowserKind.Sd?new IplNativeFiles(fileDevice):new IplNativeCards();active.Begin(kind,path,slot,rescan);}
+    public void Begin(IplBrowserKind kind,string path,int slot,bool rescan){active?.Dispose();active=kind==IplBrowserKind.Games?new IplNativeBrowser():kind==IplBrowserKind.Sd?new IplNativeFiles(fileDevice):new IplNativeCards();(active as IIplBrowserPageSize)?.SetPageSize(pageSize);active.Begin(kind,path,slot,rescan);}
+    public int ReadCatalogPage(int start,int maximum)=>(active as IIplBrowserCatalog)?.ReadCatalogPage(start,maximum)??0;
+    public IplBrowserItem? CatalogItem(int index)=>(active as IIplBrowserCatalog)?.CatalogItem(index);
+    public IplItemKind CatalogKind(int index)=>(active as IIplBrowserCatalog)?.CatalogKind(index)??IplItemKind.File;
     public void Tick()=>active?.Tick();
     public int ReadPage(int start,IplBrowserItem?[] output)=>active?.ReadPage(start,output)??0;
     public IplArtwork? Artwork(IplBrowserItem item)=>active?.Artwork(item);
@@ -28,15 +32,19 @@ internal sealed class IplStorageBrowser : IIplBrowserSource,IIplCardOperations,I
     public void Cancel(){if(active is IIplCardOperations cards)cards.Cancel();}
     public void Dispose(){active?.Dispose();active=null;}
 }
-internal sealed class IplNativeFiles : IIplBrowserSource
+internal sealed class IplNativeFiles : IIplBrowserSource,IIplBrowserPageSize,IIplBrowserCatalog
 {
-    private readonly StorageDevice device;private IplSdDirectory? directory;
+    private readonly StorageDevice device;private IplSdDirectory? directory;private int pageSize=6;
+    public void SetPageSize(int count){pageSize=count;directory?.SetPageSize(count);}
     public int Total=>directory?.Count??0;public bool Busy=>directory?.Busy??false;public string Status=>directory?.Status??"Storage unavailable.";public bool LaunchRequested {get;private set;}
     internal IplNativeFiles(StorageDevice device){this.device=device;}
-    public void Begin(IplBrowserKind kind,string path,int slot,bool rescan){Dispose();bool mounted=Store.IsMounted(device)||(device==StorageDevice.DvdDrive?Store.MountDisc():Store.Mount(device));if(!mounted)throw new IOException("SD storage unavailable. Check the card and GC Loader firmware.");directory=new IplSdDirectory(Store.GetPath(device,""));directory.Begin(path);}
+    public void Begin(IplBrowserKind kind,string path,int slot,bool rescan){Dispose();bool mounted=Store.IsMounted(device)||(device==StorageDevice.DvdDrive?Store.MountDisc():Store.Mount(device));if(!mounted)throw new IOException("SD storage unavailable. Check the card and GC Loader firmware.");directory=new IplSdDirectory(Store.GetPath(device,""),pageSize);directory.Begin(path);}
+    public int ReadCatalogPage(int start,int maximum)=>directory?.ReadCatalogPage(start,maximum)??0;
+    public IplBrowserItem? CatalogItem(int index)=>directory?.CatalogItem(index);
+    public IplItemKind CatalogKind(int index)=>directory?.CatalogKind(index)??IplItemKind.File;
     public void Tick()=>directory?.Tick();
     public int ReadPage(int start,IplBrowserItem?[] output)=>directory?.ReadPage(start,output)??0;
-    private string Full(IplBrowserItem item)=>IplPaths.Under(Store.GetPath(device,""),Store.GetPath(device,item.Path));
+    private string Full(IplBrowserItem item)=>IplPaths.Under(Store.GetPath(device,""),Store.GetPath(device,directory?.Path.Length>0?directory.Path+"/"+item.Path:item.Path));
     public string Describe(IplBrowserItem item)=>directory?.Describe(item)??"";
     public IplArtwork? Artwork(IplBrowserItem item)
     {

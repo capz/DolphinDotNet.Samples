@@ -8,14 +8,18 @@ Unconfirmed drafts are discarded, active card transfers are cancelled safely,
 and video rollback must succeed before returning. A keeps a value and returns
 to the flat list. B or the reverse stick direction on a cube side returns to
 the front menu. Memory-card L/R selects slots A/B. In SD folders, L opens the
-parent folder; B always closes the whole flat flow. Y refreshes storage.
+parent folder; B always closes the whole flat flow. Y switches grid/list and
+C-stick Up refreshes storage. The grid fits 105 small icons; the list shows nine
+rows with sizes. See [compact storage views](../dense-storage/README.md) for
+the current layouts and native acceptance captures.
 
 The captures below document the original Storage feature acceptance. Current
 navigation captures and details are in `../flat-navigation/`.
 
 The memory-card grid reads every game's directory, blocks, title/comment,
-permissions and native RGB5A3/CI8 icons. Up to eight icon frames are cached as
-native textures and honor loop/bounce timing; Reduced Motion freezes them.
+permissions and native RGB5A3/CI8 icons. Static icons share a native atlas;
+the selected save caches up to eight frames in native storage and honors
+loop/bounce timing. Reduced Motion freezes it.
 One image read/upload happens between frames. Copy/move use one native 8 KiB
 step per update, destination CRC readback and metadata verification. A move only
 removes its source after verification. Copy/move permissions are independent.
@@ -31,8 +35,8 @@ font displays ASCII titles with a game-code fallback, not a Japanese translation
 The SDK reports a committed operation with failed directory refresh separately,
 so the UI does not invite repeating a destructive action.
 
-SD Storage is read-only browsing/opening: six-entry incremental pages, folders
-first, root-bounded parent navigation, text/hex previews, bounded PNG thumbnails,
+SD Storage is read-only browsing/opening: bounded incremental pages, folders
+first, root-bounded parent navigation, text/hex previews, small file-type icons,
 confirmed DOL applications and valid GameCube images through Swiss. It has no
 copy, move, rename or delete controls. The normal storage device is GC Loader.
 

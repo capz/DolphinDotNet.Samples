@@ -2,7 +2,7 @@ using System;
 using Dolphin.Graphics;
 using Dolphin.Timing;
 
-internal sealed class GameCubeCanvas : IIplCanvas, IIplBrowserCanvas, IDisposable
+internal sealed partial class GameCubeCanvas : IIplCanvas, IIplBrowserCanvas, IDisposable
 {
     private const int GlassVertices=25*25, PanelRowVertices=36*3,PanelVertices=3*PanelRowVertices,BlurAxis=9,BlurTaps=BlurAxis*BlurAxis;
     private readonly GraphicsDevice device;
@@ -101,7 +101,7 @@ internal sealed class GameCubeCanvas : IIplCanvas, IIplBrowserCanvas, IDisposabl
         this.device=device;
         renderer=new Renderer(device);
         footer=new CachedFooter(glass);
-        browserCards=new CachedFooter(glass,5,24);
+        browserCards=new CachedFooter(glass,6,24);
 #if IPL_CACHED_GRID
         editorGrid=new CachedFooter(glass,1,32);
 #endif
@@ -418,6 +418,8 @@ internal sealed class GameCubeCanvas : IIplCanvas, IIplBrowserCanvas, IDisposabl
     }
     internal void UpdateArtwork(IplBrowser? browser)
     {
+        if(browser?.Compact==true){if(artworkRevision!=-1){for(int i=0;i<artwork.Length;i++){artwork[i]?.Dispose();artwork[i]=null;}artworkRevision=-1;}UpdateStorageArtwork(browser);return;}
+        if(storageMode)ReleaseStorageArtwork();
         int revision=browser?.Revision??-1;
         if(revision!=artworkRevision){
             for(int i=0;i<artwork.Length;i++){artwork[i]?.Dispose();artwork[i]=null;}
@@ -462,7 +464,7 @@ internal sealed class GameCubeCanvas : IIplCanvas, IIplBrowserCanvas, IDisposabl
         browserArtworkMaterial.Texture=image;browserArtworkTransform.LocalPosition=new Vector3((x+width/2-320)*scale,(240-y-height/2)*scale,0);browserArtworkTransform.LocalScale=new Vector3(width*scale,height*scale,1);
         renderer.DrawMesh(aspect>1.5f?browserBannerQuad:browserIconQuad,browserArtworkMaterial,browserArtworkTransform);
     }
-    public void DrawArtworks(){bool began=false;for(int i=0;i<6;i++){var image=ArtworkTexture(i);if(image==null)continue;if(!began){draw.End();renderer.Begin3D(camera);began=true;}DrawRoundedArtwork(image,40+i%3*192+17,100+i/3*146+16,142,48);}if(began){renderer.End3D();draw.Begin();}}
+    public void DrawArtworks(){if(storageMode){DrawStorageArtwork();return;}bool began=false;for(int i=0;i<6;i++){var image=ArtworkTexture(i);if(image==null)continue;if(!began){draw.End();renderer.Begin3D(camera);began=true;}DrawRoundedArtwork(image,40+i%3*192+17,100+i/3*146+16,142,48);}if(began){renderer.End3D();draw.Begin();}}
     public bool DrawArtwork(int slot,float x,float y,float width,float height){var image=ArtworkTexture(slot);if(image==null)return false;draw.End();renderer.Begin3D(camera);DrawRoundedArtwork(image,x,y,width,height);renderer.End3D();draw.Begin();return true;}
     public void BeginBrowserMask(){browserMaskVertices=0;}
     private void BrowserMaskVertex(IplPoint p){glass[browserMaskVertices++]=new VertexPositionColorTexture(World(p),Color32.White,new Vector2((offset+p.X*scale)/logicalWidth*device.Width/copyWidth,p.Y*scale/logicalHeight*device.Height/copyHeight));}
@@ -665,7 +667,7 @@ internal sealed class GameCubeCanvas : IIplCanvas, IIplBrowserCanvas, IDisposabl
 #if IPL_CACHED_SELECTORS
         for(int i=0;i<selectors.Length;i++)selectors[i]?.Dispose();
 #endif
-        browserMask.Dispose();browserBannerQuad.Dispose();browserIconQuad.Dispose();
+        ReleaseStorageArtwork();browserMask.Dispose();browserBannerQuad.Dispose();browserIconQuad.Dispose();
         footer.Dispose();browserCards.Dispose();for(int i=0;i<artwork.Length;i++)artwork[i]?.Dispose();icons.Dispose();
 #if IPL_CACHED_GRID
         editorGrid.Dispose();
