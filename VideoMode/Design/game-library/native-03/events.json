@@ -1,0 +1,51 @@
+[
+  {
+    "capture": "01-play-library",
+    "completed_frames": 453,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_452.png",
+    "efb_sha256": "799f4cf6331a448d8a7601e903283dbf554ebb08100f505acce3bbae65c4b047"
+  },
+  {
+    "capture": "02-six-glass-game-cards",
+    "completed_frames": 504,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_504.png",
+    "efb_sha256": "391265089c09ef54314205e467464be0d0007a49747f7c9fed829c84a5585f49"
+  },
+  {
+    "capture": "03-next-library-page",
+    "completed_frames": 607,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_606.png",
+    "efb_sha256": "6d519e3315b2ff317b89dbe5d20611bb3a1a5bae4bc00ed7d353892f9ca6ceab"
+  },
+  {
+    "capture": "04-swiss-confirm-default-cancel",
+    "completed_frames": 658,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_658.png",
+    "efb_sha256": "09db3b21892b4ebfb94f77d951d7d66678d86e9e143c98aa8fe77cf05e216de1"
+  },
+  {
+    "capture": "05-fixture-launch-refused",
+    "completed_frames": 760,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_760.png",
+    "efb_sha256": "699e5fde5a1fc43a45f848f0a9feda74ba1b8dc40cbc8af65e722271bd827c07"
+  },
+  {
+    "capture": "06-back-to-play",
+    "completed_frames": 864,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_863.png",
+    "efb_sha256": "ff691864d18707d2047b719afad38b455c40ee2defa70c7ecec06455d03d2484"
+  },
+  {
+    "capture": "07-reverse-stick-to-cube",
+    "completed_frames": 915,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_914.png",
+    "efb_sha256": "b673473c0b79c8917192c9c04d0a9ae2d72d5d1da47a68d92df558d6634c04c2"
+  }
+]
