@@ -44,7 +44,30 @@ Host tests cover read-only real-filesystem browsing, previews, root bounds,
 card protection, default Cancel, transfer cancellation, two-stage formatting,
 slot routing and media revisions. SDK PR #157 records actual native transfer,
 CRC, move/delete and stale-snapshot acceptance on isolated Dolphin cards, plus
-host I/O/removal/cancellation faults. Native screen acceptance is being completed
-in this draft. No physical console is connected; no physical card was modified.
+host I/O/removal/cancellation faults. `native-review/` records twelve completed native screen captures with original
+fixture saves and an original data-only DVD filesystem standing in for SD files.
+It exercises both slots, a verified copy, cancelled deletion, directory navigation,
+text opening and B return. `normal-cards/` repeats card acceptance with the final
+normal interactive DOL, real clock/preferences services enabled and no review
+fixtures. Independent post-shutdown raw-card readback matches the full copied
+8192-byte payload plus ownership/icon/comment/protection metadata, keeps the
+source and old destination, and confirms cancelled deletion retained both files.
+`normal-scan/` records progressive/interlaced previews, keep, B rollback and X
+safe mode on that same normal DOL. All named native windows and completed EFB
+frames are retained with DOL hashes and input events. The raw EFB may be taller
+than the final 640x480 presentation; compare the unscaled `-window.png` files.
+
+The native review caught and fixed a cached-footer tint mismatch. A subsequent
+replay had an extra B press; only the corrected twelve-phase replay is acceptance
+evidence. Those earlier diagnostics remain in the cloud artifact directories.
+The final face layout gives long labels space before their right-hand values.
+The final DOL is Release/O3/LTO, keeps VSync and the existing rendering caches,
+and contains no synthetic browser/review source. Its exact source SDK/engine
+revisions, size and hash are in `normal-build-manifest.json`.
+
+Physical GC Loader reads/writes, hardware clock retention and Swiss game autoboot
+remain unverified. Swiss native startup argument delivery is recorded separately
+under `../game-library/swiss-native`; the emulator window stayed black. UI file
+fixtures use Dolphin's DVD filesystem, not an emulated GC Loader SD driver. No physical console is connected; no physical card was modified.
 `OriginalCardFixture.cs.txt` is test-only source for three original UI saves. It
 must only run with fresh isolated emulator cards; it is never the delivered app.

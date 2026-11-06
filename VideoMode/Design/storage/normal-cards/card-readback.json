@@ -1,0 +1,20 @@
+{
+  "environment": "Actual native UI -> SDK card manager -> isolated Dolphin card files; not physical hardware",
+  "dol_sha256": "d343c48f0935dc6af8f9dace8bf1b28caedfe7320e99ce18fe30f665d77d2099",
+  "region": "EUR",
+  "source_files": [
+    "ColorGarden",
+    "GlassOrbit"
+  ],
+  "destination_files": [
+    "GlassOrbit",
+    "TinyRacer"
+  ],
+  "copied_bytes": 8192,
+  "copied_payload_sha256": "ea5c577d60ab7969c778a1670055e8958b28ad1bc793661760b2926dd61d04aa",
+  "source_retained": true,
+  "original_destination_retained": true,
+  "cancelled_delete_left_both_files": true,
+  "data_and_metadata_match": true,
+  "passed": true
+}
