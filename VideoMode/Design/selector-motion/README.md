@@ -94,6 +94,6 @@ selector buffers across transitions. Native screenshots, controller events and
 [the published DOL hash](scan/build.json) are preserved.
 
 Sample/run/test manifest checks, Python helper syntax and `git diff --check`
-pass. Existing SDK/engine changes remain in their separate PRs; this addition
-uses the existing published raw GX API and makes no SDK or engine modification.
-No PR has been merged. GitHub CI runs separately on the new commit.
+pass. This addition uses the existing published raw GX API and makes no SDK or
+engine modification. It is based on main after the submission-cache PR merged;
+GitHub CI runs separately for the selector addition.
