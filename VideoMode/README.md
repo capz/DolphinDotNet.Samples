@@ -87,7 +87,8 @@ date edits preserve the current time. The clock refreshes once a second and uses
 an independent monotonic animation timer. Builds using the older published SDK
 show these services as unavailable. [Native validation and limits](Design/console-settings/README.md).
 
-Game Play and Memory Card are currently empty demonstration faces. The sample
+Game Play now opens a paged GC Loader game library with native banner artwork
+and Swiss video-mode launch integration. [Library design, validation and limits](Design/game-library/README.md). Memory Card remains the next storage integration. The sample
 does not include Nintendo firmware, fonts, logos or game-save artwork.
 
 ## Build and validation

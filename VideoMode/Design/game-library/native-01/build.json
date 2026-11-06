@@ -1,0 +1,7 @@
+{
+  "native": true,
+  "environment": "Cloud Dolphin 2503",
+  "dol_sha256": "e389161aeef9f2f4150bc796f4546d7fd26f53b0cfd9a68c67f54b374c62e021",
+  "data": "Original synthetic UI fixtures, explicitly labeled. Not an attached GC Loader or real game catalog.",
+  "iteration": "First glass-card grid, before the subsequent captured-backdrop/gloss refinement."
+}

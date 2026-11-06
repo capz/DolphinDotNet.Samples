@@ -2,7 +2,7 @@ using System;
 using Dolphin.Graphics;
 using Dolphin.Timing;
 
-internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
+internal sealed class GameCubeCanvas : IIplCanvas, IIplBrowserCanvas, IDisposable
 {
     private const int GlassVertices=25*25, PanelRowVertices=36*3,PanelVertices=3*PanelRowVertices,BlurAxis=9,BlurTaps=BlurAxis*BlurAxis;
     private readonly GraphicsDevice device;
@@ -18,6 +18,19 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
     private readonly Texture2D atlas=Texture2D.FromPng(IplFontData.Png,true);
     private readonly Renderer renderer;
     private readonly CachedFooter footer;
+    private readonly CachedFooter browserCards;
+    private readonly DynamicMesh browserMask;
+    private int browserMaskVertices;
+    private readonly UvTransform[] browserBlurOffsets=new UvTransform[9];
+    private readonly Color32[] browserBlurColors=new Color32[9];
+#if IPL_BATCHED_BLUR
+    private readonly MeshPasses browserBlurPasses;
+#endif
+    private readonly Mesh browserBannerQuad,browserIconQuad;
+    private readonly Material browserArtworkMaterial=new Material{Blend=BlendMode.Alpha,Cull=CullMode.None,DepthTest=false,DepthWrite=false};
+    private readonly Transform browserArtworkTransform=new Transform();
+    private readonly Texture2D?[] artwork=new Texture2D?[6];
+    private int artworkRevision=-1,artworkCursor;
 #if IPL_CACHED_GRID
     private readonly CachedFooter editorGrid;
 #endif
@@ -86,6 +99,7 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
         this.device=device;
         renderer=new Renderer(device);
         footer=new CachedFooter(glass);
+        browserCards=new CachedFooter(glass,2,24);
 #if IPL_CACHED_GRID
         editorGrid=new CachedFooter(glass,1,32);
 #endif
@@ -116,6 +130,13 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
 #endif
         }
         panelMesh=DynamicMesh.Create(panelVertices);
+        var browserIndices=new ushort[576];for(int i=0;i<browserIndices.Length;i++)browserIndices[i]=(ushort)i;
+        browserMask=DynamicMesh.Create(glass,browserIndices);
+        browserBannerQuad=BrowserArtworkMesh(8f/142,8f/48);browserIconQuad=BrowserArtworkMesh(8f/48,8f/48);
+#if IPL_BATCHED_BLUR
+        browserBlurPasses=new MeshPasses(browserMask,9);
+#endif
+        float browserWeight=0;for(int i=0;i<9;i++){float weight=(i%3==1?2:1)*(i/3==1?2:1);browserWeight+=weight;browserBlurColors[i]=new Color32(255,255,255,(byte)(255*weight/browserWeight+.5f));}
 #if IPL_RETAINED_TINT
         panelTintMesh=new MeshColorView(panelMesh,panelTints);
 #endif
@@ -175,6 +196,11 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
         if(sx!=blurScaleX||sy!=blurScaleY)
         {
             blurScaleX=sx;blurScaleY=sy;
+            for(int i=0;i<9;i++){browserBlurOffsets[i]=new UvTransform(new Vector2((i%3-1)*4*sx,(i/3-1)*4*sy),new Vector2(1,1));
+#if IPL_BATCHED_BLUR
+                browserBlurPasses.Set(i,browserBlurColors[i],browserBlurOffsets[i]);
+#endif
+            }
             for(int tap=0;tap<BlurTaps;tap++){
                 blurOffsets[tap]=new UvTransform(new Vector2((tap%BlurAxis-BlurAxis/2)*3*sx,(tap/BlurAxis-BlurAxis/2)*3*sy),new Vector2(1,1));
 #if IPL_BATCHED_BLUR
@@ -298,6 +324,7 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
     public void Triangle(float ax,float ay,float bx,float by,float cx,float cy,uint color)
     {
         if((color&255)==0)return;
+        if(browserCards.Recording){browserCards.Triangle(ax,ay,bx,by,cx,cy,color);return;}
         if(footer.Recording){footer.Triangle(ax,ay,bx,by,cx,cy,color);return;}
         if(icons.Recording){icons.Triangle(ax,ay,bx,by,cx,cy,color);return;}
         draw.FillTriangle(new Vector2(offset+ax*scale,ay*scale),new Vector2(offset+bx*scale,by*scale),new Vector2(offset+cx*scale,cy*scale),Color(color));
@@ -387,6 +414,54 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
         return false;
 #endif
     }
+    internal void UpdateArtwork(IplBrowser? browser)
+    {
+        int revision=browser?.Revision??-1;
+        if(revision!=artworkRevision){for(int i=0;i<artwork.Length;i++){artwork[i]?.Dispose();artwork[i]=null;}artworkRevision=revision;artworkCursor=0;}
+        if(browser==null||browser.Busy||artworkCursor>=browser.Count)return;
+        int slot=artworkCursor++;var image=browser.Artwork(slot);if(image==null)return;
+        try{
+            if(image.Format==IplArtworkFormat.Rgb5A3){var texture=Texture2D.CreateNative(image.Width,image.Height,NativeTextureFormat.Rgb5A3,true);try{texture.ReplaceNative(image.Bytes);artwork[slot]=texture;}catch{texture.Dispose();throw;}}
+            else artwork[slot]=image.Format==IplArtworkFormat.Png?Texture2D.FromPng(image.Bytes,true):Texture2D.Create(image.Width,image.Height,image.Bytes,true);
+        }catch(ArgumentException){}catch(OutOfMemoryException){}
+    }
+    private Mesh BrowserArtworkMesh(float rx,float ry)
+    {
+        int used=0;var center=new IplPoint(.5f,.5f);IplPoint first=default,previous=default;
+        for(int corner=0;corner<4;corner++)for(int j=0;j<=8;j++){float a=(180-corner*90-j*90f/8)*.017453293f;float x=corner==0||corner==3?rx:1-rx,y=corner<2?1-ry:ry;var point=new IplPoint(x+(float)Math.Cos(a)*rx,y+(float)Math.Sin(a)*ry);if(corner==0&&j==0)first=point;else{BrowserArtVertex(center,ref used);BrowserArtVertex(previous,ref used);BrowserArtVertex(point,ref used);}previous=point;}
+        BrowserArtVertex(center,ref used);BrowserArtVertex(previous,ref used);BrowserArtVertex(first,ref used);
+        var indices=new ushort[used];for(int i=0;i<used;i++)indices[i]=(ushort)i;for(int i=used;i<glass.Length;i++)glass[i]=new VertexPositionColorTexture(default,Color32.White,default);return Mesh.Create(glass,indices);
+    }
+    private void BrowserArtVertex(IplPoint p,ref int at){glass[at++]=new VertexPositionColorTexture(new Vector3(p.X-.5f,.5f-p.Y,0),Color32.White,new Vector2(p.X,p.Y));}
+    public bool BrowserColorTriangle(IplPoint a,uint ca,IplPoint b,uint cb,IplPoint d,uint cd)
+    {if(!browserCards.Recording)return false;browserCards.ColoredTriangle(a.X,a.Y,b.X,b.Y,d.X,d.Y,ca,cb,cd);return true;}
+    public bool HasArtwork(int slot)=>slot>=0&&slot<artwork.Length&&artwork[slot]!=null;
+    private void DrawRoundedArtwork(Texture2D image,float x,float y,float width,float height)
+    {
+        float aspect=(float)image.Width/image.Height;if(width/height>aspect){float w=height*aspect;x+=(width-w)/2;width=w;}else{float h=width/aspect;y+=(height-h)/2;height=h;}
+        browserArtworkMaterial.Texture=image;browserArtworkTransform.LocalPosition=new Vector3((x+width/2-320)*scale,(240-y-height/2)*scale,0);browserArtworkTransform.LocalScale=new Vector3(width*scale,height*scale,1);
+        renderer.DrawMesh(aspect>1.5f?browserBannerQuad:browserIconQuad,browserArtworkMaterial,browserArtworkTransform);
+    }
+    public void DrawArtworks(){bool began=false;for(int i=0;i<6;i++){var image=artwork[i];if(image==null)continue;if(!began){draw.End();renderer.Begin3D(camera);began=true;}DrawRoundedArtwork(image,40+i%3*192+17,100+i/3*146+16,142,48);}if(began){renderer.End3D();draw.Begin();}}
+    public bool DrawArtwork(int slot,float x,float y,float width,float height){var image=slot>=0&&slot<artwork.Length?artwork[slot]:null;if(image==null)return false;draw.End();renderer.Begin3D(camera);DrawRoundedArtwork(image,x,y,width,height);renderer.End3D();draw.Begin();return true;}
+    public void BeginBrowserMask(){browserMaskVertices=0;}
+    private void BrowserMaskVertex(IplPoint p){glass[browserMaskVertices++]=new VertexPositionColorTexture(World(p),Color32.White,new Vector2((offset+p.X*scale)/logicalWidth*device.Width/copyWidth,p.Y*scale/logicalHeight*device.Height/copyHeight));}
+    public void BrowserMaskTriangle(IplPoint a,IplPoint b,IplPoint d){BrowserMaskVertex(a);BrowserMaskVertex(b);BrowserMaskVertex(d);}
+    public void EndBrowserMask(){if(browserMaskVertices!=576)throw new InvalidOperationException("Incomplete browser mask.");for(int i=browserMaskVertices;i<glass.Length;i++)glass[i]=new VertexPositionColorTexture(default,Color32.White,default);browserMask.SetVertices(glass);}
+    public void DrawBrowserFrost()
+    {
+        long began=IplFrameProfiler.Active?Clock.Timestamp:0;draw.End();renderer.Begin3D(camera);
+#if IPL_BATCHED_BLUR
+        renderer.DrawMeshPasses(browserBlurPasses,frostMaterial,identity);
+#else
+        for(int i=0;i<9;i++){frostMaterial.Color=browserBlurColors[i];frostMaterial.TextureTransform=browserBlurOffsets[i];renderer.DrawMesh(browserMask,frostMaterial,identity);}
+        frostMaterial.Color=Color32.White;frostMaterial.TextureTransform=UvTransform.Identity;
+#endif
+        renderer.End3D();draw.Begin();if(IplFrameProfiler.Active)IplFrameProfiler.BlurUs+=IplFrameProfiler.Since(began);
+    }
+    public bool BeginBrowserCache(int style){if(browserCards.Ready(style))return false;browserCards.Begin(style);return true;}
+    public void EndBrowserCache()=>browserCards.End();
+    public bool DrawBrowserCache(int style){if(!browserCards.Ready(style))return false;draw.End();renderer.Begin3D(camera);browserCards.Draw(renderer,style,scale);renderer.End3D();draw.Begin();return true;}
     public bool BeginFooterCache(int style){footer.Begin(style);return true;}
     public void EndFooterCache()=>footer.End();
     public bool DrawFooterCache(int style)
@@ -404,6 +479,7 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
     public void Rectangle(float x,float y,float width,float height,uint color)
     {
         if((color&255)==0)return;
+        if(browserCards.Recording){browserCards.Triangle(x,y,x+width,y,x+width,y+height,color);browserCards.Triangle(x,y,x+width,y+height,x,y+height,color);return;}
 #if IPL_CACHED_SELECTORS
         if(recordingSelector>=0){selectors[recordingSelector].Quad(new IplPoint(x,y),new IplPoint(x+width,y),new IplPoint(x,y+height),new IplPoint(x+width,y+height),color);return;}
 #endif
@@ -569,7 +645,8 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
 #if IPL_CACHED_SELECTORS
         for(int i=0;i<selectors.Length;i++)selectors[i]?.Dispose();
 #endif
-        footer.Dispose();icons.Dispose();
+        browserMask.Dispose();browserBannerQuad.Dispose();browserIconQuad.Dispose();
+        footer.Dispose();browserCards.Dispose();for(int i=0;i<artwork.Length;i++)artwork[i]?.Dispose();icons.Dispose();
 #if IPL_CACHED_GRID
         editorGrid.Dispose();
 #endif

@@ -24,10 +24,14 @@ internal sealed class CachedFooter : IDisposable
     }
     internal void Triangle(float ax,float ay,float bx,float by,float cx,float cy,uint rgba)
     {
-        var color=new Color32((byte)(rgba>>24),(byte)(rgba>>16),(byte)(rgba>>8),(byte)rgba);
-        staging[used++]=new VertexPositionColorTexture(new Vector3(ax-320,240-ay,0),color,Vector2.Zero);
-        staging[used++]=new VertexPositionColorTexture(new Vector3(bx-320,240-by,0),color,Vector2.Zero);
-        staging[used++]=new VertexPositionColorTexture(new Vector3(cx-320,240-cy,0),color,Vector2.Zero);
+        ColoredTriangle(ax,ay,bx,by,cx,cy,rgba,rgba,rgba);
+    }
+    private static Color32 Color(uint color)=>new Color32((byte)(color>>24),(byte)(color>>16),(byte)(color>>8),(byte)color);
+    internal void ColoredTriangle(float ax,float ay,float bx,float by,float cx,float cy,uint ca,uint cb,uint cc)
+    {
+        staging[used++]=new VertexPositionColorTexture(new Vector3(ax-320,240-ay,0),Color(ca),Vector2.Zero);
+        staging[used++]=new VertexPositionColorTexture(new Vector3(bx-320,240-by,0),Color(cb),Vector2.Zero);
+        staging[used++]=new VertexPositionColorTexture(new Vector3(cx-320,240-cy,0),Color(cc),Vector2.Zero);
         if(used==Vertices)Flush();
     }
     private void Flush()

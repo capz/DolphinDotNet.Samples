@@ -62,7 +62,7 @@ internal static class Program
 #endif
         device.ConfigureDisplay(new DisplayOptions {Resolution=reviewDisplay,Scan=ScanMode.Interlaced,Widescreen=false});
 #endif
-#if IPL_VISUAL_REVIEW || IPL_PERFORMANCE_REVIEW
+#if IPL_VISUAL_REVIEW || IPL_PERFORMANCE_REVIEW || IPL_BROWSER_REVIEW
         device.ConfigureDisplay(new DisplayOptions {Resolution=GraphicsResolution.R640x480,Scan=ScanMode.Interlaced,Widescreen=false});
 #endif
 #if IPL_HARDWARE_RUNNER
@@ -83,12 +83,17 @@ internal static class Program
 #else
         const bool hardwareAntialiasing=false;
 #endif
+#if IPL_BROWSER_REVIEW
+        using var browser=new IplBrowser(new IplBrowserFixture());
+#else
+        using var browser=new IplBrowser(new IplNativeBrowser());
+#endif
         var output=new VideoModeOutput(device,hardwareAntialiasing);
 #if IPL_VISUAL_REVIEW || IPL_PERFORMANCE_REVIEW || IPL_VIDEO_MODE_REVIEW || IPL_HARDWARE_RUNNER
         var shell=new IplShell(output);
 #else
         Controller.Update();bool restoreVideo=!Controller.GetState(0).X.IsHeld;
-        var shell=new IplShell(output,new IplPreferencesStore(),new IplConsoleCalendar(),restoreVideo,new IplConsoleSound());
+        var shell=new IplShell(output,new IplPreferencesStore(),new IplConsoleCalendar(),restoreVideo,new IplConsoleSound(),browser);
 #endif
 #if IPL_VIDEO_MODE_REVIEW
         var scanReview=new VideoModeScanReview(shell,output,reviewResolution);
@@ -140,7 +145,7 @@ internal static class Program
                 IplPerformanceOverlay.DrawEnabled=true;
                 IplPerformanceOverlay.Stats.Toggle();
             }
-            if(pad.Y.WasPressed&&!IplFrameProfiler.Active)IplFrameProfiler.Start();
+            if(pad.Y.WasPressed){if(shell.Page==ShellPage.Browser)browser.Refresh();else if(!IplFrameProfiler.Active)IplFrameProfiler.Start();}
             if(pad.Start.WasPressed) {shell.Video.Revert();if(!shell.Video.Pending)return 0;}
             if(pad.X.WasPressed)
             {
@@ -157,9 +162,13 @@ internal static class Program
                 shell.Direction(x,y,dt,stick);
             }
 #endif
+            if(browser.LaunchRequested)return 0;
             IplPerformanceOverlay.BeginFrame();
             bool timing=IplFrameProfiler.Active||IplPerformanceOverlay.Stats.Visible;
             long phaseStart=timing?Clock.Timestamp:0;
+#if !IPL_HARDWARE_RUNNER
+            canvas.UpdateArtwork(shell.Page==ShellPage.Browser?browser:null);
+#endif
             canvas.Prepare();renderer.Prepare(shell);
 #if !IPL_HARDWARE_RUNNER
             IplPerformanceOverlay.PrepareNumbers(canvas);

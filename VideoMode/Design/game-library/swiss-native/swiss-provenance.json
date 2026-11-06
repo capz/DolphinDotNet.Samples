@@ -1,0 +1,25 @@
+{
+  "release": "v0.6r2119",
+  "release_url": "https://github.com/emukidid/swiss-gc/releases/tag/v0.6r2119",
+  "archive_url": "https://github.com/emukidid/swiss-gc/releases/download/v0.6r2119/swiss_r2119.tar.xz",
+  "archive_sha256": "97825799dfbe44cca08d1e49f95d15cc996bd15a052f48827b48162005cbe916",
+  "dol_sha256": "63b4af91449af64119d565b89377bcb772de5166c716649003542a6ab641c533",
+  "format": "Uncompressed DOL converted losslessly from official ELF load segments; no code changes",
+  "official_packed_dol_sha256": "3a19ea4b814ed7d43d7dbc81c49f981c215698cfaae6ed7bca471517a74aa1d1",
+  "official_elf_sha256": "d648d1bfa83d915c104fc2624e5e24565fb939583420b5e1dc7d059ae0b74ade",
+  "load_segments": [
+    {
+      "address": "0x80003100",
+      "size": 1512544,
+      "sha256": "27f3002f27f1bc3806e64f55a606da1e874d0f4a5b0311c97f393a998215b68f"
+    },
+    {
+      "address": "0x80174580",
+      "size": 2241472,
+      "sha256": "f97bcaf929485c8a518ebd829850b1f09ba57b5273465d278d8eb167b58d60f0"
+    }
+  ],
+  "source": "https://github.com/emukidid/swiss-gc/tree/v0.6r2119",
+  "source_archive": "https://github.com/emukidid/swiss-gc/archive/refs/tags/v0.6r2119.tar.gz",
+  "license": "See swiss-licenses/LICENSE.txt and bundled third-party notices. Swiss is distributed separately from the sample."
+}

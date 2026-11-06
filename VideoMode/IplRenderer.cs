@@ -48,7 +48,7 @@ internal struct IplPoint
     internal float X,Y,Z;
     internal IplPoint(float x,float y,float z=0) { X=x;Y=y;Z=z; }
 }
-internal sealed class IplRenderer
+internal sealed partial class IplRenderer
 {
     private readonly IIplCanvas c;
     private float yaw,pitch,cy,scale,rimVisibility;
@@ -218,6 +218,8 @@ internal sealed class IplRenderer
             iconBuilding=false;iconReady=true;
         }
 #endif
+        if(shell.Page==ShellPage.Browser){PrepareBrowser(shell);return;}
+        browserMaskReady=false;
         if(shell.Editing){
 #if IPL_CACHED_GRID
             if(!gridReady&&c.BeginGridCache()){Grid();c.EndGridCache();gridReady=true;}
@@ -240,7 +242,7 @@ internal sealed class IplRenderer
         Cube();
         c.Section(IplRenderPhase.FrostGeometry);
         c.BeginPanels();
-        if(shell.Page==ShellPage.Face&&shell.Face!=ShellFace.Play&&shell.Face!=ShellFace.Memory)
+        if(shell.Page==ShellPage.Face&&shell.Face!=ShellFace.Memory)
             for(int i=0;i<shell.Rows;i++)FacePanel(shell,i);
         c.EndPanels();
 #if IPL_RETAINED_TINT
@@ -262,6 +264,7 @@ internal sealed class IplRenderer
     internal void Present(IplShell shell)
     {
         Rect(0,0,640,480,0x000000ff);
+        if(shell.Page==ShellPage.Browser){PresentBrowser(shell);return;}
         if(shell.Editing)
         {
             c.Section(IplRenderPhase.Editor);Detail(shell);
@@ -276,7 +279,7 @@ internal sealed class IplRenderer
         if(shell.Turn>.85f)
         {
             c.Section(IplRenderPhase.Icons);FaceIcon(shell);
-            if(shell.Page==ShellPage.Face&&shell.Face!=ShellFace.Play&&shell.Face!=ShellFace.Memory)
+            if(shell.Page==ShellPage.Face&&shell.Face!=ShellFace.Memory)
             {
                 c.Section(IplRenderPhase.Capture);c.CaptureBackdrop();
                 c.Section(IplRenderPhase.Frost);c.DrawFrostedPanels();
@@ -540,7 +543,7 @@ internal sealed class IplRenderer
     private void FaceMenu(IplShell s)
     {
         FaceText(s,s.Title,.045f,.79f,26,White,0,.95f);
-        if(s.Face==ShellFace.Memory||s.Face==ShellFace.Play)
+        if(s.Face==ShellFace.Memory)
         {
             FaceText(s,s.Face==ShellFace.Play?"No disc selected.":"No card selected.",0,.1f,16,White);
             FaceText(s,"Preview only.",0,-.16f,12,0xb5b9c9ff);return;

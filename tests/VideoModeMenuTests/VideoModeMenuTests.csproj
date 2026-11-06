@@ -3,14 +3,19 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
+    <DefineConstants>$(DefineConstants);IPL_HOST_FILES</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="../../VideoMode/VideoModeMenu.cs" Link="VideoModeMenu.cs" />
     <Compile Include="../../VideoMode/VideoModeScanReview.cs" Link="VideoModeScanReview.cs" />
+    <Compile Include="../../VideoMode/IplBrowser.cs" Link="IplBrowser.cs" />
+    <Compile Include="../../VideoMode/IplLibrary.cs" Link="IplLibrary.cs" />
+    <Compile Include="../../VideoMode/IplSwiss.cs" Link="IplSwiss.cs" />
     <Compile Include="../../VideoMode/IplShell.cs" Link="IplShell.cs" />
     <Compile Include="../../VideoMode/IplPreferences.cs" Link="IplPreferences.cs" />
     <Compile Include="../../VideoMode/IplPreferencesStore.cs" Link="IplPreferencesStore.cs" />
     <Compile Include="../../VideoMode/IplSelectorPose.cs" Link="IplSelectorPose.cs" />
+    <Compile Include="../../VideoMode/IplBrowserRenderer.cs" Link="IplBrowserRenderer.cs" />
     <Compile Include="../../VideoMode/IplRenderer.cs" Link="IplRenderer.cs" />
     <Compile Include="../../VideoMode/IplNumberCacheState.cs" Link="IplNumberCacheState.cs" />
     <Compile Include="../../VideoMode/IplPerformanceStats.cs" Link="IplPerformanceStats.cs" />
