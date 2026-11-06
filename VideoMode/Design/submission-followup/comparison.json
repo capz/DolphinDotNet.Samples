@@ -1,0 +1,43 @@
+[
+  {
+    "variant": "01-sdk-indexed",
+    "mask": [
+      185,
+      62,
+      277,
+      427
+    ],
+    "changed_pixels_outside_mask": 0
+  },
+  {
+    "variant": "02-footer",
+    "mask": [
+      185,
+      62,
+      277,
+      427
+    ],
+    "changed_pixels_outside_mask": 0
+  },
+  {
+    "variant": "03-combined",
+    "mask": [
+      185,
+      62,
+      277,
+      427
+    ],
+    "changed_pixels_outside_mask": 0
+  },
+  {
+    "variant": "04-angle",
+    "baseline": "outer-rim-only/02-angle/native.png",
+    "mask": [
+      38,
+      10,
+      284,
+      455
+    ],
+    "changed_pixels_outside_mask": 0
+  }
+]

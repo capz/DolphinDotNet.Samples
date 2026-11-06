@@ -123,6 +123,10 @@ presentation intervals.
 the middle and inset inner returns entirely while retaining the rounded outer
 polish. Its native frontal/angled screenshots and updated timings supersede the
 earlier full-wall appearance.
+[Cross-layer submission investigation](Design/submission-followup-review.md)
+records the cached footer, separate SDK/Hypercube PRs, controlled indexed-color
+prototype timings and the remaining CPU hotspots. The stock package pin remains
+unchanged; the combined prototype is an explicit integration control.
 
 For an uninterrupted native benchmark, build with `IplPerformanceReview=true`
 and `IplPerformanceReviewScene=Options`, `Oblique`, `Cube` or `Detail`, then run

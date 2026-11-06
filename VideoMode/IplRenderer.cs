@@ -17,6 +17,9 @@ internal interface IIplCanvas
     void RimQuad(IplPoint a,IplPoint b,IplPoint c,IplPoint d,uint color);
     void EndRims();
     void DrawRims();
+    bool BeginFooterCache(int style);
+    void EndFooterCache();
+    bool DrawFooterCache(int style);
     void BeginPanels();
     void PanelTriangle(IplPoint a,IplPoint b,IplPoint d);
     void EndPanels();
@@ -33,6 +36,7 @@ internal sealed class IplRenderer
     private readonly IIplCanvas c;
     private float yaw,pitch,cy,scale,rimVisibility;
     private float cosYaw,sinYaw,cosPitch,sinPitch;
+    private bool footerReady;
     private const uint White=0xf3f4faff, Green=0x15f88cff, Block=0x60db18ff;
     // Cube faces are signed permutations of one grid. Cache its invariant unit
     // normals and curvature, rather than renormalizing every moving vertex.
@@ -168,6 +172,11 @@ internal sealed class IplRenderer
     // by the SDK. No dynamic mesh is modified during a GX pass.
     internal void Prepare(IplShell shell)
     {
+        if(!footerReady)
+        {
+            for(int style=0;style<3;style++)if(c.BeginFooterCache(style)){FooterShapes(style);c.EndFooterCache();}
+            footerReady=true;
+        }
         if(shell.Editing)return;
         c.Section(IplRenderPhase.GlassGeometry);
         float t=shell.Turn, ease=1-(float)Math.Pow(1-t,3);
@@ -555,18 +564,29 @@ internal sealed class IplRenderer
             }
         }
     }
+    private void FooterShapes(int style)
+    {
+        const float y=428;
+        float stick=style==0?214:111;
+        for(int r=15;r>3;r-=3)Circle(stick,y,r,Rgba(210,214,217,130),false);
+        Circle(stick,y,3,0xd7d9dfff,true);
+        if(style==0)return;
+        for(int r=22;r>10;r-=3)Circle(320,y,r,Rgba(255,35,107,10),true);
+        Circle(320,y,11,0xa42351ff,true);
+        if(style==2)return;
+        for(int r=23;r>12;r-=3)Circle(470,y,r,Rgba(15,245,196,10),true);
+        Circle(470,y,13,0x168a73ff,true);
+    }
     private void Footer(IplShell s)
     {
         const float y=428;
-        float stick=s.Page==ShellPage.Cube?214:111;
-        for(int r=15;r>3;r-=3)Circle(stick,y,r,Rgba(210,214,217,130),false);
-        Circle(stick,y,3,0xd7d9dfff,true);
+        int style=s.Page==ShellPage.Cube?0:s.Video.Reverting?2:1;
+        if(!c.DrawFooterCache(style))FooterShapes(style);
+        float stick=style==0?214:111;
         Text(s.Page==ShellPage.Cube?"... Menu Selection":s.Face==ShellFace.Calendar&&s.Editing?"... Part / Value":"... Select",stick+24,y-13,s.Page==ShellPage.Cube?20:17,White);
         if(s.Page==ShellPage.Cube)return;
-        for(int r=22;r>10;r-=3)Circle(320,y,r,Rgba(255,35,107,10),true);
-        Circle(320,y,11,0xa42351ff,true);Center("B",320,y-14,20,White);Text(s.Editing?"... Cancel":"... Back",340,y-13,17,White);
+        Center("B",320,y-14,20,White);Text(s.Editing?"... Cancel":"... Back",340,y-13,17,White);
         if(s.Video.Reverting)return;
-        for(int r=23;r>12;r-=3)Circle(470,y,r,Rgba(15,245,196,10),true);
-        Circle(470,y,13,0x168a73ff,true);Center("A",470,y-14,20,White);Text(s.Editing?"... Confirm":"... Open",492,y-13,17,White);
+        Center("A",470,y-14,20,White);Text(s.Editing?"... Confirm":"... Open",492,y-13,17,White);
     }
 }
