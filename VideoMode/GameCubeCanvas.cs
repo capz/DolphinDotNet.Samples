@@ -453,6 +453,8 @@ internal sealed class GameCubeCanvas : IIplCanvas, IIplBrowserCanvas, IDisposabl
         var indices=new ushort[used];for(int i=0;i<used;i++)indices[i]=(ushort)i;for(int i=used;i<glass.Length;i++)glass[i]=new VertexPositionColorTexture(default,Color32.White,default);return Mesh.Create(glass,indices);
     }
     private void BrowserArtVertex(IplPoint p,ref int at){glass[at++]=new VertexPositionColorTexture(new Vector3(p.X-.5f,.5f-p.Y,0),Color32.White,new Vector2(p.X,p.Y));}
+    public bool BrowserColorTriangle(IplPoint a,uint ca,IplPoint b,uint cb,IplPoint d,uint cd)
+    {if(!browserCards.Recording)return false;browserCards.ColoredTriangle(a.X,a.Y,b.X,b.Y,d.X,d.Y,ca,cb,cd);return true;}
     public bool HasArtwork(int slot)=>ArtworkTexture(slot)!=null;
     private void DrawRoundedArtwork(Texture2D image,float x,float y,float width,float height)
     {

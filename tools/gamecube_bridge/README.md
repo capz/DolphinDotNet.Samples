@@ -116,7 +116,8 @@ For a matched before/after comparison, run the same command first with
 requires a clean committed source tree and creates a separate, retained
 `baseline-source` worktree under the output directory. It keeps the current
 reporting/network code and SDK while restoring only `IplRenderer.cs` and
-`GameCubeCanvas.cs` from measured pre-optimization checkpoint `0178139`. It never
+`GameCubeCanvas.cs` from measured pre-optimization checkpoint `0178139`. The explicit `IplHistoricalRenderer=true` compatibility build excludes the new
+browser renderer and artwork update from this fixed benchmark scene. It never
 overwrites the working branch. The resulting source digest and exact ELF hash
 identify this comparison build. Then run the optimized command without the flag.
 

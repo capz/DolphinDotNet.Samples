@@ -86,4 +86,4 @@ jobs:
           git fetch --no-tags --depth=1 origin 0178139832d5c34a032d17a950ab9de0894b7171
           git show 0178139832d5c34a032d17a950ab9de0894b7171:VideoMode/IplRenderer.cs > VideoMode/IplRenderer.cs
           git show 0178139832d5c34a032d17a950ab9de0894b7171:VideoMode/GameCubeCanvas.cs > VideoMode/GameCubeCanvas.cs
-          dotnet build VideoMode/VideoMode.csproj -c Release -p:DndBuildNative=false -p:IplHardwareRunner=true -p:DndDebugSymbols=false -p:DndGdbTransport=Off
+          dotnet build VideoMode/VideoMode.csproj -c Release -p:DndBuildNative=false -p:IplHistoricalRenderer=true -p:IplHardwareRunner=true -p:DndDebugSymbols=false -p:DndGdbTransport=Off
