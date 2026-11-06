@@ -218,8 +218,10 @@ internal sealed partial class IplRenderer
             iconBuilding=false;iconReady=true;
         }
 #endif
-        if(shell.Page==ShellPage.Browser){PrepareBrowser(shell);return;}
+        if(shell.Page==ShellPage.Browser){flatMaskReady=false;PrepareBrowser(shell);return;}
         browserMaskReady=false;
+        if(shell.FlatMenu){PrepareFlatMenu(shell);return;}
+        flatMaskReady=false;
         if(shell.Editing){
 #if IPL_CACHED_GRID
             if(!gridReady&&c.BeginGridCache()){Grid();c.EndGridCache();gridReady=true;}
@@ -265,6 +267,7 @@ internal sealed partial class IplRenderer
     {
         Rect(0,0,640,480,0x000000ff);
         if(shell.Page==ShellPage.Browser){PresentBrowser(shell);return;}
+        if(shell.FlatMenu){PresentFlatMenu(shell);return;}
         if(shell.Editing)
         {
             c.Section(IplRenderPhase.Editor);Detail(shell);
@@ -581,14 +584,14 @@ internal sealed partial class IplRenderer
         Center(s.Label(s.Row),320,104,23,Green);
         Selectors(s,false);
         if(s.Face==ShellFace.Calendar)
-            Center(s.RealCalendar?"A sets the GameCube clock. B discards changes.":"Calendar demonstration. Changes last for this session.",320,351,14,0xc4c9deff);
+            Center(s.RealCalendar?"A sets the clock. B discards changes and returns to the cube.":"Calendar demonstration. B discards changes and returns to the cube.",320,351,14,0xc4c9deff);
         else if(s.Face==ShellFace.Video&&!s.Video.Pending)
         {
             string status=s.Video.Status;
             if(status=="UNSUPPORTED MODE OR CABLE"||status=="NOT ENOUGH MEMORY FOR MODE")Banner(status=="UNSUPPORTED MODE OR CABLE"?"Unsupported mode or cable.":"Not enough memory for this mode.",true);
-            else Center("A previews the mode. B discards changes.",320,350,16,White);
+            else Center("A previews the mode. B returns to the cube.",320,350,16,White);
         }
-        else if(s.Face==ShellFace.Options)Center("A confirms. B discards changes.",320,351,14,0xc4c9deff);
+        else if(s.Face==ShellFace.Options)Center("A confirms. B discards changes and returns to the cube.",320,351,14,0xc4c9deff);
     }
     private void Selectors(IplShell s,bool preparing)
     {
@@ -683,7 +686,7 @@ internal sealed partial class IplRenderer
         Text(s.Page==ShellPage.Cube?"... Menu Selection":s.Face==ShellFace.Calendar&&s.Editing?"... Part / Value":"... Select",stick+24,y-13,s.Page==ShellPage.Cube?20:17,White);
         if(s.Page==ShellPage.Cube){Text("R  Storage",486,y-12,16,White);return;}
         bool modal=s.Page==ShellPage.Browser&&s.Browser?.Panel!=IplBrowserPanel.Grid;
-        Center("B",320,y-14,20,White);Text(s.Editing||modal?"... Cancel":"... Back",340,y-13,17,White);
+        Center("B",320,y-14,20,White);Text(s.Video.Reverting?"... Wait":s.Page==ShellPage.Detail||s.Page==ShellPage.Browser?"... Cube":"... Back",340,y-13,17,White);
         if(style==2)return;
         string action=s.Page==ShellPage.Browser&&s.Browser?.Panel==IplBrowserPanel.Info?"... Close":s.Editing||modal?"... Confirm":"... Open";
         Center("A",470,y-14,20,White);Text(action,492,y-13,17,White);

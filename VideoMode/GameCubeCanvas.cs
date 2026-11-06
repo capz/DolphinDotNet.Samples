@@ -101,7 +101,7 @@ internal sealed class GameCubeCanvas : IIplCanvas, IIplBrowserCanvas, IDisposabl
         this.device=device;
         renderer=new Renderer(device);
         footer=new CachedFooter(glass);
-        browserCards=new CachedFooter(glass,2,24);
+        browserCards=new CachedFooter(glass,5,24);
 #if IPL_CACHED_GRID
         editorGrid=new CachedFooter(glass,1,32);
 #endif
@@ -467,7 +467,7 @@ internal sealed class GameCubeCanvas : IIplCanvas, IIplBrowserCanvas, IDisposabl
     public void BeginBrowserMask(){browserMaskVertices=0;}
     private void BrowserMaskVertex(IplPoint p){glass[browserMaskVertices++]=new VertexPositionColorTexture(World(p),Color32.White,new Vector2((offset+p.X*scale)/logicalWidth*device.Width/copyWidth,p.Y*scale/logicalHeight*device.Height/copyHeight));}
     public void BrowserMaskTriangle(IplPoint a,IplPoint b,IplPoint d){BrowserMaskVertex(a);BrowserMaskVertex(b);BrowserMaskVertex(d);}
-    public void EndBrowserMask(){if(browserMaskVertices!=576)throw new InvalidOperationException("Incomplete browser mask.");for(int i=browserMaskVertices;i<glass.Length;i++)glass[i]=new VertexPositionColorTexture(default,Color32.White,default);browserMask.SetVertices(glass);}
+    public void EndBrowserMask(int expectedVertices=576){if(expectedVertices<3||expectedVertices>576||expectedVertices%3!=0||browserMaskVertices!=expectedVertices)throw new InvalidOperationException("Incomplete browser mask.");for(int i=browserMaskVertices;i<glass.Length;i++)glass[i]=new VertexPositionColorTexture(default,Color32.White,default);browserMask.SetVertices(glass);}
     public void DrawBrowserFrost()
     {
         long began=IplFrameProfiler.Active?Clock.Timestamp:0;draw.End();renderer.Begin3D(camera);

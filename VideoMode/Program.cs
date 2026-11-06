@@ -108,7 +108,7 @@ internal static class Program
         shell.TurnTo(ShellFace.Options);shell.Row=1;shell.Tick(1);shell.Time=0;
 #if IPL_RUNNER_DETAIL || IPL_REVIEW_DETAIL
         shell.TurnTo(ShellFace.Video);shell.Row=1;shell.Tick(1);
-        shell.Confirm();
+        shell.Confirm();shell.Confirm();
 #endif
 #endif
 #endif
@@ -159,7 +159,7 @@ internal static class Program
             else if(pad.B.WasPressed)shell.Back();
             else if(pad.A.WasPressed)shell.Confirm();
             else if(pad.R.WasPressed){if(shell.Page==ShellPage.Cube)shell.TurnTo(ShellFace.Memory);else if(shell.Page==ShellPage.Browser)browser.SwitchSlot(1);}
-            else if(pad.L.WasPressed&&shell.Page==ShellPage.Browser)browser.SwitchSlot(0);
+            else if(pad.L.WasPressed&&shell.Page==ShellPage.Browser){if(browser.Kind==IplBrowserKind.Sd)browser.ParentDirectory();else browser.SwitchSlot(0);}
             else
             {
                 int x=pad.DPadRight.IsHeld?1:pad.DPadLeft.IsHeld?-1:0;

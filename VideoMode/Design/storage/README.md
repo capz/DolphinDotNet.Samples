@@ -1,10 +1,17 @@
 # Glass Storage screens
 
-Press R at the cube, or open Options → Storage, to reach the rear Storage face.
-Its two rounded rows open Memory Card and SD Storage. The stick reverses back
-from the four directionally entered faces; the D-pad selects their rows. In flat
-screens both select items. A opens; B cancels/returns. Memory-card L/R selects
-slots A/B. Y refreshes storage. Original B navigation remains available.
+Press R at the front menu to preview the rear Storage side. Cube sides show
+read-only option previews. A opens the complete flat menu; select a row there
+with the D-pad or stick, then A opens its editor or storage browser. B closes
+any flat menu, field editor, browser or dialog directly to its cube side.
+Unconfirmed drafts are discarded, active card transfers are cancelled safely,
+and video rollback must succeed before returning. A keeps a value and returns
+to the flat list. B or the reverse stick direction on a cube side returns to
+the front menu. Memory-card L/R selects slots A/B. In SD folders, L opens the
+parent folder; B always closes the whole flat flow. Y refreshes storage.
+
+The captures below document the original Storage feature acceptance. Current
+navigation captures and details are in `../flat-navigation/`.
 
 The memory-card grid reads every game's directory, blocks, title/comment,
 permissions and native RGB5A3/CI8 icons. Up to eight icon frames are cached as

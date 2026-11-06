@@ -7,7 +7,7 @@ internal sealed partial class IplRenderer
     private bool browserMaskReady;
     private string browserLocation="",lastLocationPath="";private int lastLocationKind=-1;
     private int counterStart=-1,counterCount=-1,counterTotal=-1;
-    private bool counterBusy;
+    private bool counterBusy,counterParent;private int counterKind=-1;
     private string lastLaunchTitle="",lastVideoMode="";
     private string browserCounter="",browserStatus="",lastBrowserStatus="",browserLaunchTitle="",browserVideoMode="";
     private static float CardX(int i)=>40+i%3*192;
@@ -74,7 +74,8 @@ internal sealed partial class IplRenderer
             if(cards.BeginBrowserCache(0)){BrowserCards();cards.EndBrowserCache();}
             if(cards.BeginBrowserCache(1)){BrowserSheen();cards.EndBrowserCache();}
         }
-        if(counterStart!=browser.PageStart||counterCount!=browser.Count||counterTotal!=browser.Total||counterBusy!=browser.Busy){counterBusy=browser.Busy;counterStart=browser.PageStart;counterCount=browser.Count;counterTotal=browser.Total;browserCounter="Y  Rescan  |  "+(browser.Count==0?(browser.Busy?"Reading...":"No entries"):(browser.PageStart+1).ToString()+"-"+(browser.PageStart+browser.Count).ToString()+" / "+browser.Total.ToString());}
+        bool parent=browser.Kind==IplBrowserKind.Sd&&browser.Path.Length>0;
+        if(counterStart!=browser.PageStart||counterCount!=browser.Count||counterTotal!=browser.Total||counterBusy!=browser.Busy||counterParent!=parent||counterKind!=(int)browser.Kind){counterBusy=browser.Busy;counterParent=parent;counterKind=(int)browser.Kind;counterStart=browser.PageStart;counterCount=browser.Count;counterTotal=browser.Total;browserCounter=(parent?"L  Parent  |  ":"")+(browser.Kind==IplBrowserKind.Games?"Y  Rescan  |  ":"Y  Refresh  |  ")+(browser.Count==0?(browser.Busy?"Reading...":"No entries"):(browser.PageStart+1).ToString()+"-"+(browser.PageStart+browser.Count).ToString()+" / "+browser.Total.ToString());}
         if(lastBrowserStatus!=browser.Status){lastBrowserStatus=browser.Status;browserStatus=Fit(lastBrowserStatus,590,11);}
         if(browser.Selected!=null&&lastLaunchTitle!=browser.Selected.Title){lastLaunchTitle=browser.Selected.Title;browserLaunchTitle=Fit(lastLaunchTitle,480,24);}
         string mode=IplSwiss.VideoMode(shell.Video.Applied);if(mode!=lastVideoMode){lastVideoMode=mode;browserVideoMode="Video mode: "+mode;}

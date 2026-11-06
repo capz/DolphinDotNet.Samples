@@ -23,7 +23,7 @@ internal interface IIplBrowserCanvas
     bool BrowserColorTriangle(IplPoint a,uint ca,IplPoint b,uint cb,IplPoint d,uint cd);
     void DrawArtworks();bool HasArtwork(int slot);
     bool DrawArtwork(int slot,float x,float y,float width,float height);
-    void BeginBrowserMask();void BrowserMaskTriangle(IplPoint a,IplPoint b,IplPoint d);void EndBrowserMask();void DrawBrowserFrost();
+    void BeginBrowserMask();void BrowserMaskTriangle(IplPoint a,IplPoint b,IplPoint d);void EndBrowserMask(int expectedVertices=576);void DrawBrowserFrost();
 }
 internal sealed class IplBrowser : IDisposable
 {
@@ -99,13 +99,14 @@ internal sealed class IplBrowser : IDisposable
         if(item.Kind==IplItemKind.Game||item.Kind==IplItemKind.Dol){Panel=IplBrowserPanel.Launch;Choice=0;return;}
         try{Information=source.Describe(item);Panel=IplBrowserPanel.Info;}catch(Exception e){error=e.Message??"Storage operation failed. Check the device.";}
     }
-    // Returns false when B should leave the flat screen for its cube face.
-    internal bool Back()
+    // B leaves the entire flat flow. Folder navigation has its own L action.
+    internal void ParentDirectory(){if(Kind==IplBrowserKind.Sd&&Panel==IplBrowserPanel.Grid&&!Busy&&Path.Length>0)Open(Kind,IplPaths.Parent(Path),Slot);}
+    internal string Exit()
     {
-        if(Panel==IplBrowserPanel.Progress){try{(source as IIplCardOperations)?.Cancel();error="";}catch(Exception e){error=e.Message??"Transfer stopped; check the destination card.";}Panel=IplBrowserPanel.Grid;Load();return true;}
-        if(Panel!=IplBrowserPanel.Grid){Panel=IplBrowserPanel.Grid;error="";return true;}
-        if(Kind==IplBrowserKind.Sd&&Path.Length>0){Open(Kind,IplPaths.Parent(Path),Slot);return true;}
-        source.Dispose();Active=false;return false;
+        string status="";
+        if(Active&&Kind==IplBrowserKind.MemoryCards&&Busy)try{(source as IIplCardOperations)?.Cancel();}catch(Exception e){status=e.Message??"Transfer stopped. Check the destination card.";}
+        try{source.Dispose();}catch(Exception e){status=e.Message??"Storage could not close cleanly. Check the device.";}
+        Active=false;Panel=IplBrowserPanel.Grid;Count=0;Array.Clear(Items,0,Items.Length);Revision++;return status;
     }
     internal void Refresh(){if(Panel!=IplBrowserPanel.Grid)return;error="";PageStart=Selection=Count=0;Array.Clear(Items,0,Items.Length);Revision++;try{source.Begin(Kind,Path,Slot,true);if(!Busy)Load();}catch(Exception e){error=e.Message??"Storage operation failed. Check the device.";}}
     internal int ArtworkFrames(int index)=>Items[index]!=null?Math.Max(0,Math.Min(8,(source as IIplAnimatedArtwork)?.ArtworkFrames(Items[index]!)??1)):0;

@@ -15,7 +15,7 @@ internal sealed class VideoModeScanReview
     internal VideoModeScanReview(IplShell shell,IVideoModeOutput output,int resolution=1)
     {
         this.shell=shell;this.output=output;this.resolution=resolution;
-        shell.TurnTo(ShellFace.Video);shell.Tick(1);shell.Row=1;
+        shell.TurnTo(ShellFace.Video);shell.Tick(1);shell.Confirm();shell.Row=1;
     }
     internal void Tick()
     {
@@ -61,7 +61,7 @@ internal sealed class VideoModeScanReview
             case 17:
                 label="PASS SAFE I";
                 shell.Video.SafeMode();CheckMode(1,false,1);
-                if(!Failed){shell.TurnTo(ShellFace.Video);shell.Tick(1);shell.Row=1;Complete=true;}
+                if(!Failed){shell.TurnTo(ShellFace.Video);shell.Tick(1);shell.Confirm();shell.Row=1;Complete=true;}
                 break;
         }
         Phase++;
@@ -70,16 +70,17 @@ internal sealed class VideoModeScanReview
     }
     private static string ModeName(VideoModeSettings mode)
         =>(mode.Resolution==2?"576":mode.Resolution==0?"240":"480")+(mode.Scan==2?"P":"I");
+    private void OpenList(){if(!shell.FlatMenu){shell.TurnTo(ShellFace.Video);shell.Tick(1);shell.Confirm();}}
     private void Preview(int scan)
     {
-        shell.Row=1;shell.Confirm();
+        OpenList();shell.Row=1;shell.Confirm();
         shell.Direction(0,0,0);shell.Direction(0,scan==2?1:-1,.016f);
         if(!shell.Editing||shell.Video.Selected.Scan!=scan){Failed=true;return;}
         shell.Confirm();CheckMode(scan,true);
     }
     private void PreviewResolution(int target)
     {
-        shell.Row=0;shell.Confirm();
+        OpenList();shell.Row=0;shell.Confirm();
         for(int i=0;i<2&&shell.Video.Selected.Resolution!=target;i++)
         {
             shell.Direction(0,0,0);shell.Direction(0,1,.016f);
