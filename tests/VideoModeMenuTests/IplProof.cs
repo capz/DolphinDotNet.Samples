@@ -7,6 +7,9 @@ using System.Text;
 internal sealed class IplProof : IIplCanvas
 {
     public void Section(IplRenderPhase phase) { }
+    public bool BeginFooterCache(int style)=>false;
+    public void EndFooterCache() { }
+    public bool DrawFooterCache(int style)=>false;
     public void Rectangle(float x,float y,float width,float height,uint color)
     {Triangle(x,y,x+width,y,x,y+height,color);Triangle(x+width,y,x+width,y+height,x,y+height,color);}
     private readonly StringBuilder shapes=new StringBuilder();

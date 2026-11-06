@@ -10,6 +10,7 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
     private readonly IndexedRims rims=new IndexedRims();
     private readonly Texture2D atlas=Texture2D.FromPng(IplFontData.Png,true);
     private readonly Renderer renderer;
+    private readonly CachedFooter footer;
     private readonly Texture2D glossMap=Texture2D.FromPng(IplGlossData.Png,true);
     private readonly GxEffect glossEffect=GxEffect.FromPackage(IplGlossEffect.Package);
     private readonly Material glossMaterial=new Material {Blend=BlendMode.Additive,Cull=CullMode.None,DepthTest=false,DepthWrite=false};
@@ -40,7 +41,7 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
     private float blurScaleX,blurScaleY;
     internal GameCubeCanvas(GraphicsDevice device)
     {
-        this.device=device;renderer=new Renderer(device);
+        this.device=device;renderer=new Renderer(device);footer=new CachedFooter(glass);
         glossMaterial.Texture=glossMap;glossMaterial.Effect=glossEffect;
         draw=new Draw2D(device,new Draw2DOptions {VertexCapacity=32760});
         // One shared 15 KiB textured grid for both transmission and reflection:
@@ -184,7 +185,18 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
         if(IplFrameProfiler.Active)IplFrameProfiler.BlurUs=IplFrameProfiler.Since(start);
     }
     public void Triangle(float ax,float ay,float bx,float by,float cx,float cy,uint color)
-    {if((color&255)!=0)draw.FillTriangle(new Vector2(offset+ax*scale,ay*scale),new Vector2(offset+bx*scale,by*scale),new Vector2(offset+cx*scale,cy*scale),Color(color));}
+    {
+        if((color&255)==0)return;
+        if(footer.Recording){footer.Triangle(ax,ay,bx,by,cx,cy,color);return;}
+        draw.FillTriangle(new Vector2(offset+ax*scale,ay*scale),new Vector2(offset+bx*scale,by*scale),new Vector2(offset+cx*scale,cy*scale),Color(color));
+    }
+    public bool BeginFooterCache(int style){footer.Begin(style);return true;}
+    public void EndFooterCache()=>footer.End();
+    public bool DrawFooterCache(int style)
+    {
+        if(!footer.Ready(style))return false;
+        draw.End();renderer.Begin3D(camera);footer.Draw(renderer,style,scale);renderer.End3D();draw.Begin();return true;
+    }
     public void Rectangle(float x,float y,float width,float height,uint color)
     {if((color&255)!=0)draw.FillRectangle(new RectF(offset+x*scale,y*scale,width*scale,height*scale),Color(color));}
 #if !IPL_HARDWARE_RUNNER
@@ -253,6 +265,7 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
     public void Dispose()
     {
         rims.Dispose();
+        footer.Dispose();
 #if !IPL_HARDWARE_RUNNER
         for(int i=0;i<overlayMeshCount;i++)overlayLabels[i].Dispose();
 #endif
