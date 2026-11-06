@@ -41,12 +41,6 @@ if args.storage:
     with (config/'Dolphin.ini').open('a') as f:f.write('[Core]\nSlotA = 1\nSlotB = 1\n'+('DefaultISO = '+str(args.disc.resolve())+'\n' if args.disc else ''))
     if args.card_user:
         shutil.copytree(args.card_user/'GC',root/'user/GC')
-        # Original fixture DOL boots as EUR; the original data-only DVD fixture
-        # has a USA header. Both use western card encoding. Keep the seeded
-        # files under the region-specific names Dolphin actually opens.
-        for slot in ('A','B'):
-            seed=root/('user/GC/MemoryCard'+slot+'.EUR.raw')
-            if seed.exists():shutil.copyfile(seed,root/('user/GC/MemoryCard'+slot+'.USA.raw'))
 (config/'GFX.ini').write_text('[Settings]\nDumpFramesAsImages = True\nInternalResolution = 1\nMSAA = 1\nSSAA = False\nAspectRatio = 2\n[Enhancements]\nPostProcessingShader = IplEdgeAA\n[Hacks]\nForceProgressive = True\n')
 (config/'GCPadNew.ini').write_text('[GCPad1]\nDevice = XInput2/0/Virtual core pointer\nButtons/Z = Z\nButtons/A = A\nButtons/B = B\nButtons/X = X\nButtons/Y = Y\nTriggers/L = Q\nTriggers/R = W\nD-Pad/Left = Left\nD-Pad/Right = Right\nD-Pad/Up = Up\nD-Pad/Down = Down\nMain Stick/Up = I\nMain Stick/Down = K\nMain Stick/Left = J\nMain Stick/Right = L\n')
 shaders=root/'user/Shaders';shaders.mkdir()
