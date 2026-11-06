@@ -50,12 +50,16 @@
     <DefineConstants Condition="'$(IplVisualReview)' == 'true'">$(DefineConstants);IPL_VISUAL_REVIEW</DefineConstants>
     <DefineConstants Condition="('$(IplVisualReview)' == 'true' or '$(IplPerformanceReview)' == 'true') and '$(IplVisualReviewAngle)' == 'true'">$(DefineConstants);IPL_VISUAL_REVIEW_ANGLE</DefineConstants>
   </PropertyGroup>
+  <ItemGroup Condition="'$(IplHistoricalRenderer)' == 'true'">
+    <Compile Remove="IplBrowserRenderer.cs" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="$(IntermediateOutputPath)IplHardwareRunConfig.g.cs" Condition="'$(IplHardwareRunner)' == 'true'" />
     <DndEffect Include="gloss.dndfx.json" GeneratedSource="IplGlossEffect.g.cs" ClassName="IplGlossEffect" />
     <PackageReference Include="DolphinDotNet.GameCube" Version="$(DndPackageVersion)" />
   </ItemGroup>
   <Target Name="ValidateIplReviewModes" BeforeTargets="CoreCompile">
+    <Error Condition="'$(IplHistoricalRenderer)' == 'true' and '$(IplHardwareRunner)' != 'true'" Text="Historical renderer compatibility is only supported for hardware instrumentation builds." />
     <Error Condition="('$(IplSharedGlass)' == 'true' or '$(IplBatchedBlur)' == 'true' or '$(IplRetainedTint)' == 'true' or '$(IplBatchedText)' == 'true') and '$(IplNextSdk)' != 'true'" Text="Shared glass, retained tint, packed text and batched blur require the explicit source-SDK integration build." />
     <Error Condition="'$(IplPerformanceReviewOverlay)' != 'Off' and ('$(IplPerformanceReview)' != 'true' or ('$(IplPerformanceReviewOverlay)' != 'Timers' and '$(IplPerformanceReviewOverlay)' != 'Full'))"
            Text="IplPerformanceReviewOverlay must be Off, or Timers/Full with IplPerformanceReview=true." />

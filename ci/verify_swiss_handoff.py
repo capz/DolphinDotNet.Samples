@@ -42,11 +42,15 @@ with (root/'emulator.log').open('w') as log:
     if 0x80003100<=address<0x817fff00:
      size=int.from_bytes(memory(sock,address+8,4),'big')
      if size<=512:diagnostic=memory(sock,address+12,size*2).decode('utf-16-be')
+   native_error=''
+   if received!=expected and 'exception_text' in caller:
+    error=int.from_bytes(memory(sock,caller['exception_text'],4),'big')
+    if 0x80003100<=error<0x817fff00:native_error=memory(sock,error,192).split(b'\0')[0].decode('utf-8',errors='replace')
    proc.send_signal(signal.SIGSTOP);capture(root/'native-window.ppm')
    for frame in sorted((root/'user/Dump/Frames').glob('*.png'),key=lambda p:p.stat().st_mtime_ns,reverse=True):
     raw=frame.read_bytes()
     if raw.endswith(b'IEND\xaeB`\x82'):(root/'native-efb.png').write_bytes(raw);break
-   report={'environment':'Real official Swiss v0.6r2119 after managed DOL chainload in cloud Dolphin 2503; not physical GC Loader/game autoboot','caller_sha256':hashlib.sha256(a.caller.read_bytes()).hexdigest(),'fixture_iso_sha256':hashlib.sha256(a.disc.read_bytes()).hexdigest(),'expected_argv':expected,'received_argv':received,'caller_diagnostic':diagnostic,'passed':received==expected}
+   report={'environment':'Real official Swiss v0.6r2119 after managed DOL chainload in cloud Dolphin 2503; not physical GC Loader/game autoboot','caller_sha256':hashlib.sha256(a.caller.read_bytes()).hexdigest(),'fixture_iso_sha256':hashlib.sha256(a.disc.read_bytes()).hexdigest(),'expected_argv':expected,'received_argv':received,'caller_diagnostic':diagnostic,'native_error':native_error,'passed':received==expected}
    (root/'result.json').write_text(json.dumps(report,indent=2)+'\n');print(json.dumps(report));assert report['passed'],'Official Swiss did not receive exact argv'
  finally:
   if proc.poll() is None:

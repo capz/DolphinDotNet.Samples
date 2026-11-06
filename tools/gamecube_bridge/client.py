@@ -90,7 +90,7 @@ def run(args):
     command = ['dotnet', 'build', 'VideoMode/VideoMode.csproj', '-c', 'Release', '-p:DndBuildNative=true',
                '-p:DndBuildBackend=' + args.backend, '-p:DndDebugSymbols=false', '-p:DndGdbTransport=Off',
                '-p:IplHardwareRunner=true', '-p:IplFrameLogDevice=None', '-p:IplRunnerScene=' + args.scene,
-               '-p:IplRunnerVideo=' + args.video]
+               '-p:IplRunnerVideo=' + args.video, '-p:IplHistoricalRenderer=' + str(getattr(args,'baseline_renderer',False)).lower()]
     try:
         with (destination / 'build.log').open('w') as log:
             subprocess.run(command, cwd=root, env=environment, stdout=log, stderr=subprocess.STDOUT, check=True)
