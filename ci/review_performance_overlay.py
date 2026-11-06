@@ -20,7 +20,9 @@ parser=argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--logs',type=Path,required=True)
 parser.add_argument('--dol',type=Path,required=True)
 parser.add_argument('--widescreen',action='store_true',help='Also preview/keep 16:9, hide Z, and return through X safe mode')
+parser.add_argument('--calendar',action='store_true',help='Review two-row blur and independent time/date editing instead of the overlay sequence')
 args=parser.parse_args()
+if args.calendar and args.widescreen:parser.error('Choose calendar or widescreen review')
 root=args.logs.resolve()
 if root.exists() and any(root.iterdir()):raise ValueError('Use a fresh capture directory')
 root.mkdir(parents=True,exist_ok=True)
@@ -36,12 +38,23 @@ x.XStringToKeysym.argtypes=[C.c_char_p];x.XStringToKeysym.restype=C.c_ulong
 x.XKeysymToKeycode.argtypes=[C.c_void_p,C.c_ulong];x.XKeysymToKeycode.restype=C.c_uint
 xt.XTestFakeKeyEvent.argtypes=[C.c_void_p,C.c_uint,C.c_int,C.c_ulong]
 x.XSync.argtypes=[C.c_void_p,C.c_int]
+def frame_count():
+    return len(list((root/'user/Dump/Frames').glob('*.png')))
+
+def wait_frames(start,count):
+    deadline=time.monotonic()+45
+    while frame_count()<start+count:
+        if p.poll() is not None:raise RuntimeError('Dolphin exited while awaiting input frames')
+        if time.monotonic()>deadline:raise TimeoutError('Native frames stalled during input replay')
+        time.sleep(.05)
+
 def key(name,held=.15):
     code=x.XKeysymToKeycode(d,x.XStringToKeysym(name.encode()))
+    before=frame_count()
     assert xt.XTestFakeKeyEvent(d,code,1,0)
-    x.XSync(d,0);time.sleep(held)
+    x.XSync(d,0);time.sleep(held);wait_frames(before,6)
     assert xt.XTestFakeKeyEvent(d,code,0,0)
-    x.XSync(d,0);time.sleep(3)
+    x.XSync(d,0);wait_frames(frame_count(),45)
 
 log=(root/'emulator.log').open('w')
 p=subprocess.Popen(['/usr/games/dolphin-emu-nogui','--platform','x11','-u',str(root/'user'),'-C','SYSCONF.IPL.PGS=True','-e',str(args.dol.resolve())],stdout=log,stderr=subprocess.STDOUT)
@@ -56,17 +69,23 @@ def shot(name):
     p.send_signal(signal.SIGCONT)
 try:
     time.sleep(15);capture(root/'unused.ppm',True);time.sleep(2)
-    shot('01-default-hidden')
-    key('z',2);shot('02-z-held-visible')
-    key('Left');shot('03-options-visible')
-    key('a');shot('04-editor-visible')
-    key('z',1);shot('05-z-hidden-editor')
-    key('b');key('z');time.sleep(12);shot('06-reopened-options')
-    if args.widescreen:
-        key('b');key('Right');key('Down');key('Down')
-        key('a');key('Up');key('a');key('a');shot('07-widescreen-kept')
-        key('z');shot('08-widescreen-hidden')
-        key('x');shot('09-safe-mode')
+    if args.calendar:
+        key('Down');shot('01-calendar-two-rows')
+        key('a');key('Up');key('Right');key('Up');shot('02-time-parts')
+        key('b');key('Down');key('a');key('Right');key('Up');shot('03-date-parts')
+        key('b');shot('04-calendar-cancelled')
+    else:
+        shot('01-default-hidden')
+        key('z',2);shot('02-z-held-visible')
+        key('Left');shot('03-options-visible')
+        key('a');shot('04-editor-visible')
+        key('z',1);shot('05-z-hidden-editor')
+        key('b');key('z');time.sleep(12);shot('06-reopened-options')
+        if args.widescreen:
+            key('x');key('Down');key('Down')
+            key('a');key('Up');key('a');key('a');shot('07-widescreen-kept')
+            key('z');shot('08-widescreen-hidden')
+            key('x');shot('09-safe-mode')
     (root/'events.json').write_text(json.dumps(events,indent=2)+'\n')
 finally:
     if p.poll() is None:

@@ -1,6 +1,10 @@
 <Project Sdk="DolphinDotNet.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <IplCachedIcons Condition="'$(IplCachedIcons)' == ''">true</IplCachedIcons>
+    <DefineConstants Condition="'$(IplCachedIcons)' == 'true'">$(DefineConstants);IPL_CACHED_ICONS</DefineConstants>
+    <DefineConstants Condition="'$(IplSharedGlass)' == 'true'">$(DefineConstants);IPL_SHARED_GLASS</DefineConstants>
+    <DefineConstants Condition="'$(IplBatchedBlur)' == 'true'">$(DefineConstants);IPL_BATCHED_BLUR</DefineConstants>
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <IplRunnerScene Condition="'$(IplRunnerScene)' == ''">Options</IplRunnerScene>
@@ -39,6 +43,7 @@
     <PackageReference Include="DolphinDotNet.GameCube" Version="$(DndPackageVersion)" />
   </ItemGroup>
   <Target Name="ValidateIplReviewModes" BeforeTargets="CoreCompile">
+    <Error Condition="('$(IplSharedGlass)' == 'true' or '$(IplBatchedBlur)' == 'true') and '$(IplNextSdk)' != 'true'" Text="Shared glass and batched blur require the explicit source-SDK integration build." />
     <Error Condition="'$(IplPerformanceReviewOverlay)' != 'Off' and ('$(IplPerformanceReview)' != 'true' or ('$(IplPerformanceReviewOverlay)' != 'Timers' and '$(IplPerformanceReviewOverlay)' != 'Full'))"
            Text="IplPerformanceReviewOverlay must be Off, or Timers/Full with IplPerformanceReview=true." />
     <Error Condition="'$(IplHardwareRunner)' == 'true' and ('$(Configuration)' != 'Release' or '$(DndDebugSymbols)' == 'true' or ('$(DndGdbTransport)' != '' and '$(DndGdbTransport)' != 'Off'))"

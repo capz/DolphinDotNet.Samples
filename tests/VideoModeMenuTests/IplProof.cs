@@ -7,6 +7,10 @@ using System.Text;
 internal sealed class IplProof : IIplCanvas
 {
     public void Section(IplRenderPhase phase) { }
+    public bool BeginIconCache(int style)=>false;
+    public void EndIconCache() { }
+    public void PrepareIcon(IplPoint origin,IplPoint x,IplPoint y,float scale,float centerY) { }
+    public bool DrawIconCache(int style)=>false;
     public bool BeginFooterCache(int style)=>false;
     public void EndFooterCache() { }
     public bool DrawFooterCache(int style)=>false;
