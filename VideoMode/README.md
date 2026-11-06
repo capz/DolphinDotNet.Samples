@@ -73,9 +73,21 @@ to include the fix in the DOL. [Native scan-mode evidence, package provenance an
 limitations](Design/scan-mode-review.md) cover both resolution sequences and retain
 the earlier failure for comparison. Physical console/cable/display testing remains open.
 
-Time, date and sound are explicitly session-only interaction demonstrations.
-They do not write the console RTC or system SRAM. Game Play and Memory Card are
-honest empty demonstration faces, not a disc launcher or card manager. The sample
+Confirmed video settings, sound and Reduced Motion are stored in alternating
+32-byte checksummed records on GC Loader SD (`videomode/settings-a.bin` and
+`settings-b.bin`). Startup loads the newest valid record and applies its video
+mode, with a boot-output fallback on unsupported modes. Hold X during startup to
+bypass saved video. Preview drafts and reverted modes are never saved. A read-only
+or missing card is reported without changing another storage device.
+
+Source builds with `IplConsoleServices=true` use the SDK console-services APIs to
+read the real local console calendar and write IPL SRAM clock bias and sound.
+A confirms Time/Date; B discards. Time edits preserve the current date/seconds;
+date edits preserve the current time. The clock refreshes once a second and uses
+an independent monotonic animation timer. Builds using the older published SDK
+show these services as unavailable. [Native validation and limits](Design/console-settings/README.md).
+
+Game Play and Memory Card are currently empty demonstration faces. The sample
 does not include Nintendo firmware, fonts, logos or game-save artwork.
 
 ## Build and validation

@@ -1,0 +1,7 @@
+{
+  "dol_sha256": "feeadc686fafe5a5f81c810e49ec6734385a7425f5da0b8df79d8e3cb69a86f7",
+  "sdk_commit": "6a12d537927976529059979d8444f0827c634759",
+  "native": true,
+  "physical_console": false,
+  "services": "real clock and console sound enabled; GC Loader unavailable in Dolphin"
+}

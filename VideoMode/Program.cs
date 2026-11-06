@@ -84,7 +84,12 @@ internal static class Program
         const bool hardwareAntialiasing=false;
 #endif
         var output=new VideoModeOutput(device,hardwareAntialiasing);
+#if IPL_VISUAL_REVIEW || IPL_PERFORMANCE_REVIEW || IPL_VIDEO_MODE_REVIEW || IPL_HARDWARE_RUNNER
         var shell=new IplShell(output);
+#else
+        Controller.Update();bool restoreVideo=!Controller.GetState(0).X.IsHeld;
+        var shell=new IplShell(output,new IplPreferencesStore(),new IplConsoleCalendar(),restoreVideo,new IplConsoleSound());
+#endif
 #if IPL_VIDEO_MODE_REVIEW
         var scanReview=new VideoModeScanReview(shell,output,reviewResolution);
 #endif
@@ -139,8 +144,7 @@ internal static class Program
             if(pad.Start.WasPressed) {shell.Video.Revert();if(!shell.Video.Pending)return 0;}
             if(pad.X.WasPressed)
             {
-                shell.Video.SafeMode();
-                if(!shell.Video.Pending)shell.TurnTo(ShellFace.Video);
+                shell.SafeMode();
             }
             else if(pad.B.WasPressed)shell.Back();
             else if(pad.A.WasPressed)shell.Confirm();

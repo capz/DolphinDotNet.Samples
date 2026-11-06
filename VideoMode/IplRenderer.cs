@@ -265,7 +265,9 @@ internal sealed class IplRenderer
         if(shell.Editing)
         {
             c.Section(IplRenderPhase.Editor);Detail(shell);
-            c.Section(IplRenderPhase.Footer);Footer(shell);c.Section(IplRenderPhase.None);return;
+            c.Section(IplRenderPhase.Footer);Footer(shell);c.Section(IplRenderPhase.None);
+            if(shell.SystemStatus.Length>0)Center(shell.SystemStatus,320,463,11,0xaabbd0ddu);
+            return;
         }
         c.Section(IplRenderPhase.Transmission);
         c.DrawGlass();
@@ -289,6 +291,7 @@ internal sealed class IplRenderer
             else FaceMenu(shell);
         }
         c.Section(IplRenderPhase.Footer);Footer(shell);c.Section(IplRenderPhase.None);
+        if(shell.SystemStatus.Length>0)Center(shell.SystemStatus,320,463,11,0xaabbd0ddu);
     }
     private void Cube()
     {
@@ -580,14 +583,14 @@ internal sealed class IplRenderer
         Center(s.Label(s.Row),320,104,23,Green);
         Selectors(s,false);
         if(s.Face==ShellFace.Calendar)
-            Center("Calendar demonstration. Changes last for this session.",320,351,14,0xc4c9deff);
+            Center(s.RealCalendar?"A sets the GameCube clock. B discards changes.":"Calendar demonstration. Changes last for this session.",320,351,14,0xc4c9deff);
         else if(s.Face==ShellFace.Video&&!s.Video.Pending)
         {
             string status=s.Video.Status;
             if(status=="UNSUPPORTED MODE OR CABLE"||status=="NOT ENOUGH MEMORY FOR MODE")Banner(status=="UNSUPPORTED MODE OR CABLE"?"Unsupported mode or cable.":"Not enough memory for this mode.",true);
             else Center("A previews the mode. B discards changes.",320,350,16,White);
         }
-        else if(s.Face==ShellFace.Options)Center("Sound demonstration. Changes last for this session.",320,351,14,0xc4c9deff);
+        else if(s.Face==ShellFace.Options)Center("A confirms. B discards changes.",320,351,14,0xc4c9deff);
     }
     private void Selectors(IplShell s,bool preparing)
     {
