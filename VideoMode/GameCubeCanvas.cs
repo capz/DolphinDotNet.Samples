@@ -8,6 +8,13 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
     private readonly GraphicsDevice device;
     private readonly Draw2D draw;
     private readonly IndexedRims rims=new IndexedRims();
+#if IPL_CACHED_SELECTORS
+    private readonly IndexedRims[] selectors=new IndexedRims[3];
+    private readonly string[] selectorValues=new string[3];
+    private readonly float[] selectorCells=new float[3];
+    private readonly uint[] selectorColors=new uint[3];
+    private int recordingSelector=-1;
+#endif
     private readonly Texture2D atlas=Texture2D.FromPng(IplFontData.Png,true);
     private readonly Renderer renderer;
     private readonly CachedFooter footer;
@@ -295,6 +302,39 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
         if(icons.Recording){icons.Triangle(ax,ay,bx,by,cx,cy,color);return;}
         draw.FillTriangle(new Vector2(offset+ax*scale,ay*scale),new Vector2(offset+bx*scale,by*scale),new Vector2(offset+cx*scale,cy*scale),Color(color));
     }
+    public bool BeginSelectorCache(int part,string value,float cell,uint color)
+    {
+#if IPL_CACHED_SELECTORS
+        var mesh=selectors[part];
+        if(mesh!=null&&selectorValues[part]==value&&selectorCells[part]==cell&&selectorColors[part]==color)return false;
+        if(mesh==null)selectors[part]=mesh=new IndexedRims(1024);
+        selectorValues[part]=value;selectorCells[part]=cell;selectorColors[part]=color;
+        recordingSelector=part;mesh.Begin();return true;
+#else
+        return false;
+#endif
+    }
+    public void EndSelectorCache()
+    {
+#if IPL_CACHED_SELECTORS
+        selectors[recordingSelector].End();recordingSelector=-1;
+#endif
+    }
+    public void PrepareSelector(int part,IplSelectorPose pose,float centerX,float centerY)
+    {
+#if IPL_CACHED_SELECTORS
+        selectors[part].PrepareSelector(pose,centerX,centerY,logicalWidth,logicalHeight,scale,offset);
+#endif
+    }
+    public bool DrawSelectorCache(int part)
+    {
+#if IPL_CACHED_SELECTORS
+        if(selectors[part]==null||!selectors[part].Ready)return false;
+        draw.End();selectors[part].Draw(device);draw.Begin();return true;
+#else
+        return false;
+#endif
+    }
     public bool BeginGridCache()
     {
 #if IPL_CACHED_GRID
@@ -364,6 +404,9 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
     public void Rectangle(float x,float y,float width,float height,uint color)
     {
         if((color&255)==0)return;
+#if IPL_CACHED_SELECTORS
+        if(recordingSelector>=0){selectors[recordingSelector].Quad(new IplPoint(x,y),new IplPoint(x+width,y),new IplPoint(x,y+height),new IplPoint(x+width,y+height),color);return;}
+#endif
 #if IPL_CACHED_GRID
         if(editorGrid.Recording){editorGrid.Triangle(x,y,x+width,y,x+width,y+height,color);editorGrid.Triangle(x,y,x+width,y+height,x,y+height,color);return;}
 #endif
@@ -523,6 +566,9 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
     public void Dispose()
     {
         rims.Dispose();
+#if IPL_CACHED_SELECTORS
+        for(int i=0;i<selectors.Length;i++)selectors[i]?.Dispose();
+#endif
         footer.Dispose();icons.Dispose();
 #if IPL_CACHED_GRID
         editorGrid.Dispose();

@@ -5,6 +5,13 @@ DolphinDotNet SDK. The visual target is the [committed optical-glass mockup](Des
 inspired by the Nintendo GameCube IPL: a dark translucent cube floating on black,
 layered optical walls, face menus and a bottom controller legend. Flat configuration
 screens use green block-built values and a fading grid.
+
+The active value rocks, tilts and floats while its editor is open. Left/right
+moves that motion between independent time/date parts; inactive parts and labels
+stay still. Motion eases in over 180 ms, stops when confirming or backing out,
+and respects Options → Motion → Reduced. Wide values use less roll to keep clear
+of the arrows. [Native selector-motion review](Design/selector-motion/README.md).
+
 The rounded cube is projected 3D geometry, not a screenshot or rotating image.
 
 Glass uses a rounded-box surface with a visible curved edge profile and

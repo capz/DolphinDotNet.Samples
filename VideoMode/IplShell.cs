@@ -11,6 +11,7 @@ internal sealed class IplShell
     internal ShellFace Face, PreviousFace;
     internal int Row, Part;
     internal float Time, Turn = 1;
+    internal float SelectorTime { get; private set; }
     internal bool ReducedMotion;
     private readonly float[] focus = new float[3];
     internal float Focus(int row) => focus[row];
@@ -38,6 +39,7 @@ internal sealed class IplShell
     internal void Tick(float dt)
     {
         Time += dt; Turn = Math.Min(1, Turn + dt / .64f);
+        SelectorTime = Editing ? Math.Min(.18f, SelectorTime + dt) : 0;
         // Advance both the incoming and outgoing item, independent of frame rate.
         for(int i=0;i<3;i++)
         {
@@ -72,7 +74,7 @@ internal sealed class IplShell
         }
         if (Page == ShellPage.Face) { if (y != 0) Row = Wrap(Row - y, 0, Rows - 1); return; }
         // Horizontal movement selects a part; it never changes a value.
-        if (Face == ShellFace.Calendar && x != 0) Part = Wrap(Part + x, 0, Row == 0 ? 1 : 2);
+        if (Face == ShellFace.Calendar && x != 0) { Part = Wrap(Part + x, 0, Row == 0 ? 1 : 2); SelectorTime = 0; }
         if (y == 0) return;
         if (Face == ShellFace.Video) { Video.SelectRow(Row); Video.Edit(y); }
         else if (Face == ShellFace.Calendar)
@@ -100,7 +102,7 @@ internal sealed class IplShell
             if (Face == ShellFace.Options && Row == 1) { ReducedMotion = !ReducedMotion; return; }
             Video.CancelSelection(); Video.SelectRow(Row);
             hour = Hour; minute = Minute; day = Day; month = Month; year = Year; sound = Sound;
-            Part = 0; Page = ShellPage.Detail; return;
+            Part = 0; SelectorTime = 0; Page = ShellPage.Detail; return;
         }
         if (Face == ShellFace.Video)
         {

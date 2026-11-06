@@ -1,0 +1,51 @@
+[
+  {
+    "capture": "01-interlaced-editor",
+    "completed_frames": 631,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_630.png",
+    "efb_sha256": "37c57fd16af2278d345ecec621ef7861ca78caec9535281722bfa96a0e019646"
+  },
+  {
+    "capture": "02-progressive-editor",
+    "completed_frames": 684,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_683.png",
+    "efb_sha256": "816df6a7ca941f1f7b3d25a101d9ae655499dccd33c5add139f6981e6cc5b210"
+  },
+  {
+    "capture": "03-progressive-preview",
+    "completed_frames": 735,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_734.png",
+    "efb_sha256": "25a591240da94f9356768402f074b5974ce5f768fcddb7a1cae071afe8a058fb"
+  },
+  {
+    "capture": "04-progressive-kept",
+    "completed_frames": 786,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_785.png",
+    "efb_sha256": "43acc03f66d061a51e0ea8b9413511e3dd331c7e3a13699723829d3cc77efeae"
+  },
+  {
+    "capture": "05-interlaced-preview",
+    "completed_frames": 943,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_942.png",
+    "efb_sha256": "dc727d7747fb00a9d87415462683b5a422fca5063f3c3861af9f09af98e5505a"
+  },
+  {
+    "capture": "06-progressive-restored",
+    "completed_frames": 994,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_993.png",
+    "efb_sha256": "b054d69b25f26286f62d4fcc8e7ce820f09aeb1c5f04ad7e72ff4c5c068da53b"
+  },
+  {
+    "capture": "07-safe-interlaced",
+    "completed_frames": 1046,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_1046.png",
+    "efb_sha256": "8172a9dcd16fb6f2b476535573a2be250586b9993b114b6174e7ffed6a9866bd"
+  }
+]

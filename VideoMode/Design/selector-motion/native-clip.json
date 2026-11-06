@@ -1,0 +1,13 @@
+{
+  "dol_sha256": "e6c0b320993af27b113ba0b7fb49ef6b7ced1ecbdec3bba94a2b0195a9dda458",
+  "source": "Dolphin native EFB movie frames, before presentation postprocessing",
+  "first_frame": 469,
+  "last_frame": 669,
+  "frames": 201,
+  "playback_fps": 60,
+  "dimensions": [
+    640,
+    528
+  ],
+  "processing": "H.264 encoding only; no crop or scale"
+}

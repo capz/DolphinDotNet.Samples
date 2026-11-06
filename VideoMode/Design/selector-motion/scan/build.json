@@ -1,0 +1,6 @@
+{
+  "dol_sha256": "52f9d3f70a03aed95353ce08b3bc984b59a5812a9a952d66c804d6e611b60671",
+  "sdk_package": "0.1.0-preview.217.1",
+  "build": "Normal interactive build, published package and default cache flags; no fixed clock",
+  "images": "Completed unmodified native EFB PNGs. Dimensions follow the actual output mode."
+}
