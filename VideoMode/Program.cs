@@ -146,9 +146,11 @@ internal static class Program
             else if(pad.A.WasPressed)shell.Confirm();
             else
             {
-                int x=pad.DPadRight.IsHeld||pad.Stick.X>.55f?1:pad.DPadLeft.IsHeld||pad.Stick.X<-.55f?-1:0;
-                int y=pad.DPadUp.IsHeld||pad.Stick.Y>.55f?1:pad.DPadDown.IsHeld||pad.Stick.Y<-.55f?-1:0;
-                shell.Direction(x,y,dt);
+                int x=pad.DPadRight.IsHeld?1:pad.DPadLeft.IsHeld?-1:0;
+                int y=pad.DPadUp.IsHeld?1:pad.DPadDown.IsHeld?-1:0;
+                bool stick=x==0&&y==0;
+                if(stick){x=pad.Stick.X>.55f?1:pad.Stick.X<-.55f?-1:0;y=pad.Stick.Y>.55f?1:pad.Stick.Y<-.55f?-1:0;}
+                shell.Direction(x,y,dt,stick);
             }
 #endif
             IplPerformanceOverlay.BeginFrame();
