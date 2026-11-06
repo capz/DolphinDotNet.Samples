@@ -154,5 +154,3 @@ integration table above.
 
 SDK #155 and Hypercube #9 retain their existing passing CI heads and separate
 PRs. No PR is merged. Samples CI runs on the new commit independently.
-
-
