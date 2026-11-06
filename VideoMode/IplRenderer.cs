@@ -681,7 +681,7 @@ internal sealed partial class IplRenderer
 #endif
         float stick=style==0?214:111;
         Text(s.Page==ShellPage.Cube?"... Menu Selection":s.Face==ShellFace.Calendar&&s.Editing?"... Part / Value":"... Select",stick+24,y-13,s.Page==ShellPage.Cube?20:17,White);
-        if(s.Page==ShellPage.Cube){Text("R  Storage",486,y-12,16,0xb4ccd4ffu);return;}
+        if(s.Page==ShellPage.Cube){Text("R  Storage",486,y-12,16,White);return;}
         bool modal=s.Page==ShellPage.Browser&&s.Browser?.Panel!=IplBrowserPanel.Grid;
         Center("B",320,y-14,20,White);Text(s.Editing||modal?"... Cancel":"... Back",340,y-13,17,White);
         if(style==2)return;
