@@ -20,7 +20,14 @@ claim. VSync stays enabled.
 with SHA256 and events. The titles/artwork are clearly labeled original UI
 fixtures. The first surfaces looked too solid against the optical-glass target;
 the next refinement adds live frost, lighter transmission, specular sheen and
-rounded artwork. Further native acceptance is in progress in this draft.
+rounded artwork. `native-02/` records that intermediate state. `native-03/` records the
+next real native build: interpolated per-vertex teal/amber/violet transmission
+replaces hard overlapping highlight bands. Rounded artwork, paging, default
+Cancel, fixture launch refusal, B and reverse-stick return were replayed again.
+Full native window PNGs preserve the actual 640x480 presentation; raw completed
+EFB frames are also retained. This flat grid follows the target's material and
+spacing, not an exact copy of its single cube-face composition. Its glass is
+quieter and has less optical wall depth; no pixel-perfect match is claimed.
 
 Swiss receives real configuration-string argv: `Autoload=gcldr:/...`, `AutoBoot`,
 and the supported NTSC/PAL video keys. Because Swiss loads per-game INI after its
@@ -40,5 +47,9 @@ published package reports launch unavailable.
 Host tests cover actual filesystem index/cache behavior, torn/corrupt records,
 read-only fallback, root bounds, argv and byte-preserving per-game configuration.
 Native official-Swiss handoff and physical GC Loader/game autoboot acceptance
-are separate from the labeled visual fixture. The former is still being tested
-in this draft; no physical console is connected to this cloud session.
+are separate from the labeled visual fixture. `swiss-native/` records exact argument delivery to the full official ELF
+payload repacked without code changes. That startup acceptance does not prove
+Swiss UI/game autoboot; the emulator window was black. The prepared SD DOL is a
+lossless conversion of official ELF load segments because the packed wrapper
+probes expansion hardware unsupported by Dolphin 2503. No physical console is
+connected to this cloud session.
