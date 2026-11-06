@@ -58,3 +58,11 @@ class NativeFrames:
 
     def close(self):
         if self.connection is not None:self.connection.close()
+
+    def stable_frame(self):
+        previous=int.from_bytes(self.memory(self.connection,self.serial,4),'big')
+        for _ in range(20):
+            time.sleep(.1);current=int.from_bytes(self.memory(self.connection,self.serial,4),'big')
+            if current==previous:self.count=current;return current
+            previous=current
+        raise RuntimeError('Guest did not remain paused for native capture')

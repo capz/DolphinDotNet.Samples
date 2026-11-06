@@ -5,6 +5,7 @@ internal sealed partial class IplRenderer
     private int storageTextRevision=-1,storageTextSelection=-1;
     private readonly string[] storageNames=new string[IplStorageLayout.ListRows],storageGames=new string[IplStorageLayout.ListRows];
     private string storageName="",storageGame="",storageSize="";
+    private int storageLabelRevision=-1,storageLabelSelection=-1;private string storageLabelStatus="";
     private void StorageSurface(IIplBrowserCanvas? mask,bool body)
     {
         const float x=38,y=93,width=564,height=263,radius=9;
@@ -44,9 +45,27 @@ internal sealed partial class IplRenderer
             storageTextRevision=browser.Revision;storageTextSelection=browser.Selection;
         }
         string mode=IplSwiss.VideoMode(shell.Video.Applied);if(mode!=lastVideoMode){lastVideoMode=mode;browserVideoMode="Video mode: "+mode;}
+        if(c is IIplBrowserCanvas text){bool changed=storageLabelRevision!=browser.Revision||storageLabelSelection!=browser.Selection||storageLabelStatus!=browserStatus;
+            if(text.BeginStorageTextCache(changed)){StorageFixedText(browser);text.EndStorageTextCache();}
+            storageLabelRevision=browser.Revision;storageLabelSelection=browser.Selection;storageLabelStatus=browserStatus;}
 #if IPL_CACHED_FOOTER_TEXT
         if(c.BeginFooterTextCache()){Footer(shell);c.EndFooterTextCache();}
 #endif
+    }
+    private void StorageFixedText(IplBrowser browser)
+    {
+        Center(browser.Title,320,24,29,White);
+        if(browser.Kind==IplBrowserKind.Sd)Center(browserLocation,320,61,13,0x9bbebdccu);
+        if(browser.Kind==IplBrowserKind.MemoryCards)for(int slot=0;slot<2;slot++)Center((slot==0?"L  ":"R  ")+browser.SlotCaption(slot),slot==0?176:464,68,11,slot==browser.Slot?White:0x9bbebdccu);
+        if(browser.ListView){bool memory=browser.Kind==IplBrowserKind.MemoryCards;
+            Text(memory?"Save":"Filename",78,96,11,0x8ebbbcccu);if(memory)Text("Game",297,96,11,0x8ebbbcccu);Text("Size",565,96,11,0x8ebbbcccu);
+            for(int i=0;i<browser.Count;i++){float y=IplStorageLayout.Y(i,true);var item=browser.Items[i]!;
+                if(memory)Text(storageGames[i]??"",297,y+6,12,0x9bc5cdffu);
+                Text(item.Detail,593-TextWidth(item.Detail,11),y+6,11,i==browser.Selection?White:0xbfcfd9ffu);}}
+        if(browser.Selected!=null){Text(storageName,44,362,16,White);
+            if(browser.Kind==IplBrowserKind.MemoryCards&&browser.Selected.Kind==IplItemKind.Save)Text(storageGame,44,383,13,0x9bc5cdffu);
+            Text(storageSize,593-TextWidth(storageSize,13),383,13,0xb4ded8ffu);}
+        Center(browserStatus,320,400,10,0xa7bdc9ddu);Center(browserCounter,320,460,11,0x8eaaaec0u);
     }
     private void PresentStorageBrowser(IplShell shell,IplBrowser browser)
     {
@@ -55,10 +74,8 @@ internal sealed partial class IplRenderer
         if(!c.DrawGridCache())
 #endif
             Grid();
-        Center(browser.Title,320,24,29,White);
         bool memory=browser.Kind==IplBrowserKind.MemoryCards;
-        if(memory){for(int slot=0;slot<2;slot++){float x=slot==0?40:328;Bubble(x,63,272,28,11,slot==browser.Slot?0x3d999660u:0x1d334160u);Center((slot==0?"L  ":"R  ")+browser.SlotCaption(slot),x+136,68,11,slot==browser.Slot?White:0x9bbebdccu);}}
-        else Center(browserLocation,320,61,13,0x9bbebdccu);
+        if(memory){for(int slot=0;slot<2;slot++){float x=slot==0?40:328;Bubble(x,63,272,28,11,slot==browser.Slot?0x3d999660u:0x1d334160u);}}
         if(c is IIplBrowserCanvas cards){
             c.Section(IplRenderPhase.Capture);c.CaptureBackdrop();c.Section(IplRenderPhase.Frost);cards.DrawBrowserFrost();c.Section(IplRenderPhase.Editor);
             if(!cards.DrawBrowserCache(5))StorageSurface(null,true);
@@ -68,22 +85,14 @@ internal sealed partial class IplRenderer
         }
         if(c is IIplBrowserCanvas art)art.DrawArtworks();
         if(browser.ListView){
-            Text(memory?"Save":"Filename",78,96,11,0x8ebbbcccu);if(memory)Text("Game",297,96,11,0x8ebbbcccu);Text("Size",565,96,11,0x8ebbbcccu);
             for(int i=0;i<browser.Count;i++){
                 var item=browser.Items[i]!;float y=IplStorageLayout.Y(i,true),focus=browser.Focus(i);focus=focus*focus*(3-2*focus);
                 uint color=i==browser.Selection?White:0xbfcfd9ffu;Text(storageNames[i]??"",78,y+5,12.2f*(1+.13f*focus),color);
-                if(memory)Text(storageGames[i]??"",297,y+6,12,0x9bc5cdffu);
-                Text(item.Detail,593-TextWidth(item.Detail,11),y+6,11,color);
             }
         }
-        if(browser.Selected!=null){
-            Text(storageName,44,362,16,White);
-            if(memory&&browser.Selected.Kind==IplItemKind.Save)Text(storageGame,44,383,13,0x9bc5cdffu);
-            Text(storageSize,593-TextWidth(storageSize,13),383,13,0xb4ded8ffu);
-        }else Center(browser.Busy?"Reading storage...":"No entries",320,217,18,0xaacbd3ffu);
+        if(!(c is IIplBrowserCanvas fixedText)||!fixedText.DrawStorageTextCache())StorageFixedText(browser);
+        if(browser.Selected==null)Center(browser.Busy?"Reading storage...":"No entries",320,217,18,0xaacbd3ffu);
         if(browser.Panel!=IplBrowserPanel.Grid)BrowserDialog(shell,browser);
-        Center(browserStatus,320,400,10,0xa7bdc9ddu);
         c.Section(IplRenderPhase.Footer);Footer(shell);c.Section(IplRenderPhase.None);
-        Center(browserCounter,320,460,11,0x8eaaaec0u);
     }
 }
