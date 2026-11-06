@@ -1,0 +1,51 @@
+[
+  {
+    "capture": "01-interlaced-editor",
+    "completed_frames": 639,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_638.png",
+    "efb_sha256": "a2d8244d069b7721b8cc70485699f71849c7686f7fe1b02fa829886a0513cf69"
+  },
+  {
+    "capture": "02-progressive-editor",
+    "completed_frames": 692,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_691.png",
+    "efb_sha256": "0b0ac751b9356c05e014cd9a18bed477627af05c304b8ca25d357b53d81dacba"
+  },
+  {
+    "capture": "03-progressive-preview",
+    "completed_frames": 743,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_742.png",
+    "efb_sha256": "811e57ce81f126c17729a75ab8297d34f98f44421019f033626947dbffa6459c"
+  },
+  {
+    "capture": "04-progressive-kept",
+    "completed_frames": 794,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_794.png",
+    "efb_sha256": "48f0932b36530e1be97b340b5691db1c341dd40071c8081df28982fea6e17c4e"
+  },
+  {
+    "capture": "05-interlaced-preview",
+    "completed_frames": 949,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_948.png",
+    "efb_sha256": "da7eb060e8fc08d15cc8caf11a76f9571d1a0fda6b3e4550beff9277f25845f5"
+  },
+  {
+    "capture": "06-progressive-restored",
+    "completed_frames": 1000,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_999.png",
+    "efb_sha256": "e42ceec630328dcb6254f64c07fc28613f1aa3be7038fcc1afe51d630ca736b7"
+  },
+  {
+    "capture": "07-safe-interlaced",
+    "completed_frames": 1052,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_1051.png",
+    "efb_sha256": "d97bd2356e5dff5464b3ca2b51ddd7f3ccedd0cf2da83982fbb51089b6bc36a8"
+  }
+]

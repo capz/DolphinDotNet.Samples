@@ -1,0 +1,9 @@
+{
+  "samples_code_revision": "f76b9198fead81121f02b9a26607e84f2971cd69",
+  "sdk_revision": "4dc80bd10faae69d5b288c7bc227ce6be0e9c750",
+  "engine_revision": "1fa7b6207450ea45732a09d649af8729e7298b5c",
+  "configuration": "Release; native O3/LTO; normal interactive; console/card services; all measured rendering caches enabled; VSync enabled",
+  "review_fixtures": false,
+  "dol_sha256": "d343c48f0935dc6af8f9dace8bf1b28caedfe7320e99ce18fe30f665d77d2099",
+  "dol_bytes": 2545120
+}

@@ -31,6 +31,7 @@ internal sealed class IplShell
     private int entryX,entryY;
     private bool returnLatch;
     private bool repeatStick;
+    private bool storageFromCube;
     internal IplShell(IVideoModeOutput output,IIplPreferencesStore? preferences=null,IIplConsoleCalendar? calendar=null,bool restoreVideo=true,IIplConsoleSound? soundService=null,IplBrowser? browser=null)
     {
         Browser=browser;this.preferences=preferences;this.calendar=calendar;this.soundService=soundService;bool loaded=false;
@@ -63,17 +64,17 @@ internal sealed class IplShell
     }
     internal void SafeMode()
     {if(Page==ShellPage.Browser)Browser?.Dispose();Video.SafeMode();if(!Video.Pending&&Video.Status=="SAFE MODE - 640X480I 4:3"){TurnTo(ShellFace.Video);SavePreferences();}else SystemStatus=Video.Status;}
-    internal int Rows => Face == ShellFace.Video ? 3 : Face == ShellFace.Calendar ? 2 : Face == ShellFace.Options ? 3 : 1;
+    internal int Rows => Face == ShellFace.Video ? 3 : Face == ShellFace.Calendar ? 2 : Face == ShellFace.Options ? 3 : Face==ShellFace.Memory?2:1;
     internal bool Editing => Page == ShellPage.Detail;
-    internal string Title => Face == ShellFace.Video ? "Video" : Face == ShellFace.Calendar ? "Calendar" : Face == ShellFace.Options ? "Options" : Face == ShellFace.Memory ? "Memory Card" : "Game Play";
-    internal string Label(int row) => Face == ShellFace.Video ? (row == 0 ? "Output" : row == 1 ? "Scan" : "Aspect Ratio") : Face == ShellFace.Calendar ? (row == 0 ? "Time" : "Date") : Face == ShellFace.Options ? (row == 0 ? "Sound" : row == 1 ? "Motion" : "Memory Card") : Face == ShellFace.Memory ? "Slot A / Slot B" : "Game Library";
+    internal string Title => Face == ShellFace.Video ? "Video" : Face == ShellFace.Calendar ? "Calendar" : Face == ShellFace.Options ? "Options" : Face == ShellFace.Memory ? "Storage" : "Game Play";
+    internal string Label(int row) => Face == ShellFace.Video ? (row == 0 ? "Output" : row == 1 ? "Scan" : "Aspect Ratio") : Face == ShellFace.Calendar ? (row == 0 ? "Time" : "Date") : Face == ShellFace.Options ? (row == 0 ? "Sound" : row == 1 ? "Motion" : "Storage") : Face == ShellFace.Memory ? (row==0?"Memory Card":"SD Storage") : "Game Library";
     internal string Value(int row)
     {
         var v = Editing ? Video.Selected : Video.Applied;
         if (Face == ShellFace.Video) return row == 0 ? (v.Resolution == 0 ? "240" : v.Resolution == 2 ? "576" : "480") : row == 1 ? (v.Scan == 0 ? "Auto" : v.Scan == 1 ? "Interlaced" : "Progressive") : v.Widescreen ? "16:9" : "4:3";
         if (Face == ShellFace.Calendar) return !CalendarAvailable?"Unavailable":row == 0 ? Two(Editing ? hour : Hour) + ":" + Two(Editing ? minute : Minute) : Two(Editing ? day : Day) + "/" + Two(Editing ? month : Month) + "/" + (Editing ? year : Year).ToString();
         if (Face == ShellFace.Options) return row == 0 ? !SoundAvailable?"Unavailable":((Editing ? sound : Sound) == 0 ? "Stereo" : "Mono") : row == 1 ? (ReducedMotion ? "Reduced" : "Full") : "Open";
-        return Face == ShellFace.Memory ? "Not mounted" : "Open";
+        return "Open";
     }
     internal string Segment(int part) => Row == 0 ? Two(part == 0 ? hour : minute) : part == 0 ? Two(day) : part == 1 ? Two(month) : year.ToString();
     private static string Two(int v) => v < 10 ? "0" + v.ToString() : v.ToString();
@@ -98,6 +99,7 @@ internal sealed class IplShell
     }
     internal void TurnTo(ShellFace face)
     {
+        if(face==ShellFace.Memory)storageFromCube=Face==ShellFace.Menu;
         PreviousFace = Face; Face = face; Row = Part = 0;
         for(int i=0;i<3;i++)focus[i]=0;
         Page = face == ShellFace.Menu ? ShellPage.Cube : ShellPage.Face;
@@ -123,7 +125,7 @@ internal sealed class IplShell
             TurnTo(x > 0 ? ShellFace.Video : x < 0 ? ShellFace.Options : y > 0 ? ShellFace.Play : ShellFace.Calendar);
             return;
         }
-        if (Page == ShellPage.Face) { if (y != 0) Row = Wrap(Row - y, 0, Rows - 1); return; }
+        if (Page == ShellPage.Face) { if (!stick && y != 0) Row = Wrap(Row - y, 0, Rows - 1); return; }
         // Horizontal movement selects a part; it never changes a value.
         if (Face == ShellFace.Calendar && x != 0) { Part = Wrap(Part + x, 0, Row == 0 ? 1 : 2); SelectorTime = 0; }
         if (y == 0) return;
@@ -151,7 +153,7 @@ internal sealed class IplShell
         {
             if (Face == ShellFace.Options && Row == 2) { TurnTo(ShellFace.Memory); return; }
             if(Face==ShellFace.Play){if(Browser==null){SystemStatus="Library unavailable in this build.";return;}Browser.Open(IplBrowserKind.Games);Page=ShellPage.Browser;return;}
-            if (Face == ShellFace.Memory) return;
+            if(Face==ShellFace.Memory){if(Browser==null){SystemStatus="Storage services unavailable in this build.";return;}Browser.Open(Row==0?IplBrowserKind.MemoryCards:IplBrowserKind.Sd);Page=ShellPage.Browser;return;}
             if (Face == ShellFace.Calendar && !CalendarAvailable) {SystemStatus=calendar==null?"System clock unavailable.":calendar.Status;return;}
             if (Face == ShellFace.Options && Row==0 && !SoundAvailable) {SystemStatus=soundService==null?"Console sound unavailable.":soundService.Status;return;}
             if (Face == ShellFace.Options && Row == 1) { ReducedMotion = !ReducedMotion;SavePreferences(); return; }
@@ -183,6 +185,6 @@ internal sealed class IplShell
         if (Video.Pending) { Video.Revert(); if (!Video.Pending) Page = ShellPage.Face; return; }
         if(Page==ShellPage.Browser){if(Browser==null||!Browser.Back())Page=ShellPage.Face;return;}
         if (Page == ShellPage.Detail) { Video.CancelSelection(); Page = ShellPage.Face; return; }
-        if (Face == ShellFace.Memory) TurnTo(ShellFace.Options); else TurnTo(ShellFace.Menu);
+        if (Face == ShellFace.Memory) TurnTo(storageFromCube?ShellFace.Menu:ShellFace.Options); else TurnTo(ShellFace.Menu);
     }
 }

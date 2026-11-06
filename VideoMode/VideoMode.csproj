@@ -1,6 +1,8 @@
 <Project Sdk="DolphinDotNet.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <DefineConstants Condition="'$(IplStorageReview)' == 'true'">$(DefineConstants);IPL_STORAGE_REVIEW</DefineConstants>
+    <DefineConstants Condition="'$(IplMemoryCardServices)' == 'true'">$(DefineConstants);IPL_MEMORY_CARD_SERVICES</DefineConstants>
     <DefineConstants Condition="'$(IplBrowserReview)' == 'true'">$(DefineConstants);IPL_BROWSER_REVIEW</DefineConstants>
     <DefineConstants Condition="'$(IplConsoleServices)' == 'true'">$(DefineConstants);IPL_CONSOLE_SERVICES</DefineConstants>
     <IplCachedSelectors Condition="'$(IplCachedSelectors)' == ''">true</IplCachedSelectors>

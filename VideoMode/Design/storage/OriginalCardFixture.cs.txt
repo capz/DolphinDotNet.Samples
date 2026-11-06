@@ -1,0 +1,12 @@
+using System;
+using Dolphin.Storage;
+internal static class Program {
+ internal static readonly int[] Result=new int[2],Probe=new int[2];internal static int Steps;internal static string Status="Not started";
+ static byte[] Icon(int tint){var bytes=new byte[2048];int at=0;for(int ty=0;ty<32;ty+=4)for(int tx=0;tx<32;tx+=4)for(int y=0;y<4;y++)for(int x=0;x<4;x++){int color=0x8000|((tx+x)*31/31<<10)|((ty+y)*31/31<<5)|tint;bytes[at++]=(byte)(color>>8);bytes[at++]=(byte)color;}return bytes;}
+ static void Save(StorageDevice device,string id,string name,string title,int tint){using(var card=MemoryCard.Mount(device,new MemoryCardIdentity(id,"01"))){card.WriteSave(name,new byte[2048],new MemoryCardSaveOptions{Title=title,Comment="Original native UI fixture",Icon=Icon(tint)});}}
+ static int Main(){try{var display=Dolphin.Graphics.GraphicsDevice.Default;for(int i=0;i<24;i++){display.BeginFrame(Dolphin.Graphics.Color32.Black);display.EndFrame();}
+ for(int i=0;i<2;i++)using(var card=MemoryCardManager.Open(i==0?StorageDevice.MemoryCardSlotA:StorageDevice.MemoryCardSlotB)){Probe[i]=card.MountResult;if(!card.IsReady)card.Format();if(card.Count!=0)throw new InvalidOperationException("Use fresh isolated emulated cards only");}
+ Save(StorageDevice.MemoryCardSlotA,"ABCD","GlassOrbit","Glass Orbit Demo",22);Save(StorageDevice.MemoryCardSlotA,"EFGH","ColorGarden","Color Garden Demo",10);Save(StorageDevice.MemoryCardSlotB,"IJKL","TinyRacer","Tiny Racer Demo",28);
+ Result[0]=1;Result[1]=1;Steps=3;Status="Three original native UI fixture saves seeded on isolated emulator cards.";return 0;
+ }catch(Exception e){Result[0]=-1;Status=e.Message??"Fixture seed failed";return 1;}}
+}

@@ -8,6 +8,8 @@
   <ItemGroup>
     <Compile Include="../../VideoMode/VideoModeMenu.cs" Link="VideoModeMenu.cs" />
     <Compile Include="../../VideoMode/VideoModeScanReview.cs" Link="VideoModeScanReview.cs" />
+    <Compile Include="../../VideoMode/IplCardOperations.cs" Link="IplCardOperations.cs" />
+    <Compile Include="../../VideoMode/IplSdDirectory.cs" Link="IplSdDirectory.cs" />
     <Compile Include="../../VideoMode/IplBrowser.cs" Link="IplBrowser.cs" />
     <Compile Include="../../VideoMode/IplLibrary.cs" Link="IplLibrary.cs" />
     <Compile Include="../../VideoMode/IplSwiss.cs" Link="IplSwiss.cs" />

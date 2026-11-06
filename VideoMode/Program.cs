@@ -62,7 +62,7 @@ internal static class Program
 #endif
         device.ConfigureDisplay(new DisplayOptions {Resolution=reviewDisplay,Scan=ScanMode.Interlaced,Widescreen=false});
 #endif
-#if IPL_VISUAL_REVIEW || IPL_PERFORMANCE_REVIEW || IPL_BROWSER_REVIEW
+#if IPL_VISUAL_REVIEW || IPL_PERFORMANCE_REVIEW || IPL_BROWSER_REVIEW || IPL_STORAGE_REVIEW
         device.ConfigureDisplay(new DisplayOptions {Resolution=GraphicsResolution.R640x480,Scan=ScanMode.Interlaced,Widescreen=false});
 #endif
 #if IPL_HARDWARE_RUNNER
@@ -83,14 +83,18 @@ internal static class Program
 #else
         const bool hardwareAntialiasing=false;
 #endif
-#if IPL_BROWSER_REVIEW
+#if IPL_STORAGE_REVIEW
+        using var browser=new IplBrowser(new IplStorageBrowser(Dolphin.Storage.StorageDevice.DvdDrive));
+#elif IPL_BROWSER_REVIEW
         using var browser=new IplBrowser(new IplBrowserFixture());
 #else
-        using var browser=new IplBrowser(new IplNativeBrowser());
+        using var browser=new IplBrowser(new IplStorageBrowser());
 #endif
         var output=new VideoModeOutput(device,hardwareAntialiasing);
 #if IPL_VISUAL_REVIEW || IPL_PERFORMANCE_REVIEW || IPL_VIDEO_MODE_REVIEW || IPL_HARDWARE_RUNNER
         var shell=new IplShell(output);
+#elif IPL_STORAGE_REVIEW
+        var shell=new IplShell(output,browser:browser);
 #else
         Controller.Update();bool restoreVideo=!Controller.GetState(0).X.IsHeld;
         var shell=new IplShell(output,new IplPreferencesStore(),new IplConsoleCalendar(),restoreVideo,new IplConsoleSound(),browser);
@@ -130,6 +134,7 @@ internal static class Program
             IplFrameProfiler.ExtraDraws=IplFrameProfiler.ExtraTriangles=0;
             Controller.Update();var pad=Controller.GetState(0);float dt=clock.Tick();
             shell.Tick(dt);
+            if(browser.LaunchRequested)return 0;
 #if IPL_VISUAL_REVIEW || IPL_PERFORMANCE_REVIEW || IPL_HARDWARE_RUNNER
             shell.Time=0;
 #endif
@@ -153,6 +158,8 @@ internal static class Program
             }
             else if(pad.B.WasPressed)shell.Back();
             else if(pad.A.WasPressed)shell.Confirm();
+            else if(pad.R.WasPressed){if(shell.Page==ShellPage.Cube)shell.TurnTo(ShellFace.Memory);else if(shell.Page==ShellPage.Browser)browser.SwitchSlot(1);}
+            else if(pad.L.WasPressed&&shell.Page==ShellPage.Browser)browser.SwitchSlot(0);
             else
             {
                 int x=pad.DPadRight.IsHeld?1:pad.DPadLeft.IsHeld?-1:0;
