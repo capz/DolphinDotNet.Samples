@@ -20,6 +20,8 @@ def main():
     parser.add_argument('--icons', action='store_true')
     parser.add_argument('--glass', action='store_true')
     parser.add_argument('--blur', action='store_true')
+    parser.add_argument('--glyphs', action='store_true')
+    parser.add_argument('--tints', action='store_true')
     parser.add_argument('--hypercube', type=Path,
                         help='Link OrderedMeshPasses from this engine checkout with its native backend')
     args = parser.parse_args()
@@ -43,6 +45,8 @@ def main():
         'IplCachedIcons': str(args.icons).lower(),
         'IplSharedGlass': str(args.glass).lower(),
         'IplBatchedBlur': str(args.blur).lower(),
+        'IplBatchedText': str(args.glyphs).lower(),
+        'IplRetainedTint': str(args.tints).lower(),
         'IplNextSdk': 'true', 'DndSampleControls': 'true', 'DndBuildBackend': 'Docker',
     }
     for key, value in settings.items():

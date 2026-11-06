@@ -1,0 +1,44 @@
+[
+  {
+    "before": "VideoMode/Design/submission-round-3/00-control.png",
+    "after": "VideoMode/Design/submission-round-3/01-glyphs.png",
+    "before_sha256": "b9b9fe122e3a90140495890e625f436530fc898c4cf219928c43727b74747d4a",
+    "after_sha256": "fe162e71ce4c478686ed829e541c8c9d15fe19d62cdc238d47417277fceebff2",
+    "masked_overlay_inclusive": [
+      40,
+      12,
+      282,
+      453
+    ],
+    "changed_uncovered_pixels": 0,
+    "maximum_channel_difference": 0
+  },
+  {
+    "before": "VideoMode/Design/submission-round-3/00-control.png",
+    "after": "VideoMode/Design/submission-round-3/02-tints.png",
+    "before_sha256": "b9b9fe122e3a90140495890e625f436530fc898c4cf219928c43727b74747d4a",
+    "after_sha256": "1d36bc593aed5cd69fd840a27f2cb525ebf08a69c6d20319f29f53eaa7851929",
+    "masked_overlay_inclusive": [
+      40,
+      12,
+      282,
+      453
+    ],
+    "changed_uncovered_pixels": 0,
+    "maximum_channel_difference": 0
+  },
+  {
+    "before": "VideoMode/Design/submission-round-2/05-angle-final.png",
+    "after": "VideoMode/Design/submission-round-3/03-angle.png",
+    "before_sha256": "89bea3f2c8a8200bfcc0844e17fd32191b2ccc104f7451bf21461bd4a1f0af71",
+    "after_sha256": "f9183691441131c79f3a2bbf0bcaa60181048d6766589e30ab6b114ac163d8f7",
+    "masked_overlay_inclusive": [
+      40,
+      12,
+      282,
+      453
+    ],
+    "changed_uncovered_pixels": 16,
+    "maximum_channel_difference": 1
+  }
+]

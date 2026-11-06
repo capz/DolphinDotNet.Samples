@@ -27,6 +27,8 @@ internal interface IIplCanvas
     void BeginPanels();
     void PanelTriangle(IplPoint a,IplPoint b,IplPoint d);
     void EndPanels();
+    void PreparePanelTint(int selected);
+    bool DrawPanelTint();
     void CaptureBackdrop();
     void DrawFrostedPanels();
 }
@@ -41,6 +43,7 @@ internal sealed class IplRenderer
     private float yaw,pitch,cy,scale,rimVisibility;
     private float cosYaw,sinYaw,cosPitch,sinPitch;
     private bool footerReady,iconReady,iconBuilding;
+    internal const uint SelectedPanelTint=0xc5c8d436u,IdlePanelTint=0xb9bdbd32u;
     private const uint White=0xf3f4faff, Green=0x15f88cff, Block=0x60db18ff;
     // Cube faces are signed permutations of one grid. Cache its invariant unit
     // normals and curvature, rather than renormalizing every moving vertex.
@@ -207,6 +210,9 @@ internal sealed class IplRenderer
         if(shell.Page==ShellPage.Face&&shell.Face!=ShellFace.Play&&shell.Face!=ShellFace.Memory)
             for(int i=0;i<shell.Rows;i++)FacePanel(shell,i);
         c.EndPanels();
+#if IPL_RETAINED_TINT
+        c.PreparePanelTint(shell.Row);
+#endif
         c.Section(IplRenderPhase.RimGeometry);
         c.BeginRims();GlassRims();c.EndRims();
 #if IPL_CACHED_ICONS
@@ -235,7 +241,10 @@ internal sealed class IplRenderer
                 c.Section(IplRenderPhase.Capture);c.CaptureBackdrop();
                 c.Section(IplRenderPhase.Frost);c.DrawFrostedPanels();
                 c.Section(IplRenderPhase.PanelTint);
-                for(int i=0;i<shell.Rows;i++)if(shell.Face!=ShellFace.Play&&shell.Face!=ShellFace.Memory)PanelTint(shell,i);
+#if IPL_RETAINED_TINT
+                if(!c.DrawPanelTint())
+#endif
+                    for(int i=0;i<shell.Rows;i++)PanelTint(shell,i);
             }
             c.Section(IplRenderPhase.Labels);
             if(shell.Page==ShellPage.Cube) MenuLabels(shell);
@@ -425,7 +434,7 @@ internal sealed class IplRenderer
         c.Text(text,x,y,size,color,angle);
     }
     private void FacePanel(IplShell s,int row)=>PanelShape(s,row,0);
-    private void PanelTint(IplShell s,int row)=>PanelShape(s,row,row==s.Row?0xc5c8d436:0xb9bdbd32);
+    private void PanelTint(IplShell s,int row)=>PanelShape(s,row,row==s.Row?SelectedPanelTint:IdlePanelTint);
     private void PanelShape(IplShell s,int row,uint tint)
     {
         const float left=-.78f,right=.78f,height=.33f,radius=.075f;

@@ -1,0 +1,11 @@
+{
+  "dol_sha256": "43afde08ff861f4ff2e18b47b168e6d58ba6c374b4686e3241596052116b08cc",
+  "features": [
+    "indexed icons",
+    "shared glass",
+    "native ordered blur",
+    "packed glyphs",
+    "shared tint"
+  ],
+  "native_capture": "unscaled paused X11 PPM converted to PNG; each saved image visually inspected"
+}

@@ -62,6 +62,8 @@ internal sealed class IplProof : IIplCanvas
     public void BeginPanels()=>panels.Clear();
     public void PanelTriangle(IplPoint a,IplPoint b,IplPoint d)
     {panels.Append("M"+N(a.X)+" "+N(a.Y)+"L"+N(b.X)+" "+N(b.Y)+"L"+N(d.X)+" "+N(d.Y)+"Z");}
+    public void PreparePanelTint(int selected){}
+    public bool DrawPanelTint()=>false;
     public void EndPanels() { }
     public void CaptureBackdrop()=>backdrop=shapes.ToString();
     public void DrawFrostedPanels()

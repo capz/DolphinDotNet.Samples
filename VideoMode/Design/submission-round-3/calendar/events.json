@@ -1,0 +1,54 @@
+[
+  {
+    "capture": "01-calendar-two-rows",
+    "completed_frames": 535,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_534.png",
+    "efb_sha256": "2e4a1bb9c208739335ebca75dea454ae4cda7e265b4570b6f80b4cb235961cb0",
+    "native_size": [
+      640,
+      528
+    ],
+    "saved_sha256": "2e4a1bb9c208739335ebca75dea454ae4cda7e265b4570b6f80b4cb235961cb0",
+    "capture_method": "byte-for-byte completed native Dolphin frame dump"
+  },
+  {
+    "capture": "02-time-parts",
+    "completed_frames": 743,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_742.png",
+    "efb_sha256": "89b9c0bb9c47be1df4faa0444b1a5f94d8f55aadafcf230023d684b22593ff24",
+    "native_size": [
+      640,
+      528
+    ],
+    "saved_sha256": "89b9c0bb9c47be1df4faa0444b1a5f94d8f55aadafcf230023d684b22593ff24",
+    "capture_method": "byte-for-byte completed native Dolphin frame dump"
+  },
+  {
+    "capture": "03-date-parts",
+    "completed_frames": 1004,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_1004.png",
+    "efb_sha256": "71b185cc6ec2ac4db5c623203a42d42bb877fac2b2d71c855a538d2fb9a16692",
+    "native_size": [
+      640,
+      528
+    ],
+    "saved_sha256": "71b185cc6ec2ac4db5c623203a42d42bb877fac2b2d71c855a538d2fb9a16692",
+    "capture_method": "byte-for-byte completed native Dolphin frame dump"
+  },
+  {
+    "capture": "04-calendar-cancelled",
+    "completed_frames": 1055,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_1054.png",
+    "efb_sha256": "5aed0d471bcb2a667606250538ed4be6d8872b347a7546c2b38bcc99504c6b61",
+    "native_size": [
+      640,
+      528
+    ],
+    "saved_sha256": "5aed0d471bcb2a667606250538ed4be6d8872b347a7546c2b38bcc99504c6b61",
+    "capture_method": "byte-for-byte completed native Dolphin frame dump"
+  }
+]
