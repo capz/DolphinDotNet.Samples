@@ -4,13 +4,25 @@ using Dolphin.Timing;
 
 internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
 {
-    private const int GlassVertices=25*25, PanelVertices=3*36*3,BlurAxis=9,BlurTaps=BlurAxis*BlurAxis;
+    private const int GlassVertices=25*25, PanelRowVertices=36*3,PanelVertices=3*PanelRowVertices,BlurAxis=9,BlurTaps=BlurAxis*BlurAxis;
     private readonly GraphicsDevice device;
     private readonly Draw2D draw;
     private readonly IndexedRims rims=new IndexedRims();
     private readonly Texture2D atlas=Texture2D.FromPng(IplFontData.Png,true);
     private readonly Renderer renderer;
     private readonly CachedFooter footer;
+#if IPL_CACHED_GRID
+    private readonly CachedFooter editorGrid;
+#endif
+    private readonly IndexedIcons icons=new IndexedIcons();
+#if IPL_CACHED_FOOTER_TEXT
+    private readonly CachedFooterText footerText;
+#endif
+#if IPL_BATCHED_TEXT
+    private const int GlyphCapacity=16;
+    private readonly Texture2D[] glyphTextures=new Texture2D[GlyphCapacity];
+    private readonly float[] glyphVertices=new float[GlyphCapacity*24];
+#endif
     private readonly Texture2D glossMap=Texture2D.FromPng(IplGlossData.Png,true);
     private readonly GxEffect glossEffect=GxEffect.FromPackage(IplGlossEffect.Package);
     private readonly Material glossMaterial=new Material {Blend=BlendMode.Additive,Cull=CullMode.None,DepthTest=false,DepthWrite=false};
@@ -23,16 +35,39 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
     private readonly Transform overlayTransform=new Transform();
     private int overlayMeshCount,overlayVertices;
     private uint overlayColor;
+#if IPL_CACHED_NUMBERS
+    private readonly Mesh[] numberMeshes=new Mesh[4];
+    private readonly int[] numberMeshCounts=new int[2];
+    private int numberGroup,numberVertices,numberChunk;
+    private uint numberColor;
+#endif
 #endif
     private readonly Material glassMaterial=new Material {Blend=BlendMode.Alpha,Cull=CullMode.None,DepthTest=false,DepthWrite=false};
     private readonly Material frostMaterial=new Material {Blend=BlendMode.Alpha,Cull=CullMode.None,DepthTest=false,DepthWrite=false};
     private readonly VertexPositionColorTexture[] glass=new VertexPositionColorTexture[GlassVertices];
     private readonly DynamicMesh[] glassMeshes=new DynamicMesh[6];
+#if IPL_SHARED_GLASS
+    private readonly MeshColorView[] glossMeshes=new MeshColorView[6];
+#else
     private readonly DynamicMesh[] glossMeshes=new DynamicMesh[6];
+#endif
     private readonly Color32[] glossColors=new Color32[GlassVertices];
     private readonly IplPoint[] panelPoints=new IplPoint[PanelVertices];
     private readonly VertexPositionColorTexture[] panelVertices=new VertexPositionColorTexture[PanelVertices];
     private readonly DynamicMesh panelMesh;
+#if IPL_RETAINED_TINT
+    private readonly MeshColorView panelTintMesh;
+    private readonly Color32[] panelTints=new Color32[PanelVertices];
+    private readonly Material panelTintMaterial=new Material {Blend=BlendMode.Alpha,Cull=CullMode.None,DepthTest=false,DepthWrite=false};
+    private int tintRows=-1,tintSelected=-1;
+#endif
+#if IPL_BATCHED_BLUR
+    #if IPL_HYPERCUBE_PASSES
+    private readonly Hypercube.GameCube.OrderedMeshPasses blurPasses;
+#else
+    private readonly MeshPasses blurPasses;
+#endif
+#endif
     private readonly UvTransform[] blurOffsets=new UvTransform[BlurTaps];
     private readonly Color32[] blurColors=new Color32[BlurTaps];
     private SceneCapture? capture;
@@ -41,9 +76,22 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
     private float blurScaleX,blurScaleY;
     internal GameCubeCanvas(GraphicsDevice device)
     {
-        this.device=device;renderer=new Renderer(device);footer=new CachedFooter(glass);
+        this.device=device;
+        renderer=new Renderer(device);
+        footer=new CachedFooter(glass);
+#if IPL_CACHED_GRID
+        editorGrid=new CachedFooter(glass,1,32);
+#endif
+#if IPL_CACHED_FOOTER_TEXT
+        footerText=new CachedFooterText(glass,atlas);
+#endif
         glossMaterial.Texture=glossMap;glossMaterial.Effect=glossEffect;
+        #if IPL_BATCHED_TEXT
+        draw=new Draw2D(device,new Draw2DOptions {VertexCapacity=32760,SpriteCapacity=GlyphCapacity});
+        for(int i=0;i<GlyphCapacity;i++)glyphTextures[i]=atlas;
+#else
         draw=new Draw2D(device,new Draw2DOptions {VertexCapacity=32760});
+#endif
         // One shared 15 KiB textured grid for both transmission and reflection:
         // the published SDK reserves only 256 KiB for the entire managed heap.
         var indices=new ushort[24*24*6];int at=0;
@@ -52,8 +100,25 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
             int a=y*25+x;indices[at++]=(ushort)a;indices[at++]=(ushort)(a+1);indices[at++]=(ushort)(a+25);
             indices[at++]=(ushort)(a+1);indices[at++]=(ushort)(a+26);indices[at++]=(ushort)(a+25);
         }
-        for(int i=0;i<6;i++){glassMeshes[i]=DynamicMesh.Create(glass,indices);glossMeshes[i]=DynamicMesh.Create(glass,indices);}
+        for(int i=0;i<6;i++){
+            glassMeshes[i]=DynamicMesh.Create(glass,indices);
+#if IPL_SHARED_GLASS
+            glossMeshes[i]=new MeshColorView(glassMeshes[i],glossColors);
+#else
+            glossMeshes[i]=DynamicMesh.Create(glass,indices);
+#endif
+        }
         panelMesh=DynamicMesh.Create(panelVertices);
+#if IPL_RETAINED_TINT
+        panelTintMesh=new MeshColorView(panelMesh,panelTints);
+#endif
+#if IPL_BATCHED_BLUR
+#if IPL_HYPERCUBE_PASSES
+        blurPasses=new Hypercube.GameCube.OrderedMeshPasses(panelMesh,BlurTaps);
+#else
+        blurPasses=new MeshPasses(panelMesh,BlurTaps);
+#endif
+#endif
         // Allocate the optional native material options between frames, once.
         frostMaterial.TextureTransform=UvTransform.Identity;
         float accumulated=0;
@@ -85,6 +150,7 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
     }
     internal void Prepare()
     {
+        IplFrameProfiler.ExtraDraws=IplFrameProfiler.ExtraTriangles=0;
         var size=draw.LogicalSize;logicalWidth=size.X;logicalHeight=size.Y;
         scale=size.Y/480f;offset=(size.X-640*scale)/2;
         rims.Prepare(size.X,size.Y,scale,offset);
@@ -102,8 +168,12 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
         if(sx!=blurScaleX||sy!=blurScaleY)
         {
             blurScaleX=sx;blurScaleY=sy;
-            for(int tap=0;tap<BlurTaps;tap++)
+            for(int tap=0;tap<BlurTaps;tap++){
                 blurOffsets[tap]=new UvTransform(new Vector2((tap%BlurAxis-BlurAxis/2)*3*sx,(tap/BlurAxis-BlurAxis/2)*3*sy),new Vector2(1,1));
+#if IPL_BATCHED_BLUR
+                blurPasses.Set(tap,blurColors[tap],blurOffsets[tap]);
+#endif
+            }
         }
     }
     internal void Begin()=>draw.Begin();
@@ -123,8 +193,12 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
     public void EndGlassFace()
     {
         glassMeshes[glassCount].SetVertices(glass);
+#if IPL_SHARED_GLASS
+        glossMeshes[glassCount++].SetColors(glossColors);
+#else
         for(int i=0;i<GlassVertices;i++)glass[i].Color=glossColors[i];
         glossMeshes[glassCount++].SetVertices(glass);
+#endif
     }
     public void EndGlass()
     {
@@ -156,12 +230,34 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
         // sampling offset, instead of rebuilding 81 copies of identical geometry.
         for(int i=0;i<PanelVertices;i++)
         {
-            if(i>=panelCount){panelVertices[i]=default;continue;}
+            if(i>=panelCount){panelVertices[i]=new VertexPositionColorTexture(default,Color32.White,default);continue;}
             var p=panelPoints[i];
             var uv=new Vector2((offset+p.X*scale)/logicalWidth*device.Width/copyWidth,p.Y*scale/logicalHeight*device.Height/copyHeight);
             panelVertices[i]=new VertexPositionColorTexture(World(p),Color32.White,uv);
         }
         panelMesh.SetVertices(panelVertices);
+    }
+    // Reuse the already-projected blur mask. Only row/selection changes upload
+    // its independent color stream; moving the cube needs no second geometry.
+    public void PreparePanelTint(int selected)
+    {
+#if IPL_RETAINED_TINT
+        if(panelCount==0)return;
+        int rows=panelCount/PanelRowVertices;
+        if(rows==tintRows&&selected==tintSelected)return;
+        tintRows=rows;tintSelected=selected;
+        for(int i=0;i<PanelVertices;i++)panelTints[i]=Color(i/PanelRowVertices==selected?IplRenderer.SelectedPanelTint:IplRenderer.IdlePanelTint);
+        panelTintMesh.SetColors(panelTints);
+#endif
+    }
+    public bool DrawPanelTint()
+    {
+#if IPL_RETAINED_TINT
+        if(panelCount==0)return true;
+        draw.End();renderer.Begin3D(camera);renderer.DrawMesh(panelTintMesh,panelTintMaterial,identity);renderer.End3D();draw.Begin();return true;
+#else
+        return false;
+#endif
     }
     public void CaptureBackdrop()
     {
@@ -174,6 +270,13 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
         if(panelCount==0)return;
         long start=IplFrameProfiler.Active?Clock.Timestamp:0;
         draw.End();renderer.Begin3D(camera);
+#if IPL_BATCHED_BLUR
+#if IPL_HYPERCUBE_PASSES
+        blurPasses.Draw(renderer,frostMaterial,identity);
+#else
+        renderer.DrawMeshPasses(blurPasses,frostMaterial,identity);
+#endif
+#else
         for(int tap=0;tap<BlurTaps;tap++)
         {
             // Incremental Gaussian average of the immutable captured backdrop.
@@ -181,6 +284,7 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
             frostMaterial.Color=blurColors[tap];frostMaterial.TextureTransform=blurOffsets[tap];
             renderer.DrawMesh(panelMesh,frostMaterial,identity);
         }
+#endif
         renderer.End3D();draw.Begin();
         if(IplFrameProfiler.Active)IplFrameProfiler.BlurUs=IplFrameProfiler.Since(start);
     }
@@ -188,17 +292,83 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
     {
         if((color&255)==0)return;
         if(footer.Recording){footer.Triangle(ax,ay,bx,by,cx,cy,color);return;}
+        if(icons.Recording){icons.Triangle(ax,ay,bx,by,cx,cy,color);return;}
         draw.FillTriangle(new Vector2(offset+ax*scale,ay*scale),new Vector2(offset+bx*scale,by*scale),new Vector2(offset+cx*scale,cy*scale),Color(color));
+    }
+    public bool BeginGridCache()
+    {
+#if IPL_CACHED_GRID
+        editorGrid.Begin(0);return true;
+#else
+        return false;
+#endif
+    }
+    public void EndGridCache()
+    {
+#if IPL_CACHED_GRID
+        editorGrid.End();
+#endif
+    }
+    public bool DrawGridCache()
+    {
+#if IPL_CACHED_GRID
+        if(!editorGrid.Ready(0))return false;
+        draw.End();renderer.Begin3D(camera);editorGrid.Draw(renderer,0,scale);renderer.End3D();draw.Begin();return true;
+#else
+        return false;
+#endif
+    }
+    public void ResetFooterTextCache()
+    {
+#if IPL_CACHED_FOOTER_TEXT
+        footerText.Reset();
+#endif
+    }
+    public bool BeginFooterTextCache()
+    {
+#if IPL_CACHED_FOOTER_TEXT
+        footerText.Begin();return true;
+#else
+        return false;
+#endif
+    }
+    public void EndFooterTextCache()
+    {
+#if IPL_CACHED_FOOTER_TEXT
+        footerText.End();
+#endif
+    }
+    public bool DrawFooterTextCache()
+    {
+#if IPL_CACHED_FOOTER_TEXT
+        if(!footerText.Ready)return false;
+        draw.End();renderer.Begin3D(camera);footerText.Draw(renderer);renderer.End3D();draw.Begin();return true;
+#else
+        return false;
+#endif
     }
     public bool BeginFooterCache(int style){footer.Begin(style);return true;}
     public void EndFooterCache()=>footer.End();
     public bool DrawFooterCache(int style)
     {
+#if IPL_CACHED_FOOTER_TEXT
+        if(footerText.Recording)return true;
+#endif
         if(!footer.Ready(style))return false;
         draw.End();renderer.Begin3D(camera);footer.Draw(renderer,style,scale);renderer.End3D();draw.Begin();return true;
     }
+    public bool BeginIconCache(int style){icons.Begin(style);return true;}
+    public void EndIconCache()=>icons.End();
+    public void PrepareIcon(IplPoint origin,IplPoint x,IplPoint y,float cubeScale,float centerY)=>icons.Prepare(origin,x,y,cubeScale,centerY,logicalWidth,logicalHeight,scale,offset);
+    public bool DrawIconCache(int style){if(!icons.Ready(style))return false;draw.End();icons.Draw(device,style);draw.Begin();return true;}
     public void Rectangle(float x,float y,float width,float height,uint color)
-    {if((color&255)!=0)draw.FillRectangle(new RectF(offset+x*scale,y*scale,width*scale,height*scale),Color(color));}
+    {
+        if((color&255)==0)return;
+#if IPL_CACHED_GRID
+        if(editorGrid.Recording){editorGrid.Triangle(x,y,x+width,y,x+width,y+height,color);editorGrid.Triangle(x,y,x+width,y+height,x,y+height,color);return;}
+#endif
+        draw.FillRectangle(new RectF(offset+x*scale,y*scale,width*scale,height*scale),Color(color));
+    }
 #if !IPL_HARDWARE_RUNNER
     internal void OverlayLabel(string text,float x,float y,float size,uint color)
     {
@@ -230,6 +400,48 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
         if(count!=indices.Length){indices=new ushort[count];Array.Copy(overlayIndices,indices,count);}
         overlayLabels[overlayMeshCount++]=Mesh.Create(glass,indices);overlayVertices=0;
     }
+#if IPL_CACHED_NUMBERS
+    internal void BeginNumberGroup(int group)
+    {numberGroup=group;numberVertices=numberChunk=0;numberColor=group==0?IplOverlayLayout.TotalColor:IplOverlayLayout.DetailColor;}
+    internal void CacheNumber(byte[] text,int length,float right,float y,float size)
+    {
+        float factor=size/28,width=0;
+        for(int i=0;i<length;i++)width+=IplFontData.Widths[text[i]-32]*factor;
+        float x=right-width,du=32f/atlas.Width,dv=40f/atlas.Height;var tint=Color(numberColor);
+        for(int i=0;i<length;i++){
+            if(numberVertices+4>624)FlushNumberGroup();
+            int ch=text[i]-32;float u=ch%16*32f/atlas.Width,v=ch/16*40f/atlas.Height;
+            float r=x+32*factor,b=y+40*factor;
+            glass[numberVertices++]=new VertexPositionColorTexture(new Vector3(x-320,240-y,0),tint,new Vector2(u,v));
+            glass[numberVertices++]=new VertexPositionColorTexture(new Vector3(r-320,240-y,0),tint,new Vector2(u+du,v));
+            glass[numberVertices++]=new VertexPositionColorTexture(new Vector3(r-320,240-b,0),tint,new Vector2(u+du,v+dv));
+            glass[numberVertices++]=new VertexPositionColorTexture(new Vector3(x-320,240-b,0),tint,new Vector2(u,v+dv));
+            x+=IplFontData.Widths[ch]*factor;
+        }
+    }
+    private void FlushNumberGroup()
+    {
+        if(numberVertices==0)return;
+        if(numberChunk==2)throw new InvalidOperationException("Number cache capacity exceeded.");
+        var tint=Color(numberColor);
+        for(int i=numberVertices;i<glass.Length;i++)glass[i]=new VertexPositionColorTexture(default,tint,default);
+        var indices=new ushort[numberVertices/4*6];Array.Copy(overlayIndices,indices,indices.Length);
+        int slot=numberGroup*2+numberChunk++;var replacement=Mesh.Create(glass,indices);
+        numberMeshes[slot]?.Dispose();numberMeshes[slot]=replacement;numberVertices=0;
+    }
+    internal void EndNumberGroup()
+    {
+        FlushNumberGroup();
+        for(int i=numberChunk;i<numberMeshCounts[numberGroup];i++){int slot=numberGroup*2+i;numberMeshes[slot].Dispose();numberMeshes[slot]=null!;}
+        numberMeshCounts[numberGroup]=numberChunk;
+    }
+    internal void DrawOverlayNumbers()
+    {
+        draw.End();renderer.Begin3D(camera);overlayTransform.LocalScale=new Vector3(scale,scale,1);
+        for(int group=0;group<2;group++)for(int i=0;i<numberMeshCounts[group];i++)renderer.DrawMesh(numberMeshes[group*2+i],overlayMaterial,overlayTransform);
+        renderer.End3D();draw.Begin();
+    }
+#endif
     internal void DrawOverlayLabels()
     {
         draw.End();renderer.Begin3D(camera);
@@ -238,8 +450,53 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
         renderer.End3D();draw.Begin();
     }
 #endif
+#if IPL_BATCHED_TEXT
+    // Six XYUV vertices per glyph, using the SDK's ordered packed-quad path.
+    // Small fixed chunks keep the total managed heap below 256 KiB.
+    private void Glyph(int index,int ch,float x,float y,float width,float height,float co,float si)
+    {
+        float u=(ch%16*32f)/atlas.Width,v=(ch/16*40f)/atlas.Height,du=32f/atlas.Width,dv=40f/atlas.Height;
+        float rx=x+width*co,ry=y+width*si,bx=x-height*si,by=y+height*co,ex=rx-height*si,ey=ry+height*co;
+        int at=index*24;
+        GlyphVertex(at,x,y,u,v);GlyphVertex(at+4,rx,ry,u+du,v);GlyphVertex(at+8,ex,ey,u+du,v+dv);
+        GlyphVertex(at+12,x,y,u,v);GlyphVertex(at+16,ex,ey,u+du,v+dv);GlyphVertex(at+20,bx,by,u,v+dv);
+    }
+    private void GlyphVertex(int at,float x,float y,float u,float v)
+    {glyphVertices[at]=x;glyphVertices[at+1]=y;glyphVertices[at+2]=u;glyphVertices[at+3]=v;}
     public void Text(string value,float x,float y,float size,uint color,float angle,float stretch=1)
     {
+#if IPL_CACHED_FOOTER_TEXT
+        if(footerText.Recording){footerText.Add(value,x,y,size,color,angle,stretch,scale);return;}
+#endif
+        float factor=size/28,co=(float)Math.Cos(angle*.017453293f),si=(float)Math.Sin(angle*.017453293f),advance=0;
+        float rotation=angle*.01745329252f,quadCo=angle==0?1:MathF.Cos(rotation),quadSi=angle==0?0:MathF.Sin(rotation);
+        var tint=Color(color);int used=0;
+        for(int i=0;i<value.Length;i++){
+            int ch=value[i]-32;if(ch<0||ch>=96)continue;
+            Glyph(used++,ch,offset+(x+advance*co)*scale,(y+advance*si)*scale,32*factor*stretch*scale,40*factor*scale,quadCo,quadSi);
+            advance+=IplFontData.Widths[ch]*factor*stretch;
+            if(used==GlyphCapacity){draw.DrawTexturedQuads(glyphTextures,glyphVertices,used,tint);used=0;}
+        }
+        if(used!=0)draw.DrawTexturedQuads(glyphTextures,glyphVertices,used,tint);
+    }
+    internal void TextAscii(byte[] value,int length,float right,float y,float size,uint color)
+    {
+        float factor=size/28,width=0;
+        for(int i=0;i<length;i++)width+=IplFontData.Widths[value[i]-32]*factor;
+        float x=right-width;var tint=Color(color);int used=0;
+        for(int i=0;i<length;i++){
+            int ch=value[i]-32;Glyph(used++,ch,offset+x*scale,y*scale,32*factor*scale,40*factor*scale,1,0);
+            x+=IplFontData.Widths[ch]*factor;
+            if(used==GlyphCapacity){draw.DrawTexturedQuads(glyphTextures,glyphVertices,used,tint);used=0;}
+        }
+        if(used!=0)draw.DrawTexturedQuads(glyphTextures,glyphVertices,used,tint);
+    }
+#else
+    public void Text(string value,float x,float y,float size,uint color,float angle,float stretch=1)
+    {
+#if IPL_CACHED_FOOTER_TEXT
+        if(footerText.Recording){footerText.Add(value,x,y,size,color,angle,stretch,scale);return;}
+#endif
         float factor=size/28,co=(float)Math.Cos(angle*.017453293f),si=(float)Math.Sin(angle*.017453293f),advance=0;
         for(int i=0;i<value.Length;i++)
         {
@@ -262,14 +519,28 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
             x+=IplFontData.Widths[ch]*factor;
         }
     }
+#endif
     public void Dispose()
     {
         rims.Dispose();
-        footer.Dispose();
+        footer.Dispose();icons.Dispose();
+#if IPL_CACHED_GRID
+        editorGrid.Dispose();
+#endif
+#if IPL_CACHED_FOOTER_TEXT
+        footerText.Dispose();
+#endif
 #if !IPL_HARDWARE_RUNNER
         for(int i=0;i<overlayMeshCount;i++)overlayLabels[i].Dispose();
+#if IPL_CACHED_NUMBERS
+        for(int i=0;i<numberMeshes.Length;i++)numberMeshes[i]?.Dispose();
 #endif
-        capture?.Dispose();panelMesh.Dispose();
+#endif
+        capture?.Dispose();
+#if IPL_RETAINED_TINT
+        panelTintMesh.Dispose();
+#endif
+        panelMesh.Dispose();
         for(int i=0;i<glassMeshes.Length;i++){glassMeshes[i].Dispose();glossMeshes[i].Dispose();}draw.Dispose();atlas.Dispose();glossMap.Dispose();glossEffect.Dispose();
     }
 }

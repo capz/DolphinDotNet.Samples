@@ -1,0 +1,8 @@
+{
+  "dol_sha256": "9ea1dcfb6f8e449421a493b39c15e62f9ddf5124e58cad456a561663a9bb43c7",
+  "build": "normal interactive source SDK, icons+shared glass+native Hypercube blur",
+  "sdk_api_commit": "2dcb0887cfabc0f2b6d5c4f6136d505551c03869",
+  "hypercube_native_source_commit": "4b67e2761b68724a502929e2d7723ac5434a161d",
+  "capture": "frame-paced XTest -> Dolphin -> native SDK input; paused unscaled X11 PPM -> PNG",
+  "window": "640x480; 16:9 mode uses anamorphic native output"
+}

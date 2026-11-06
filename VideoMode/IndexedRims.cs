@@ -91,8 +91,8 @@ internal sealed class IndexedRims : IDisposable
         device.EndRaw();
         // SDK counters track managed draws. Include our raw batches and their
         // degenerate padding without changing the hardware runner's CSV schema.
-        IplFrameProfiler.ExtraDraws=chunks;
-        IplFrameProfiler.ExtraTriangles=chunks*IplRimCommands.Quads*2;
+        IplFrameProfiler.ExtraDraws+=chunks;
+        IplFrameProfiler.ExtraTriangles+=chunks*IplRimCommands.Quads*2;
     }
     public void Dispose()
     {commands.Dispose();positionBuffer.Dispose();colorBuffer.Dispose();projectionBuffer.Dispose();transformBuffer.Dispose();}

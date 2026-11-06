@@ -1,0 +1,65 @@
+[
+  {
+    "capture": "01-default-hidden",
+    "completed_frames": 423,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_422.png",
+    "efb_sha256": "95126e12619682fa1eb0edcd9829af6103b96ae9f5f84c5e8b742053739f8484"
+  },
+  {
+    "capture": "02-z-held-visible",
+    "completed_frames": 516,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_515.png",
+    "efb_sha256": "16d1f32c7db70436f02803e3ef4a2e63a3455fb5131be0fa7fbd56b16cd8ef3b"
+  },
+  {
+    "capture": "03-options-visible",
+    "completed_frames": 567,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_567.png",
+    "efb_sha256": "14870b9c4ab0d91ef83a52cfef598c49d1bb79901de885be46d097f0da2ff532"
+  },
+  {
+    "capture": "04-editor-visible",
+    "completed_frames": 618,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_617.png",
+    "efb_sha256": "4bd8cb74e982886ab9aa2a1ae60dbb7830feb8c7359d142f82aef4eec0c767d8"
+  },
+  {
+    "capture": "05-z-hidden-editor",
+    "completed_frames": 695,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_694.png",
+    "efb_sha256": "d65085353d4a8441423fb24c07c03426b9398c8d657e52b8be17515f370d8281"
+  },
+  {
+    "capture": "06-reopened-options",
+    "completed_frames": 920,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_919.png",
+    "efb_sha256": "7d36c8eeb5956a6552b48b2bf36f9df9ca6e03c7d14a5b80d668a32f7a34108e"
+  },
+  {
+    "capture": "07-widescreen-kept",
+    "completed_frames": 1281,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_1280.png",
+    "efb_sha256": "b6bcaa9975aa9a6efa7cd3fff7c02dcd2a0c2f7714a9d640bf44300e2a5c153a"
+  },
+  {
+    "capture": "08-widescreen-hidden",
+    "completed_frames": 1332,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_1331.png",
+    "efb_sha256": "742975d7165a778b0bcf5aec4c32a08dae44658beeff7c7b8b363163d8ae25d9"
+  },
+  {
+    "capture": "09-safe-mode",
+    "completed_frames": 1384,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_1384.png",
+    "efb_sha256": "aa0449d101e9dfe0b57318a95c539578f93428179f12f3604d0b92d676bab58d"
+  }
+]

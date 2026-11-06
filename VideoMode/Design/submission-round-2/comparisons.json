@@ -1,0 +1,54 @@
+[
+  {
+    "before": "00-baseline.png",
+    "after": "01-icons.png",
+    "masked_overlay_inclusive": [
+      40,
+      12,
+      282,
+      453
+    ],
+    "changed_uncovered_pixels": 0,
+    "before_sha256": "70187d27f95062dfd2011a172c9d3da93bbeb7dda7900e6b47e97404ebbf719d",
+    "after_sha256": "0d130697143a73dea9d1695a48ef39bfe02269170cca33a03f2f8aab02615024"
+  },
+  {
+    "before": "01-icons.png",
+    "after": "02-glass.png",
+    "masked_overlay_inclusive": [
+      40,
+      12,
+      282,
+      453
+    ],
+    "changed_uncovered_pixels": 0,
+    "before_sha256": "0d130697143a73dea9d1695a48ef39bfe02269170cca33a03f2f8aab02615024",
+    "after_sha256": "7af535ede65b3d7b078615cae99f96b99d637cfaba547dd783583f0f5c70e7d9"
+  },
+  {
+    "before": "02-glass.png",
+    "after": "03-blur.png",
+    "masked_overlay_inclusive": [
+      40,
+      12,
+      282,
+      453
+    ],
+    "changed_uncovered_pixels": 0,
+    "before_sha256": "7af535ede65b3d7b078615cae99f96b99d637cfaba547dd783583f0f5c70e7d9",
+    "after_sha256": "b9b9fe122e3a90140495890e625f436530fc898c4cf219928c43727b74747d4a"
+  },
+  {
+    "before": "04-angle-baseline.png",
+    "after": "05-angle-final.png",
+    "masked_overlay_inclusive": [
+      40,
+      12,
+      282,
+      453
+    ],
+    "changed_uncovered_pixels": 0,
+    "before_sha256": "92921e4f3bac93ed45098a88be264eeb23b7db9504265eb2a0ea81731286f280",
+    "after_sha256": "89bea3f2c8a8200bfcc0844e17fd32191b2ccc104f7451bf21461bd4a1f0af71"
+  }
+]

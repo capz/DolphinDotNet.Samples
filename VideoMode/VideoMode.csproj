@@ -1,6 +1,19 @@
 <Project Sdk="DolphinDotNet.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <IplCachedGrid Condition="'$(IplCachedGrid)' == ''">true</IplCachedGrid>
+    <IplCachedFooterText Condition="'$(IplCachedFooterText)' == ''">true</IplCachedFooterText>
+    <IplCachedNumbers Condition="'$(IplCachedNumbers)' == ''">true</IplCachedNumbers>
+    <DefineConstants Condition="'$(IplCachedGrid)' == 'true'">$(DefineConstants);IPL_CACHED_GRID</DefineConstants>
+    <DefineConstants Condition="'$(IplCachedFooterText)' == 'true'">$(DefineConstants);IPL_CACHED_FOOTER_TEXT</DefineConstants>
+    <DefineConstants Condition="'$(IplCachedNumbers)' == 'true'">$(DefineConstants);IPL_CACHED_NUMBERS</DefineConstants>
+    <IplBatchedText Condition="'$(IplBatchedText)' == ''">false</IplBatchedText>
+    <DefineConstants Condition="'$(IplBatchedText)' == 'true'">$(DefineConstants);IPL_BATCHED_TEXT</DefineConstants>
+    <DefineConstants Condition="'$(IplRetainedTint)' == 'true'">$(DefineConstants);IPL_RETAINED_TINT</DefineConstants>
+    <IplCachedIcons Condition="'$(IplCachedIcons)' == ''">true</IplCachedIcons>
+    <DefineConstants Condition="'$(IplCachedIcons)' == 'true'">$(DefineConstants);IPL_CACHED_ICONS</DefineConstants>
+    <DefineConstants Condition="'$(IplSharedGlass)' == 'true'">$(DefineConstants);IPL_SHARED_GLASS</DefineConstants>
+    <DefineConstants Condition="'$(IplBatchedBlur)' == 'true'">$(DefineConstants);IPL_BATCHED_BLUR</DefineConstants>
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <IplRunnerScene Condition="'$(IplRunnerScene)' == ''">Options</IplRunnerScene>
@@ -39,6 +52,7 @@
     <PackageReference Include="DolphinDotNet.GameCube" Version="$(DndPackageVersion)" />
   </ItemGroup>
   <Target Name="ValidateIplReviewModes" BeforeTargets="CoreCompile">
+    <Error Condition="('$(IplSharedGlass)' == 'true' or '$(IplBatchedBlur)' == 'true' or '$(IplRetainedTint)' == 'true' or '$(IplBatchedText)' == 'true') and '$(IplNextSdk)' != 'true'" Text="Shared glass, retained tint, packed text and batched blur require the explicit source-SDK integration build." />
     <Error Condition="'$(IplPerformanceReviewOverlay)' != 'Off' and ('$(IplPerformanceReview)' != 'true' or ('$(IplPerformanceReviewOverlay)' != 'Timers' and '$(IplPerformanceReviewOverlay)' != 'Full'))"
            Text="IplPerformanceReviewOverlay must be Off, or Timers/Full with IplPerformanceReview=true." />
     <Error Condition="'$(IplHardwareRunner)' == 'true' and ('$(Configuration)' != 'Release' or '$(DndDebugSymbols)' == 'true' or ('$(DndGdbTransport)' != '' and '$(DndGdbTransport)' != 'Off'))"

@@ -155,6 +155,9 @@ internal static class Program
             bool timing=IplFrameProfiler.Active||IplPerformanceOverlay.Stats.Visible;
             long phaseStart=timing?Clock.Timestamp:0;
             canvas.Prepare();renderer.Prepare(shell);
+#if !IPL_HARDWARE_RUNNER
+            IplPerformanceOverlay.PrepareNumbers(canvas);
+#endif
             int prepare=timing?IplFrameProfiler.Since(phaseStart):0;
             phaseStart=timing?Clock.Timestamp:0;
             device.BeginFrame(Color32.Black);canvas.Begin();renderer.Present(shell);

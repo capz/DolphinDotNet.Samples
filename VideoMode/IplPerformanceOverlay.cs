@@ -6,6 +6,9 @@ internal static class IplPerformanceOverlay
     internal static readonly IplPerformanceStats Stats=new IplPerformanceStats();
     internal static bool DrawEnabled=true;
     private static readonly byte[] number=new byte[16];
+#if IPL_CACHED_NUMBERS
+    private static readonly IplNumberCacheState numberState=new IplNumberCacheState();
+#endif
     private static IplRenderPhase phase;
     private static long phaseStart;
 #if IPL_PERFORMANCE_REVIEW
@@ -60,6 +63,29 @@ internal static class IplPerformanceOverlay
             canvas.FlushOverlayLabels();
         }
     }
+    internal static void PrepareNumbers(GameCubeCanvas canvas)
+    {
+#if IPL_CACHED_NUMBERS
+        if(!Stats.Visible||!Stats.HasSample||!DrawEnabled)return;
+        int dirty=numberState.Update(Stats.Display);
+        for(int group=0;group<2;group++)if((dirty&(1<<group))!=0){
+#if IPL_PERFORMANCE_REVIEW
+            long start=Clock.Timestamp;
+#endif
+            canvas.BeginNumberGroup(group);
+            for(int i=0;i<IplOverlayLayout.Metrics.Length;i++){
+                int metric=IplOverlayLayout.Metrics[i];
+                if((IplOverlayLayout.Color(metric)==IplOverlayLayout.TotalColor?0:1)!=group)continue;
+                int length=IplPerformanceStats.FormatMilliseconds(Stats.Display[metric],number);
+                canvas.CacheNumber(number,length,264,IplOverlayLayout.Y(i),13);
+            }
+            canvas.EndNumberGroup();
+#if IPL_PERFORMANCE_REVIEW
+            NumbersUs+=IplFrameProfiler.Since(start);
+#endif
+        }
+#endif
+    }
     private static void Value(GameCubeCanvas canvas,int metric,float y)
     {
         uint color=IplOverlayLayout.Color(metric);
@@ -89,6 +115,18 @@ internal static class IplPerformanceOverlay
         canvas.DrawOverlayLabels();
 #if IPL_PERFORMANCE_REVIEW
         LabelsUs=IplFrameProfiler.Since(labelsStart);
+#endif
+#if IPL_CACHED_NUMBERS
+        if(Stats.HasSample){
+#if IPL_PERFORMANCE_REVIEW
+            long start=Clock.Timestamp;
+#endif
+            canvas.DrawOverlayNumbers();
+#if IPL_PERFORMANCE_REVIEW
+            NumbersUs+=IplFrameProfiler.Since(start);
+#endif
+            return;
+        }
 #endif
         for(int i=0;i<IplOverlayLayout.Metrics.Length;i++)Value(canvas,IplOverlayLayout.Metrics[i],IplOverlayLayout.Y(i));
     }

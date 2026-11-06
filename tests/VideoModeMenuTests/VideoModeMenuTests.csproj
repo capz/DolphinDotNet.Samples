@@ -9,6 +9,7 @@
     <Compile Include="../../VideoMode/VideoModeScanReview.cs" Link="VideoModeScanReview.cs" />
     <Compile Include="../../VideoMode/IplShell.cs" Link="IplShell.cs" />
     <Compile Include="../../VideoMode/IplRenderer.cs" Link="IplRenderer.cs" />
+    <Compile Include="../../VideoMode/IplNumberCacheState.cs" Link="IplNumberCacheState.cs" />
     <Compile Include="../../VideoMode/IplPerformanceStats.cs" Link="IplPerformanceStats.cs" />
     <Compile Include="../../VideoMode/IplRimCommands.cs" Link="IplRimCommands.cs" />
     <Compile Include="../../VideoMode/IplOverlayLayout.cs" Link="IplOverlayLayout.cs" />

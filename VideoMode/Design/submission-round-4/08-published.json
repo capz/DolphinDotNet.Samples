@@ -1,0 +1,7 @@
+{
+  "sdk_package": "0.1.0-preview.217.1",
+  "dol_sha256": "bff2e5172a2018112372337a63773c0f013700fc6284440b78c8b306803654f5",
+  "build": "dotnet build VideoMode/VideoMode.csproj -c Release -p:DndBuildNative=true -p:DndBuildBackend=Docker",
+  "caches": "IplCachedNumbers, IplCachedFooterText and IplCachedGrid enabled by application defaults; other source-only APIs disabled",
+  "capture": "Normal interactive package build, cloud-local Dolphin; full native X11 window without resize/crop. No timing result is inferred from this boot capture."
+}

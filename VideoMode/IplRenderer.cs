@@ -4,6 +4,13 @@ using System;
 internal interface IIplCanvas
 {
     void Section(IplRenderPhase phase);
+    bool BeginGridCache();
+    void EndGridCache();
+    bool DrawGridCache();
+    void ResetFooterTextCache();
+    bool BeginFooterTextCache();
+    void EndFooterTextCache();
+    bool DrawFooterTextCache();
     void Triangle(float ax,float ay,float bx,float by,float cx,float cy,uint color);
     void Rectangle(float x,float y,float width,float height,uint color);
     void Text(string value,float x,float y,float size,uint color,float angle,float stretch=1);
@@ -20,9 +27,15 @@ internal interface IIplCanvas
     bool BeginFooterCache(int style);
     void EndFooterCache();
     bool DrawFooterCache(int style);
+    bool BeginIconCache(int style);
+    void EndIconCache();
+    void PrepareIcon(IplPoint origin,IplPoint x,IplPoint y,float scale,float centerY);
+    bool DrawIconCache(int style);
     void BeginPanels();
     void PanelTriangle(IplPoint a,IplPoint b,IplPoint d);
     void EndPanels();
+    void PreparePanelTint(int selected);
+    bool DrawPanelTint();
     void CaptureBackdrop();
     void DrawFrostedPanels();
 }
@@ -36,7 +49,11 @@ internal sealed class IplRenderer
     private readonly IIplCanvas c;
     private float yaw,pitch,cy,scale,rimVisibility;
     private float cosYaw,sinYaw,cosPitch,sinPitch;
-    private bool footerReady;
+    private bool footerReady,iconReady,iconBuilding;
+#if IPL_CACHED_GRID
+    private bool gridReady;
+#endif
+    internal const uint SelectedPanelTint=0xc5c8d436u,IdlePanelTint=0xb9bdbd32u;
     private const uint White=0xf3f4faff, Green=0x15f88cff, Block=0x60db18ff;
     // Cube faces are signed permutations of one grid. Cache its invariant unit
     // normals and curvature, rather than renormalizing every moving vertex.
@@ -172,12 +189,27 @@ internal sealed class IplRenderer
     // by the SDK. No dynamic mesh is modified during a GX pass.
     internal void Prepare(IplShell shell)
     {
+#if IPL_CACHED_FOOTER_TEXT
+        c.ResetFooterTextCache();
+#endif
         if(!footerReady)
         {
             for(int style=0;style<3;style++)if(c.BeginFooterCache(style)){FooterShapes(style);c.EndFooterCache();}
             footerReady=true;
         }
-        if(shell.Editing)return;
+#if IPL_CACHED_ICONS
+        if(!iconReady){
+            iconBuilding=true;
+            for(int i=0;i<6;i++)if(c.BeginIconCache(i)){FaceIcon((ShellFace)i,shell);c.EndIconCache();}
+            iconBuilding=false;iconReady=true;
+        }
+#endif
+        if(shell.Editing){
+#if IPL_CACHED_GRID
+            if(!gridReady&&c.BeginGridCache()){Grid();c.EndGridCache();gridReady=true;}
+#endif
+            return;
+        }
         c.Section(IplRenderPhase.GlassGeometry);
         float t=shell.Turn, ease=1-(float)Math.Pow(1-t,3);
         if(t<1)ease+=(float)Math.Sin(t*3.1415926f)*.045f;
@@ -196,9 +228,21 @@ internal sealed class IplRenderer
         if(shell.Page==ShellPage.Face&&shell.Face!=ShellFace.Play&&shell.Face!=ShellFace.Memory)
             for(int i=0;i<shell.Rows;i++)FacePanel(shell,i);
         c.EndPanels();
+#if IPL_RETAINED_TINT
+        c.PreparePanelTint(shell.Row);
+#endif
         c.Section(IplRenderPhase.RimGeometry);
         c.BeginRims();GlassRims();c.EndRims();
+#if IPL_CACHED_ICONS
+        int iconFace=SurfaceIndex(shell.Face);
+        c.PrepareIcon(Rotate(Surface(iconFace,0,0)),Rotate(Surface(iconFace,1,0)),Rotate(Surface(iconFace,0,1)),scale,cy);
+#endif
         c.Section(IplRenderPhase.None);
+#if IPL_CACHED_FOOTER_TEXT
+        if(c.BeginFooterTextCache()){
+            Footer(shell);c.EndFooterTextCache();
+        }
+#endif
     }
     internal void Present(IplShell shell)
     {
@@ -220,7 +264,10 @@ internal sealed class IplRenderer
                 c.Section(IplRenderPhase.Capture);c.CaptureBackdrop();
                 c.Section(IplRenderPhase.Frost);c.DrawFrostedPanels();
                 c.Section(IplRenderPhase.PanelTint);
-                for(int i=0;i<shell.Rows;i++)if(shell.Face!=ShellFace.Play&&shell.Face!=ShellFace.Memory)PanelTint(shell,i);
+#if IPL_RETAINED_TINT
+                if(!c.DrawPanelTint())
+#endif
+                    for(int i=0;i<shell.Rows;i++)PanelTint(shell,i);
             }
             c.Section(IplRenderPhase.Labels);
             if(shell.Page==ShellPage.Cube) MenuLabels(shell);
@@ -410,7 +457,7 @@ internal sealed class IplRenderer
         c.Text(text,x,y,size,color,angle);
     }
     private void FacePanel(IplShell s,int row)=>PanelShape(s,row,0);
-    private void PanelTint(IplShell s,int row)=>PanelShape(s,row,row==s.Row?0xc5c8d436:0xb9bdbd32);
+    private void PanelTint(IplShell s,int row)=>PanelShape(s,row,row==s.Row?SelectedPanelTint:IdlePanelTint);
     private void PanelShape(IplShell s,int row,uint tint)
     {
         const float left=-.78f,right=.78f,height=.33f,radius=.075f;
@@ -434,10 +481,15 @@ internal sealed class IplRenderer
     private static readonly string[] play={"110000000","111100000","111111000","111111110","111111111","111111110","111111000","111100000","110000000"};
     private static readonly string[] memory={"011111110","111111111","110111011","110111011","110111011","110111011","110000011","111111111","111111111","111111111","111111111"};
     private static readonly string[] home={"00011110000","01110011100","11100001110","11111011110","11111111110","11101110110","11100100110","01111111100","00011110000"};
-    private void FaceIcon(IplShell s)
+    private void FaceIcon(IplShell s)=>FaceIcon(s.Face,s);
+    private IplPoint IconPoint(IplShell s,float u,float v)=>iconBuilding?new IplPoint(u,v):FacePoint(s,u,v);
+    private void FaceIcon(ShellFace face,IplShell s)
     {
-        var bitmap=s.Face==ShellFace.Video?monitor:s.Face==ShellFace.Calendar?calendar:s.Face==ShellFace.Options?options:s.Face==ShellFace.Play?play:s.Face==ShellFace.Memory?memory:home;
-        uint color=s.Face==ShellFace.Video?0x3f6ed54bu:s.Face==ShellFace.Calendar?0x39a88148u:s.Face==ShellFace.Options?0xd878dc55u:s.Face==ShellFace.Play?0xe0a34d48u:s.Face==ShellFace.Memory?0x6788d54bu:0x708fc535u;
+#if IPL_CACHED_ICONS
+        if(!iconBuilding&&c.DrawIconCache((int)face))return;
+#endif
+        var bitmap=face==ShellFace.Video?monitor:face==ShellFace.Calendar?calendar:face==ShellFace.Options?options:face==ShellFace.Play?play:face==ShellFace.Memory?memory:home;
+        uint color=face==ShellFace.Video?0x3f6ed54bu:face==ShellFace.Calendar?0x39a88148u:face==ShellFace.Options?0xd878dc55u:face==ShellFace.Play?0xe0a34d48u:face==ShellFace.Memory?0x6788d54bu:0x708fc535u;
         const float cell=.122f,rowStep=.114f;float left=-bitmap[0].Length*cell/2,top=bitmap.Length*rowStep/2+.075f;
         for(int y=0;y<bitmap.Length;y++)for(int x=0;x<bitmap[y].Length;x++)if(bitmap[y][x]=='1')
         {
@@ -450,13 +502,13 @@ internal sealed class IplRenderer
     private void FaceBlock(IplShell s,float u,float v,float width,float height,uint color)
     {
         const float radius=.012f;
-        var center=FacePoint(s,u+width/2,v-height/2);IplPoint first=default,previous=default;
+        var center=IconPoint(s,u+width/2,v-height/2);IplPoint first=default,previous=default;
         for(int corner=0;corner<4;corner++)for(int j=0;j<=3;j++)
         {
             float x=corner==0||corner==3?u+radius:u+width-radius;
             float y=corner<2?v-radius:v-height+radius;
             var direction=wallDirections[corner*13+j*4];
-            var p=FacePoint(s,x+direction.X*radius,y+direction.Y*radius);
+            var p=IconPoint(s,x+direction.X*radius,y+direction.Y*radius);
             if(corner==0&&j==0)first=p;else Tri(center,previous,p,color);
             previous=p;
         }
@@ -464,7 +516,7 @@ internal sealed class IplRenderer
     }
     private void FaceQuad(IplShell s,float u,float v,float w,float h,uint color)
     {
-        var a=FacePoint(s,u,v);var b=FacePoint(s,u+w,v);var d=FacePoint(s,u,v-h);var e=FacePoint(s,u+w,v-h);
+        var a=IconPoint(s,u,v);var b=IconPoint(s,u+w,v);var d=IconPoint(s,u,v-h);var e=IconPoint(s,u+w,v-h);
         Tri(a,b,d,color);Tri(b,e,d,color);
     }
     private void FaceMenu(IplShell s)
@@ -500,7 +552,10 @@ internal sealed class IplRenderer
     }
     private void Detail(IplShell s)
     {
-        Grid();
+#if IPL_CACHED_GRID
+        if(!c.DrawGridCache())
+#endif
+            Grid();
         Center("Choose a system setting.",320,28,20,White);
         if(s.Video.Pending)
         {
@@ -582,6 +637,9 @@ internal sealed class IplRenderer
         const float y=428;
         int style=s.Page==ShellPage.Cube?0:s.Video.Reverting?2:1;
         if(!c.DrawFooterCache(style))FooterShapes(style);
+#if IPL_CACHED_FOOTER_TEXT
+        if(c.DrawFooterTextCache())return;
+#endif
         float stick=style==0?214:111;
         Text(s.Page==ShellPage.Cube?"... Menu Selection":s.Face==ShellFace.Calendar&&s.Editing?"... Part / Value":"... Select",stick+24,y-13,s.Page==ShellPage.Cube?20:17,White);
         if(s.Page==ShellPage.Cube)return;

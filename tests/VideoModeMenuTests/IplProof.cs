@@ -6,7 +6,18 @@ using System.Text;
 // Geometry inspection aid, not a Dolphin screenshot. Native reflection textures are not exported.
 internal sealed class IplProof : IIplCanvas
 {
+    public bool BeginGridCache()=>false;
+    public void EndGridCache(){}
+    public bool DrawGridCache()=>false;
+    public void ResetFooterTextCache(){}
+    public bool BeginFooterTextCache()=>false;
+    public void EndFooterTextCache(){}
+    public bool DrawFooterTextCache()=>false;
     public void Section(IplRenderPhase phase) { }
+    public bool BeginIconCache(int style)=>false;
+    public void EndIconCache() { }
+    public void PrepareIcon(IplPoint origin,IplPoint x,IplPoint y,float scale,float centerY) { }
+    public bool DrawIconCache(int style)=>false;
     public bool BeginFooterCache(int style)=>false;
     public void EndFooterCache() { }
     public bool DrawFooterCache(int style)=>false;
@@ -58,6 +69,8 @@ internal sealed class IplProof : IIplCanvas
     public void BeginPanels()=>panels.Clear();
     public void PanelTriangle(IplPoint a,IplPoint b,IplPoint d)
     {panels.Append("M"+N(a.X)+" "+N(a.Y)+"L"+N(b.X)+" "+N(b.Y)+"L"+N(d.X)+" "+N(d.Y)+"Z");}
+    public void PreparePanelTint(int selected){}
+    public bool DrawPanelTint()=>false;
     public void EndPanels() { }
     public void CaptureBackdrop()=>backdrop=shapes.ToString();
     public void DrawFrostedPanels()
