@@ -1,0 +1,30 @@
+[
+  {
+    "capture": "01-calendar-two-rows",
+    "completed_frames": 558,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_557.png",
+    "efb_sha256": "de40ff6c43aff7c99c57fc84ab6a2eae0ad735c751ab4194bb923b00fa211675"
+  },
+  {
+    "capture": "02-time-parts",
+    "completed_frames": 763,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_762.png",
+    "efb_sha256": "89b9c0bb9c47be1df4faa0444b1a5f94d8f55aadafcf230023d684b22593ff24"
+  },
+  {
+    "capture": "03-date-parts",
+    "completed_frames": 1022,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_1022.png",
+    "efb_sha256": "71b185cc6ec2ac4db5c623203a42d42bb877fac2b2d71c855a538d2fb9a16692"
+  },
+  {
+    "capture": "04-calendar-cancelled",
+    "completed_frames": 1073,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_1072.png",
+    "efb_sha256": "0e2d38e4af9b26fcecab754f6dcef2b5b0fb7c9556dd36a7ecfb51cbb8861a27"
+  }
+]

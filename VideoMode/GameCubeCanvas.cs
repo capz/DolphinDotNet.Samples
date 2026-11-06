@@ -11,7 +11,13 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
     private readonly Texture2D atlas=Texture2D.FromPng(IplFontData.Png,true);
     private readonly Renderer renderer;
     private readonly CachedFooter footer;
+#if IPL_CACHED_GRID
+    private readonly CachedFooter editorGrid;
+#endif
     private readonly IndexedIcons icons=new IndexedIcons();
+#if IPL_CACHED_FOOTER_TEXT
+    private readonly CachedFooterText footerText;
+#endif
 #if IPL_BATCHED_TEXT
     private const int GlyphCapacity=16;
     private readonly Texture2D[] glyphTextures=new Texture2D[GlyphCapacity];
@@ -29,6 +35,12 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
     private readonly Transform overlayTransform=new Transform();
     private int overlayMeshCount,overlayVertices;
     private uint overlayColor;
+#if IPL_CACHED_NUMBERS
+    private readonly Mesh[] numberMeshes=new Mesh[4];
+    private readonly int[] numberMeshCounts=new int[2];
+    private int numberGroup,numberVertices,numberChunk;
+    private uint numberColor;
+#endif
 #endif
     private readonly Material glassMaterial=new Material {Blend=BlendMode.Alpha,Cull=CullMode.None,DepthTest=false,DepthWrite=false};
     private readonly Material frostMaterial=new Material {Blend=BlendMode.Alpha,Cull=CullMode.None,DepthTest=false,DepthWrite=false};
@@ -64,7 +76,15 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
     private float blurScaleX,blurScaleY;
     internal GameCubeCanvas(GraphicsDevice device)
     {
-        this.device=device;renderer=new Renderer(device);footer=new CachedFooter(glass);
+        this.device=device;
+        renderer=new Renderer(device);
+        footer=new CachedFooter(glass);
+#if IPL_CACHED_GRID
+        editorGrid=new CachedFooter(glass,1,32);
+#endif
+#if IPL_CACHED_FOOTER_TEXT
+        footerText=new CachedFooterText(glass,atlas);
+#endif
         glossMaterial.Texture=glossMap;glossMaterial.Effect=glossEffect;
         #if IPL_BATCHED_TEXT
         draw=new Draw2D(device,new Draw2DOptions {VertexCapacity=32760,SpriteCapacity=GlyphCapacity});
@@ -275,10 +295,65 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
         if(icons.Recording){icons.Triangle(ax,ay,bx,by,cx,cy,color);return;}
         draw.FillTriangle(new Vector2(offset+ax*scale,ay*scale),new Vector2(offset+bx*scale,by*scale),new Vector2(offset+cx*scale,cy*scale),Color(color));
     }
+    public bool BeginGridCache()
+    {
+#if IPL_CACHED_GRID
+        editorGrid.Begin(0);return true;
+#else
+        return false;
+#endif
+    }
+    public void EndGridCache()
+    {
+#if IPL_CACHED_GRID
+        editorGrid.End();
+#endif
+    }
+    public bool DrawGridCache()
+    {
+#if IPL_CACHED_GRID
+        if(!editorGrid.Ready(0))return false;
+        draw.End();renderer.Begin3D(camera);editorGrid.Draw(renderer,0,scale);renderer.End3D();draw.Begin();return true;
+#else
+        return false;
+#endif
+    }
+    public void ResetFooterTextCache()
+    {
+#if IPL_CACHED_FOOTER_TEXT
+        footerText.Reset();
+#endif
+    }
+    public bool BeginFooterTextCache()
+    {
+#if IPL_CACHED_FOOTER_TEXT
+        footerText.Begin();return true;
+#else
+        return false;
+#endif
+    }
+    public void EndFooterTextCache()
+    {
+#if IPL_CACHED_FOOTER_TEXT
+        footerText.End();
+#endif
+    }
+    public bool DrawFooterTextCache()
+    {
+#if IPL_CACHED_FOOTER_TEXT
+        if(!footerText.Ready)return false;
+        draw.End();renderer.Begin3D(camera);footerText.Draw(renderer);renderer.End3D();draw.Begin();return true;
+#else
+        return false;
+#endif
+    }
     public bool BeginFooterCache(int style){footer.Begin(style);return true;}
     public void EndFooterCache()=>footer.End();
     public bool DrawFooterCache(int style)
     {
+#if IPL_CACHED_FOOTER_TEXT
+        if(footerText.Recording)return true;
+#endif
         if(!footer.Ready(style))return false;
         draw.End();renderer.Begin3D(camera);footer.Draw(renderer,style,scale);renderer.End3D();draw.Begin();return true;
     }
@@ -287,7 +362,13 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
     public void PrepareIcon(IplPoint origin,IplPoint x,IplPoint y,float cubeScale,float centerY)=>icons.Prepare(origin,x,y,cubeScale,centerY,logicalWidth,logicalHeight,scale,offset);
     public bool DrawIconCache(int style){if(!icons.Ready(style))return false;draw.End();icons.Draw(device,style);draw.Begin();return true;}
     public void Rectangle(float x,float y,float width,float height,uint color)
-    {if((color&255)!=0)draw.FillRectangle(new RectF(offset+x*scale,y*scale,width*scale,height*scale),Color(color));}
+    {
+        if((color&255)==0)return;
+#if IPL_CACHED_GRID
+        if(editorGrid.Recording){editorGrid.Triangle(x,y,x+width,y,x+width,y+height,color);editorGrid.Triangle(x,y,x+width,y+height,x,y+height,color);return;}
+#endif
+        draw.FillRectangle(new RectF(offset+x*scale,y*scale,width*scale,height*scale),Color(color));
+    }
 #if !IPL_HARDWARE_RUNNER
     internal void OverlayLabel(string text,float x,float y,float size,uint color)
     {
@@ -319,6 +400,48 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
         if(count!=indices.Length){indices=new ushort[count];Array.Copy(overlayIndices,indices,count);}
         overlayLabels[overlayMeshCount++]=Mesh.Create(glass,indices);overlayVertices=0;
     }
+#if IPL_CACHED_NUMBERS
+    internal void BeginNumberGroup(int group)
+    {numberGroup=group;numberVertices=numberChunk=0;numberColor=group==0?IplOverlayLayout.TotalColor:IplOverlayLayout.DetailColor;}
+    internal void CacheNumber(byte[] text,int length,float right,float y,float size)
+    {
+        float factor=size/28,width=0;
+        for(int i=0;i<length;i++)width+=IplFontData.Widths[text[i]-32]*factor;
+        float x=right-width,du=32f/atlas.Width,dv=40f/atlas.Height;var tint=Color(numberColor);
+        for(int i=0;i<length;i++){
+            if(numberVertices+4>624)FlushNumberGroup();
+            int ch=text[i]-32;float u=ch%16*32f/atlas.Width,v=ch/16*40f/atlas.Height;
+            float r=x+32*factor,b=y+40*factor;
+            glass[numberVertices++]=new VertexPositionColorTexture(new Vector3(x-320,240-y,0),tint,new Vector2(u,v));
+            glass[numberVertices++]=new VertexPositionColorTexture(new Vector3(r-320,240-y,0),tint,new Vector2(u+du,v));
+            glass[numberVertices++]=new VertexPositionColorTexture(new Vector3(r-320,240-b,0),tint,new Vector2(u+du,v+dv));
+            glass[numberVertices++]=new VertexPositionColorTexture(new Vector3(x-320,240-b,0),tint,new Vector2(u,v+dv));
+            x+=IplFontData.Widths[ch]*factor;
+        }
+    }
+    private void FlushNumberGroup()
+    {
+        if(numberVertices==0)return;
+        if(numberChunk==2)throw new InvalidOperationException("Number cache capacity exceeded.");
+        var tint=Color(numberColor);
+        for(int i=numberVertices;i<glass.Length;i++)glass[i]=new VertexPositionColorTexture(default,tint,default);
+        var indices=new ushort[numberVertices/4*6];Array.Copy(overlayIndices,indices,indices.Length);
+        int slot=numberGroup*2+numberChunk++;var replacement=Mesh.Create(glass,indices);
+        numberMeshes[slot]?.Dispose();numberMeshes[slot]=replacement;numberVertices=0;
+    }
+    internal void EndNumberGroup()
+    {
+        FlushNumberGroup();
+        for(int i=numberChunk;i<numberMeshCounts[numberGroup];i++){int slot=numberGroup*2+i;numberMeshes[slot].Dispose();numberMeshes[slot]=null!;}
+        numberMeshCounts[numberGroup]=numberChunk;
+    }
+    internal void DrawOverlayNumbers()
+    {
+        draw.End();renderer.Begin3D(camera);overlayTransform.LocalScale=new Vector3(scale,scale,1);
+        for(int group=0;group<2;group++)for(int i=0;i<numberMeshCounts[group];i++)renderer.DrawMesh(numberMeshes[group*2+i],overlayMaterial,overlayTransform);
+        renderer.End3D();draw.Begin();
+    }
+#endif
     internal void DrawOverlayLabels()
     {
         draw.End();renderer.Begin3D(camera);
@@ -342,6 +465,9 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
     {glyphVertices[at]=x;glyphVertices[at+1]=y;glyphVertices[at+2]=u;glyphVertices[at+3]=v;}
     public void Text(string value,float x,float y,float size,uint color,float angle,float stretch=1)
     {
+#if IPL_CACHED_FOOTER_TEXT
+        if(footerText.Recording){footerText.Add(value,x,y,size,color,angle,stretch,scale);return;}
+#endif
         float factor=size/28,co=(float)Math.Cos(angle*.017453293f),si=(float)Math.Sin(angle*.017453293f),advance=0;
         float rotation=angle*.01745329252f,quadCo=angle==0?1:MathF.Cos(rotation),quadSi=angle==0?0:MathF.Sin(rotation);
         var tint=Color(color);int used=0;
@@ -368,6 +494,9 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
 #else
     public void Text(string value,float x,float y,float size,uint color,float angle,float stretch=1)
     {
+#if IPL_CACHED_FOOTER_TEXT
+        if(footerText.Recording){footerText.Add(value,x,y,size,color,angle,stretch,scale);return;}
+#endif
         float factor=size/28,co=(float)Math.Cos(angle*.017453293f),si=(float)Math.Sin(angle*.017453293f),advance=0;
         for(int i=0;i<value.Length;i++)
         {
@@ -395,8 +524,17 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
     {
         rims.Dispose();
         footer.Dispose();icons.Dispose();
+#if IPL_CACHED_GRID
+        editorGrid.Dispose();
+#endif
+#if IPL_CACHED_FOOTER_TEXT
+        footerText.Dispose();
+#endif
 #if !IPL_HARDWARE_RUNNER
         for(int i=0;i<overlayMeshCount;i++)overlayLabels[i].Dispose();
+#if IPL_CACHED_NUMBERS
+        for(int i=0;i<numberMeshes.Length;i++)numberMeshes[i]?.Dispose();
+#endif
 #endif
         capture?.Dispose();
 #if IPL_RETAINED_TINT

@@ -6,6 +6,13 @@ using System.Text;
 // Geometry inspection aid, not a Dolphin screenshot. Native reflection textures are not exported.
 internal sealed class IplProof : IIplCanvas
 {
+    public bool BeginGridCache()=>false;
+    public void EndGridCache(){}
+    public bool DrawGridCache()=>false;
+    public void ResetFooterTextCache(){}
+    public bool BeginFooterTextCache()=>false;
+    public void EndFooterTextCache(){}
+    public bool DrawFooterTextCache()=>false;
     public void Section(IplRenderPhase phase) { }
     public bool BeginIconCache(int style)=>false;
     public void EndIconCache() { }

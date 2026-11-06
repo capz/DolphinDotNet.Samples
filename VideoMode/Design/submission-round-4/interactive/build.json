@@ -1,0 +1,5 @@
+{
+  "dol_sha256": "a4776ea875de1fb10a0c466f9253d41fb05260bce87f6d17819304debadd759a",
+  "build": "normal interactive source SDK, all integration switches and numbers/footer/grid caches, no deterministic review",
+  "images": "Full native 640x480 X11 presentation; no resize or crop. Frame dumps referenced by events remain available in the cloud artifacts."
+}

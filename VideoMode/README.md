@@ -133,6 +133,13 @@ batches and reusing the blur mesh for row tint. The source-SDK build helper acce
 `--glyphs --tints` alongside `--icons --glass --blur`; these API-dependent paths
 stay opt-in with the older published package pin. VSync remains enabled.
 
+[Text and editor caching](Design/submission-round-4/README.md) retains unchanged
+overlay values, combined footer glyphs and the static editor grid. These caches
+use the published SDK and are enabled by default; set `IplCachedNumbers=false`,
+`IplCachedFooterText=false` or `IplCachedGrid=false` to disable each for comparison.
+The source build helper enables them explicitly with
+`--numbers --footer-text --grid`. Moving menu text remains live.
+
 For an uninterrupted native benchmark, build with `IplPerformanceReview=true`
 and `IplPerformanceReviewScene=Options`, `Oblique`, `Cube` or `Detail`, then run
 `ci/profile_videomode.py --scene` with the same scene. The default is Options.

@@ -51,6 +51,8 @@ def run(args):
     for line in table.splitlines():
         parts = line.split()
         if len(parts) == 3:
+            if parts[2].split('.lto_priv.')[0] == 'dnd_value_heap':
+                symbols['HeapPointer'] = int(parts[0], 16)
             for name in ('Count', 'Ready', 'Samples', 'Status', 'Summary', 'OverlaySamples', 'OverlaySetupUs'):
                 if parts[2].split('.lto_priv.')[0] == 'dnd_static_IplFrameProfiler_' + name:
                     symbols[name] = int(parts[0], 16)
@@ -86,7 +88,13 @@ def run(args):
                 count = int.from_bytes(memory(conn, symbols['Count'], 4), 'big')
                 ready = int.from_bytes(memory(conn, symbols['Ready'], 4), 'big')
                 if count != 96 or not ready:
-                    raise RuntimeError(f'Incomplete uninterrupted run: {count}/96, ready={ready}; rerun with a longer --wait')
+                    subprocess.run(['python3', str(Path(__file__).with_name('capture_x11.py')), str(root / 'incomplete-native-window.ppm')], check=True)
+                    send(conn, 'p40')
+                    pc = reply(conn)
+                    while pc == '' or pc.startswith(('T', 'S')):
+                        pc = reply(conn)
+                    (root / 'incomplete.json').write_text(json.dumps({'count':count,'ready':ready,'pc':pc,'symbols':symbols},indent=2)+'\n')
+                    raise RuntimeError(f'Incomplete uninterrupted run: {count}/96, ready={ready}; inspect incomplete.json and its native capture for a stall, or retry with a longer --wait')
                 pointer = int.from_bytes(memory(conn, symbols['Samples'], 4), 'big')
                 header = struct.unpack('>6I', memory(conn, pointer, 24))
                 if header[2:4] != (96 * len(FIELDS), 4):
@@ -110,6 +118,14 @@ def run(args):
                           'scene': args.scene,
                           'overlay_mode': args.overlay,
                           'dol_sha256': hashlib.sha256(dol.read_bytes()).hexdigest(), 'frames': len(rows), 'summary': summarize(rows)}
+                if 'HeapPointer' in symbols:
+                    heap = int.from_bytes(memory(conn, symbols['HeapPointer'], 4), 'big')
+                    start, capacity, used, blocks, free_list, collections = struct.unpack('>6I', memory(conn, heap, 24))
+                    if not (0 < used <= capacity <= 16 * 1024 * 1024):
+                        raise ValueError('Invalid native managed-heap snapshot')
+                    report['managed_heap'] = {'capacity_bytes': capacity, 'arena_used_bytes': used,
+                                              'collections': collections,
+                                              'note': 'Post-window arena size, including reusable blocks; not live bytes or a peak measurement'}
                 if 'OverlaySetupUs' in symbols:
                     report['overlay_setup_us']=int.from_bytes(memory(conn,symbols['OverlaySetupUs'],4),'big')
                 if 'OverlaySamples' in symbols:

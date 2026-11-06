@@ -5,20 +5,21 @@ using Dolphin.Graphics;
 // grid; only native meshes and a bounded index array survive initialization.
 internal sealed class CachedFooter : IDisposable
 {
-    private const int Styles=3,Slots=8,Vertices=624;
+    private const int Vertices=624;
+    private readonly int styles,slots;
     private readonly VertexPositionColorTexture[] staging;
     private readonly ushort[] indices=new ushort[Vertices];
-    private readonly Mesh[] meshes=new Mesh[Styles*Slots];
-    private readonly int[] counts=new int[Styles];
+    private readonly Mesh[] meshes;
+    private readonly int[] counts;
     private readonly Material material=new Material{Blend=BlendMode.Alpha,Cull=CullMode.None,DepthTest=false,DepthWrite=false};
     private readonly Transform transform=new Transform();
     private int style,used;
     internal bool Recording {get;private set;}
-    internal CachedFooter(VertexPositionColorTexture[] staging)
-    {this.staging=staging;for(int i=0;i<indices.Length;i++)indices[i]=(ushort)i;}
+    internal CachedFooter(VertexPositionColorTexture[] staging,int styles=3,int slots=8)
+    {this.staging=staging;this.styles=styles;this.slots=slots;meshes=new Mesh[styles*slots];counts=new int[styles];for(int i=0;i<indices.Length;i++)indices[i]=(ushort)i;}
     internal void Begin(int variant)
     {
-        if(Recording||variant<0||variant>=Styles||counts[variant]!=0)throw new InvalidOperationException("Invalid footer cache setup.");
+        if(Recording||variant<0||variant>=styles||counts[variant]!=0)throw new InvalidOperationException("Invalid footer cache setup.");
         style=variant;used=0;Recording=true;
     }
     internal void Triangle(float ax,float ay,float bx,float by,float cx,float cy,uint rgba)
@@ -32,18 +33,18 @@ internal sealed class CachedFooter : IDisposable
     private void Flush()
     {
         if(used==0)return;
-        if(counts[style]==Slots)throw new InvalidOperationException("Footer cache capacity exceeded.");
+        if(counts[style]==slots)throw new InvalidOperationException("Footer cache capacity exceeded.");
         var prefix=indices;
         if(used!=indices.Length){prefix=new ushort[used];Array.Copy(indices,prefix,used);}
         for(int i=used;i<staging.Length;i++)staging[i]=default;
-        meshes[style*Slots+counts[style]++]=Mesh.Create(staging,prefix);used=0;
+        meshes[style*slots+counts[style]++]=Mesh.Create(staging,prefix);used=0;
     }
     internal void End(){Flush();Recording=false;}
     internal bool Ready(int variant)=>counts[variant]!=0;
     internal void Draw(Renderer renderer,int variant,float scale)
     {
         transform.LocalScale=new Vector3(scale,scale,1);
-        for(int i=0;i<counts[variant];i++)renderer.DrawMesh(meshes[variant*Slots+i],material,transform);
+        for(int i=0;i<counts[variant];i++)renderer.DrawMesh(meshes[variant*slots+i],material,transform);
     }
-    public void Dispose(){for(int s=0;s<Styles;s++)for(int i=0;i<counts[s];i++)meshes[s*Slots+i].Dispose();}
+    public void Dispose(){for(int s=0;s<styles;s++)for(int i=0;i<counts[s];i++)meshes[s*slots+i].Dispose();}
 }

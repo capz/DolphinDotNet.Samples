@@ -22,6 +22,9 @@ def main():
     parser.add_argument('--blur', action='store_true')
     parser.add_argument('--glyphs', action='store_true')
     parser.add_argument('--tints', action='store_true')
+    parser.add_argument('--numbers', action='store_true')
+    parser.add_argument('--footer-text', action='store_true')
+    parser.add_argument('--grid', action='store_true')
     parser.add_argument('--hypercube', type=Path,
                         help='Link OrderedMeshPasses from this engine checkout with its native backend')
     args = parser.parse_args()
@@ -47,6 +50,9 @@ def main():
         'IplBatchedBlur': str(args.blur).lower(),
         'IplBatchedText': str(args.glyphs).lower(),
         'IplRetainedTint': str(args.tints).lower(),
+        'IplCachedNumbers': str(args.numbers).lower(),
+        'IplCachedFooterText': str(args.footer_text).lower(),
+        'IplCachedGrid': str(args.grid).lower(),
         'IplNextSdk': 'true', 'DndSampleControls': 'true', 'DndBuildBackend': 'Docker',
     }
     for key, value in settings.items():

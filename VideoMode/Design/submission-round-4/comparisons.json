@@ -1,0 +1,72 @@
+[
+  {
+    "before": "00-control.png",
+    "after": "01-numbers.png",
+    "before_sha256": "1d36bc593aed5cd69fd840a27f2cb525ebf08a69c6d20319f29f53eaa7851929",
+    "after_sha256": "5c474c3415cad1bf2ffbf1607ebd131f56b1b1df32cacc75c3a1e6ee51df175a",
+    "masked_overlay_inclusive": [
+      40,
+      12,
+      282,
+      453
+    ],
+    "changed_uncovered_pixels": 0,
+    "maximum_channel_difference": 0
+  },
+  {
+    "before": "01-numbers.png",
+    "after": "03-footer.png",
+    "before_sha256": "5c474c3415cad1bf2ffbf1607ebd131f56b1b1df32cacc75c3a1e6ee51df175a",
+    "after_sha256": "a646c48ed0452df3f074a468b757cf9c88c56926ba935d3a24244c6098db9033",
+    "masked_overlay_inclusive": [
+      40,
+      12,
+      282,
+      453
+    ],
+    "changed_uncovered_pixels": 0,
+    "maximum_channel_difference": 0
+  },
+  {
+    "before": "01-numbers.png",
+    "after": "02-rejected-per-run-text.png",
+    "before_sha256": "5c474c3415cad1bf2ffbf1607ebd131f56b1b1df32cacc75c3a1e6ee51df175a",
+    "after_sha256": "813a63fd7b7cd66cefe2473dbd0edd3fcf4948c2996cf2d3df4f7bd37efc4e1a",
+    "masked_overlay_inclusive": [
+      40,
+      12,
+      282,
+      453
+    ],
+    "changed_uncovered_pixels": 6,
+    "maximum_channel_difference": 1
+  },
+  {
+    "before": "04-detail-control.png",
+    "after": "05-grid.png",
+    "before_sha256": "e30afe60a57fde6b22c29a96a136b712e8943dc9115e0e7d668a936fd6c3ac9c",
+    "after_sha256": "87893f3d6299edb0ada71ef714ac04e97ee70767337f4e0234a28a515e0c309a",
+    "masked_overlay_inclusive": [
+      40,
+      12,
+      282,
+      453
+    ],
+    "changed_uncovered_pixels": 0,
+    "maximum_channel_difference": 0
+  },
+  {
+    "before": "../submission-round-3/03-angle.png",
+    "after": "06-angle.png",
+    "before_sha256": "f9183691441131c79f3a2bbf0bcaa60181048d6766589e30ab6b114ac163d8f7",
+    "after_sha256": "9baf18d98b56515d639f1172e1680f0a138503bcb596b8661e15e7b2edd693fe",
+    "masked_overlay_inclusive": [
+      40,
+      12,
+      282,
+      453
+    ],
+    "changed_uncovered_pixels": 0,
+    "maximum_channel_difference": 0
+  }
+]
