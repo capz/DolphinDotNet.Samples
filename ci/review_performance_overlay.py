@@ -8,6 +8,7 @@ this is an input/capture aid, not a physical-hardware performance benchmark.
 import argparse
 import ctypes as C
 import json
+import hashlib
 from pathlib import Path
 import shutil
 import signal
@@ -64,8 +65,16 @@ def shot(name):
     p.send_signal(signal.SIGSTOP);time.sleep(.2)
     capture(root/(name+'.ppm'))
     frames=sorted((root/'user/Dump/Frames').glob('*.png'),key=lambda a:a.stat().st_mtime_ns)
-    if frames:shutil.copyfile(frames[-1],root/(name+'-efb.png'))
-    events.append({'capture':name,'completed_frames':len(frames),'input':'XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)'})
+    event={'capture':name,'completed_frames':len(frames),'input':'XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)'}
+    # SIGSTOP may interrupt the movie writer. Keep the newest complete PNG,
+    # rather than a zero-byte or truncated file from the in-flight frame.
+    for frame in reversed(frames):
+        raw=frame.read_bytes()
+        if raw.startswith(b'\x89PNG\r\n\x1a\n') and raw.endswith(b'IEND\xaeB\x60\x82'):
+            (root/(name+'-efb.png')).write_bytes(raw)
+            event['efb_source']=frame.name;event['efb_sha256']=hashlib.sha256(raw).hexdigest()
+            break
+    events.append(event)
     p.send_signal(signal.SIGCONT)
 try:
     time.sleep(15);capture(root/'unused.ppm',True);time.sleep(2)

@@ -134,3 +134,20 @@ The fixed 640x480 capture window displays the native 16:9 signal anamorphically;
 a widescreen display stretches it to the intended aspect. No native screenshot
 was resized or stretched for this report. `interactive/events.json` retains the
 completed-frame counts and `build.json` identifies the exact normal DOL.
+
+Calendar also exercises the two-row panel mesh's degenerate padding with the
+native 81-pass path: [two frosted rows](calendar/01-calendar-two-rows.png),
+[independent hour/minute edits to 13:01](calendar/02-time-parts.png),
+[independent month edit to 01/02/2026](calendar/03-date-parts.png), then
+[B cancels both edits](calendar/04-calendar-cancelled.png) back to 12:00 and
+01/01/2026. These four images are byte-for-byte completed Dolphin frame dumps
+at their native 640x528 size, not window captures or resized derivatives. The
+calendar event log records their source frame names and hashes. A paused window
+capture can stop mid-pass, and a movie PNG can still be in flight; the capture
+helper now selects only a completed PNG with its end marker.
+
+The SDK's hosted HTTPS fixture also exposed chained placeholder substitution
+that could rewrite base64 marker text inside a fresh random certificate. The
+fixture now uses a single substitution pass. Its token-preservation regression
+and real Debug/Release HTTPS AOT tests with and without GC stress pass locally.
+TLS validation itself was not relaxed; hosted CI is rerunning the fixed fixture.
