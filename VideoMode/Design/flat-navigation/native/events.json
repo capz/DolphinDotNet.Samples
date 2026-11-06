@@ -1,0 +1,268 @@
+[
+  {
+    "capture": "01-options-side-read-only",
+    "completed_frames": 606,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_605.png",
+    "efb_sha256": "b608cd43eb6a6f01de53da48e3ef7c45a67d8a476402c252f7c7652b0b8cbe81",
+    "body_and_footer_white_pixels": [
+      2119,
+      229,
+      199,
+      191
+    ],
+    "pixels_modified": false
+  },
+  {
+    "capture": "02-options-flat-list",
+    "completed_frames": 658,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_657.png",
+    "efb_sha256": "b0ea6002ae941a8d9b7a30d94ab0a1724400d7ff530ee640393a2e4b2394e7c9",
+    "body_and_footer_white_pixels": [
+      2979,
+      229,
+      185,
+      191
+    ],
+    "pixels_modified": false
+  },
+  {
+    "capture": "03-motion-changed-on-flat-page",
+    "completed_frames": 760,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_759.png",
+    "efb_sha256": "4663a01c9bdde692ff1a7754b4eaaa2682fd76d7ec616d86e443667e262cbebf",
+    "body_and_footer_white_pixels": [
+      3337,
+      229,
+      185,
+      191
+    ],
+    "pixels_modified": false
+  },
+  {
+    "capture": "04-flat-list-b-to-cube",
+    "completed_frames": 862,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_861.png",
+    "efb_sha256": "6cdda918baa5b894d8d741506e991ef57e34c18243be8d8fb71d456da5640324",
+    "body_and_footer_white_pixels": [
+      2075,
+      229,
+      199,
+      191
+    ],
+    "pixels_modified": false
+  },
+  {
+    "capture": "05-video-flat-list",
+    "completed_frames": 1016,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_1015.png",
+    "efb_sha256": "ee3043bd60520ce7238e40ed1390f3811db3903718785345cc213acd173c434c",
+    "body_and_footer_white_pixels": [
+      2907,
+      229,
+      185,
+      191
+    ],
+    "pixels_modified": false
+  },
+  {
+    "capture": "06-scan-field-editor",
+    "completed_frames": 1118,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_1117.png",
+    "efb_sha256": "a632d59f2cf2cef40ba2b87da8cb0aa2a7af0ef773438880dc3af3741fa298bf",
+    "body_and_footer_white_pixels": [
+      1061,
+      229,
+      185,
+      275
+    ],
+    "pixels_modified": false
+  },
+  {
+    "capture": "07-progressive-preview",
+    "completed_frames": 1222,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_1221.png",
+    "efb_sha256": "9d09c4f2acb04c0862c1a55da3f0b04bdacb3dee81b860883492692fc5a4f5bc",
+    "body_and_footer_white_pixels": [
+      2775,
+      229,
+      185,
+      275
+    ],
+    "pixels_modified": false
+  },
+  {
+    "capture": "08-b-reverts-before-cube",
+    "completed_frames": 1273,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_1272.png",
+    "efb_sha256": "7a10f249a3cc4c9a4353791930e78bad53ca2ff79eee14311b2e6852f4536e0e",
+    "body_and_footer_white_pixels": [
+      2020,
+      229,
+      199,
+      191
+    ],
+    "pixels_modified": false
+  },
+  {
+    "capture": "09-kept-progressive-flat-list",
+    "completed_frames": 1690,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_1689.png",
+    "efb_sha256": "de8d9ca0ddfa791d2348451d292315725550d1ea7a2222a6099770920777b71b",
+    "body_and_footer_white_pixels": [
+      3122,
+      229,
+      185,
+      191
+    ],
+    "pixels_modified": false
+  },
+  {
+    "capture": "10-calendar-flat-list",
+    "completed_frames": 1898,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_1897.png",
+    "efb_sha256": "92638dc79bbd0a2659908d8ad644dd3735a4ec6b87c015d65fe98faff2b48d6d",
+    "body_and_footer_white_pixels": [
+      2563,
+      229,
+      185,
+      191
+    ],
+    "pixels_modified": false
+  },
+  {
+    "capture": "11-hour-draft",
+    "completed_frames": 2006,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_2005.png",
+    "efb_sha256": "e0f6c58c918e32bb8e1e4aa57a036e454a54c11c7b1cccf6be37c54162809094",
+    "body_and_footer_white_pixels": [
+      1415,
+      269,
+      185,
+      275
+    ],
+    "pixels_modified": false
+  },
+  {
+    "capture": "12-editor-b-discards-to-cube",
+    "completed_frames": 2057,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_2056.png",
+    "efb_sha256": "3f1a54f6d67375628bd654f9c41d701b5c49839855d7296010bd0c4960db0b1d",
+    "body_and_footer_white_pixels": [
+      1785,
+      229,
+      199,
+      191
+    ],
+    "pixels_modified": false
+  },
+  {
+    "capture": "13-storage-flat-list",
+    "completed_frames": 2212,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_2211.png",
+    "efb_sha256": "7d903b9936b6a2316bf478d4454cf97a5a116838f510c366dc4fe55cbf3e1037",
+    "body_and_footer_white_pixels": [
+      3060,
+      229,
+      185,
+      191
+    ],
+    "pixels_modified": false
+  },
+  {
+    "capture": "14-native-memory-card-grid",
+    "completed_frames": 2264,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_2263.png",
+    "efb_sha256": "c08352fd9445954e229797a27f31cd69bbf3c97c89bbee03498cbac2d7fbe816",
+    "body_and_footer_white_pixels": [
+      2027,
+      229,
+      185,
+      191
+    ],
+    "pixels_modified": false
+  },
+  {
+    "capture": "15-native-card-action-dialog",
+    "completed_frames": 2315,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_2314.png",
+    "efb_sha256": "ced6946bc1da3b48f1e80a74cb9750c64a251183254f6a96a658bc4e2f79115b",
+    "body_and_footer_white_pixels": [
+      3022,
+      229,
+      185,
+      275
+    ],
+    "pixels_modified": false
+  },
+  {
+    "capture": "16-dialog-b-closes-to-cube",
+    "completed_frames": 2366,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_2365.png",
+    "efb_sha256": "6c5e4a6893750c0efcebad02a93161bdbb95bab6c5e0bfbaaf22225d2fb64dfd",
+    "body_and_footer_white_pixels": [
+      2084,
+      229,
+      199,
+      191
+    ],
+    "pixels_modified": false
+  },
+  {
+    "capture": "17-game-browser",
+    "completed_frames": 2519,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_2518.png",
+    "efb_sha256": "35675b604914f22e83e3575b594ccdc9d0eee1fbbf73b72d686b0f8ba88901e7",
+    "body_and_footer_white_pixels": [
+      1275,
+      229,
+      185,
+      191
+    ],
+    "pixels_modified": false
+  },
+  {
+    "capture": "18-browser-b-to-cube",
+    "completed_frames": 2570,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_2569.png",
+    "efb_sha256": "0d6bea5bd201772a369973d361e2601bc16310a6024bbc27c00947af8d36d5f3",
+    "body_and_footer_white_pixels": [
+      1783,
+      229,
+      199,
+      191
+    ],
+    "pixels_modified": false
+  },
+  {
+    "capture": "19-safe-interlaced-preview-side",
+    "completed_frames": 2621,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_2620.png",
+    "efb_sha256": "e2269a25f6d60eb6746129157ec1d243171ec9fdab9fe23ab393a6cf1e907e23",
+    "body_and_footer_white_pixels": [
+      2000,
+      229,
+      199,
+      191
+    ],
+    "pixels_modified": false
+  }
+]
