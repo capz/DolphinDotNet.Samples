@@ -25,8 +25,9 @@ parser.add_argument('--calendar',action='store_true',help='Review two-row blur a
 parser.add_argument('--selector-motion',action='store_true',help='Record active hour/minute/month/year motion, A/B and Reduced Motion')
 parser.add_argument('--selector-scan',action='store_true',help='Exercise animated scan values across progressive/interlaced preview, keep, rollback and safe mode')
 parser.add_argument('--directional-return',action='store_true',help='Review reverse stick return, hold latching and D-pad Calendar rows')
+parser.add_argument('--system-clock',action='store_true',help='Adjust isolated clock, inspect SRAM and Dolphin restart policy, then decrement')
 args=parser.parse_args()
-if sum([args.calendar,args.widescreen,args.selector_motion,args.selector_scan,args.directional_return])>1:parser.error('Choose one review sequence')
+if sum([args.calendar,args.widescreen,args.selector_motion,args.selector_scan,args.directional_return,args.system_clock])>1:parser.error('Choose one review sequence')
 root=args.logs.resolve()
 if root.exists() and any(root.iterdir()):raise ValueError('Use a fresh capture directory')
 root.mkdir(parents=True,exist_ok=True)
@@ -81,7 +82,19 @@ def shot(name):
     p.send_signal(signal.SIGCONT)
 try:
     time.sleep(15);capture(root/'unused.ppm',True);time.sleep(2)
-    if args.directional_return:
+    if args.system_clock:
+        key('Down');shot('01-real-clock')
+        key('a');key('Up');key('Right');key('Up');shot('02-clock-draft')
+        key('a');shot('03-clock-committed')
+        p.terminate();p.wait(timeout=15)
+        for saved in (root/'user').rglob('*SRAM*'):
+            if saved.is_file():shutil.copyfile(saved,root/('committed-'+saved.name))
+        shutil.move(root/'user/Dump/Frames',root/'before-restart-frames')
+        p=subprocess.Popen(['/usr/games/dolphin-emu-nogui','--platform','x11','-u',str(root/'user'),'-C','SYSCONF.IPL.PGS=True','-e',str(args.dol.resolve())],stdout=log,stderr=subprocess.STDOUT)
+        time.sleep(15);capture(root/'restart-unused.ppm',True);time.sleep(2)
+        key('Down');shot('04-clock-after-restart')
+        key('a');key('Down');key('Right');key('Down');key('a');shot('05-clock-decremented-after-emulator-reset')
+    elif args.directional_return:
         key('i');shot('01-up-play');key('k',2);shot('02-down-return-held')
         key('k');key('Up');shot('03-calendar-dpad-date');key('i');shot('04-up-return')
         key('l');shot('05-right-video');key('j');shot('06-left-return')

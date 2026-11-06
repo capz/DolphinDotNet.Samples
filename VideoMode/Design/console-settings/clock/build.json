@@ -1,0 +1,7 @@
+{
+  "dol_sha256": "d5fcbfb53701c5f35a8e7538b7ed082414edab10fe93acebdb3341acf1ebb8cd",
+  "clock": "Real emulated GameCube RTC + IPL SRAM bias, no fixed review clock",
+  "scope": "Isolated cloud Dolphin user directory; no physical console or host OS clock was changed",
+  "sequence": "Read, adjust, A commit; valid SRAM +3660. Restart (Dolphin resets bias), read, decrement producing valid SRAM -3660. No emulator restart persistence claim.",
+  "source_sdk": "/workspace/DolphinDotNet-console working console-services branch"
+}
