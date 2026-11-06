@@ -13,6 +13,7 @@ internal sealed partial class IplRenderer
     private void Bubble(float x,float y,float width,float height,float radius,uint color)
     {
         if((color&255)==0)return;
+        radius=Math.Min(radius,Math.Min(width,height)/2);
         IplPoint center=new IplPoint(x+width/2,y+height/2),first=default,previous=default;
         for(int corner=0;corner<4;corner++)for(int j=0;j<=8;j++){
             float cx=corner==0||corner==3?x+radius:x+width-radius,yy=corner<2?y+height-radius:y+radius;
@@ -21,28 +22,41 @@ internal sealed partial class IplRenderer
         }
         Tri(center,previous,first,color);
     }
+    private static readonly float[] cardRows={0,2,6,12,24,48,66,84,108,120,126,130,132};
+    private static float CardInset(float y){float edge=Math.Min(y,132-y);return edge>=24?0:24-(float)Math.Sqrt(Math.Max(0,576-(24-edge)*(24-edge)));}
+    private static uint CardLight(float x,float y)
+    {
+        float teal=IplLighting.ExpNegative((x-.82f)*(x-.82f)*5+(y-.18f)*(y-.18f)*5);
+        float warm=IplLighting.ExpNegative((x-.12f)*(x-.12f)*8+(y-.64f)*(y-.64f)*6);
+        float violet=IplLighting.ExpNegative((x-.60f)*(x-.60f)*6+(y-1.06f)*(y-1.06f)*12);
+        float gloss=IplLighting.ExpNegative((y-.035f)*(y-.035f)*1100)*(0.28f+0.5f*teal);
+        return Rgba((int)(23+36*warm+20*teal+32*violet+115*gloss),(int)(39+25*warm+61*teal+8*violet+115*gloss),(int)(55+14*warm+52*teal+70*violet+118*gloss),(int)(96+28*gloss));
+    }
+    private void CardTriangle(IplPoint a,uint ca,IplPoint b,uint cb,IplPoint d,uint cd)
+    {if(!(c is IIplBrowserCanvas cards)||!cards.BrowserColorTriangle(a,ca,b,cb,d,cd))Tri(a,b,d,cb);}
     private void GlassCard(int index)
     {
         float x=CardX(index),y=CardY(index);
-        Bubble(x,y,176,132,24,0x9ddce333);
-        Bubble(x+1.4f,y+1.4f,173.2f,129.2f,22.6f,0x1f354d80);
-        Bubble(x+3,y+64,98,64,20,0x8d632218);
-        Bubble(x+77,y+4,94,72,20,0x49e5c71b);
-        Bubble(x+35,y+108,107,21,10,0x8368e421);
-        Bubble(x+2,y+2,172,61,22,0xa0e1ec20);
-        Bubble(x+4,y+3,168,24,18,0xe8ffff14);
-        Line(x+27,y+1.5f,x+117,y+1.5f,1.2f,0xeaffffb0);
-        Line(x+117,y+1.5f,x+145,y+1.5f,.8f,0xd2f9ff65);
-        Line(x+1.6f,y+32,x+1.6f,y+73,1.1f,0x79ddc52e);
-        Line(x+31,y+130.8f,x+125,y+130.8f,.9f,0x8b7cde36);
-        Bubble(x+12,y+12,152,56,12,0x03080e68);
+        for(int row=0;row<12;row++){
+            float ya=cardRows[row],yb=cardRows[row+1],leftA=CardInset(ya),leftB=CardInset(yb);
+            for(int column=0;column<8;column++){
+                float a=column/8f,b=(column+1)/8f;
+                var p=new IplPoint(x+leftA+(176-2*leftA)*a,y+ya);var q=new IplPoint(x+leftA+(176-2*leftA)*b,y+ya);
+                var r=new IplPoint(x+leftB+(176-2*leftB)*a,y+yb);var t=new IplPoint(x+leftB+(176-2*leftB)*b,y+yb);
+                uint cp=CardLight((p.X-x)/176,ya/132),cq=CardLight((q.X-x)/176,ya/132),cr=CardLight((r.X-x)/176,yb/132),ct=CardLight((t.X-x)/176,yb/132);
+                CardTriangle(p,cp,q,cq,t,ct);CardTriangle(p,cp,t,ct,r,cr);
+            }
+        }
+        for(int i=0;i<12;i++){float xx=26+i*10;float light=IplLighting.ExpNegative((xx-104)*(xx-104)/2800);Line(x+xx,y+.8f,x+xx+10,y+.8f,1,Rgba(220,253,255,(int)(light*151)));}
+        Line(x+35,y+131.2f,x+115,y+131.2f,.8f,0x9f8ce02cu);
+        Bubble(x+13,y+13,150,54,12,0x03081024);
     }
     private void BrowserMask(IIplBrowserCanvas canvas,int index)
     {
         float x=CardX(index),y=CardY(index);var center=new IplPoint(x+88,y+66);IplPoint first=default,previous=default;
         for(int corner=0;corner<4;corner++)for(int j=0;j<=7;j++){float a=(180-corner*90-j*90f/7)*.017453293f;float xx=corner==0||corner==3?x+24:x+152,yy=corner<2?y+108:y+24;var point=new IplPoint(xx+(float)Math.Cos(a)*24,yy+(float)Math.Sin(a)*24);if(corner==0&&j==0)first=point;else canvas.BrowserMaskTriangle(center,previous,point);previous=point;}canvas.BrowserMaskTriangle(center,previous,first);
     }
-    private void BrowserSheen(){for(int i=0;i<6;i++){float x=CardX(i),y=CardY(i);Bubble(x+17,y+16,142,12,6,0xe8ffff16);Line(x+27,y+16.7f,x+113,y+16.7f,.9f,0xe5ffff70);Line(x+33,y+18.2f,x+135,y+18.2f,.7f,0xd5fdff20);}}
+    private void BrowserSheen(){for(int i=0;i<6;i++){float x=CardX(i),y=CardY(i);Line(x+30,y+16.7f,x+113,y+16.7f,.8f,0xe5ffff64);Line(x+35,y+18.2f,x+135,y+18.2f,.7f,0xd5fdff18);}}
     private void BrowserCards(){for(int i=0;i<6;i++)GlassCard(i);}
     private string Fit(string text,float maximum,float size)
     {if(TextWidth(text,size)<=maximum)return text;int n=text.Length;while(n>0&&TextWidth(text.Substring(0,n)+"...",size)>maximum)n--;return text.Substring(0,n)+"...";}

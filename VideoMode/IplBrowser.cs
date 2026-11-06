@@ -20,6 +20,7 @@ internal interface IIplBrowserSource : IDisposable
 internal interface IIplBrowserCanvas
 {
     bool BeginBrowserCache(int style);void EndBrowserCache();bool DrawBrowserCache(int style);
+    bool BrowserColorTriangle(IplPoint a,uint ca,IplPoint b,uint cb,IplPoint d,uint cd);
     void DrawArtworks();bool HasArtwork(int slot);
     bool DrawArtwork(int slot,float x,float y,float width,float height);
     void BeginBrowserMask();void BrowserMaskTriangle(IplPoint a,IplPoint b,IplPoint d);void EndBrowserMask();void DrawBrowserFrost();
