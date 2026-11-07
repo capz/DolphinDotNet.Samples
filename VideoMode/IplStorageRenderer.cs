@@ -30,7 +30,7 @@ internal sealed partial class IplRenderer
         int kind=(int)browser.Kind+(browser.ListView?3:0);bool parent=browser.Kind==IplBrowserKind.Sd&&browser.Path.Length>0;
         if(counterStart!=browser.PageStart||counterCount!=browser.Count||counterTotal!=browser.Total||counterBusy!=browser.Busy||counterParent!=parent||counterKind!=kind){
             counterBusy=browser.Busy;counterParent=parent;counterKind=kind;counterStart=browser.PageStart;counterCount=browser.Count;counterTotal=browser.Total;
-            browserCounter=(parent?"L Parent  |  ":"")+"Y "+(browser.ListView?"Grid":"List")+"  |  C Up Refresh  |  "+(browser.Count==0?(browser.Busy?"Reading...":"No entries"):(browser.PageStart+1).ToString()+"-"+(browser.PageStart+browser.Count).ToString()+" / "+browser.Total.ToString());
+            browserCounter=(parent?"L Parent  |  ":"")+"Z "+(browser.ListView?"Grid":"List")+"  |  C Up Refresh  |  "+(browser.Count==0?(browser.Busy?"Reading...":"No entries"):(browser.PageStart+1).ToString()+"-"+(browser.PageStart+browser.Count).ToString()+" / "+browser.Total.ToString());
         }
         if(lastBrowserStatus!=browser.Status){lastBrowserStatus=browser.Status;browserStatus=Fit(lastBrowserStatus,590,10);}
         if(lastLocationKind!=(int)browser.Kind||lastLocationPath!=browser.Path){lastLocationKind=(int)browser.Kind;lastLocationPath=browser.Path;browserLocation=Fit("SD / "+browser.Path,590,13);}

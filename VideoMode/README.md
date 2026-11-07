@@ -47,10 +47,10 @@ Physical hardware performance has not been measured in this cloud session.
 - B from a cube side returns to the front cube menu.
 - Both the analog stick and D-pad work, with delayed directional repeat.
 - X requests 640x480 interlaced, 4:3. Start exits after safely reverting a preview.
-- In memory-card/SD browsers, Y switches between a 105-icon grid and a nine-row
+- In memory-card/SD browsers, Z (or Y) switches between a 105-icon grid and a nine-row
   list; C-stick Up refreshes. Memory cards show game, blocks and KB. SD shows
   filenames and file sizes. See [compact storage views](Design/dense-storage/README.md).
-- Z toggles a live performance overlay (off at startup). Outside browsers, Y records the
+- Outside memory-card/SD browsers, Z toggles a live performance overlay (off at startup). Outside browsers, Y records the
   bounded frame-time sample independently.
 - Options > Motion disables idle floating and turning overshoot.
 

@@ -146,12 +146,16 @@ internal static class Program
             if(pad.Z.WasPressed)
             {
                 // The SDK also toggles its generic panel in Controller.Update.
-                // Use the app's detailed panel instead of drawing both.
+                // Suppress it when Z switches storage views or uses our detailed panel.
                 DebugOverlay.PerformanceVisible=false;
-                IplPerformanceOverlay.DrawEnabled=true;
-                IplPerformanceOverlay.Stats.Toggle();
+                if(shell.Page==ShellPage.Browser&&browser.Compact)browser.ToggleView();
+                else
+                {
+                    IplPerformanceOverlay.DrawEnabled=true;
+                    IplPerformanceOverlay.Stats.Toggle();
+                }
             }
-            if(pad.Y.WasPressed){if(shell.Page==ShellPage.Browser){if(browser.Compact)browser.ToggleView();else browser.Refresh();}else if(!IplFrameProfiler.Active)IplFrameProfiler.Start();}
+            else if(pad.Y.WasPressed){if(shell.Page==ShellPage.Browser){if(browser.Compact)browser.ToggleView();else browser.Refresh();}else if(!IplFrameProfiler.Active)IplFrameProfiler.Start();}
             bool refreshHeld=pad.CStick.Y>.55f;
             if(refreshHeld&&!storageRefreshHeld&&shell.Page==ShellPage.Browser)browser.Refresh();
             storageRefreshHeld=refreshHeld;
