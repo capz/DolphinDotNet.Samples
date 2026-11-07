@@ -1,0 +1,16 @@
+{
+  "environment": "Native SDK -> fresh isolated Dolphin cards, not physical hardware",
+  "dol_sha256": "106ed7874c5f4b63fce95cf2219054884fe2e3eba1c7e30125a908c7a8f3992e",
+  "result": 1,
+  "steps": null,
+  "status": "117 original saves in A; two in B. One, two and three blocks.",
+  "passed": true,
+  "persisted_slot_a_saves": 117,
+  "persisted_slot_b_saves": 2,
+  "block_sizes": [
+    1,
+    2,
+    3
+  ],
+  "directory_checksums_valid": true
+}
