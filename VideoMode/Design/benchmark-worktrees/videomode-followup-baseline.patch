@@ -1,0 +1,40 @@
+diff --git a/VideoMode/Program.cs b/VideoMode/Program.cs
+index 103cfabba2825a21f58ffc35c23c0e2623506f10..97c371505b1d4a3d24548395c9d2009cde85173f 100644
+--- a/VideoMode/Program.cs
++++ b/VideoMode/Program.cs
+@@ -90,9 +90,9 @@ internal static class Program
+ #endif
+ #if IPL_VISUAL_REVIEW || IPL_PERFORMANCE_REVIEW || IPL_HARDWARE_RUNNER
+         // Repeatable native review pose; normal builds retain the interactive IPL.
+-#if !IPL_RUNNER_CUBE
++#if !IPL_RUNNER_CUBE && !IPL_REVIEW_CUBE
+         shell.TurnTo(ShellFace.Options);shell.Row=1;shell.Tick(1);shell.Time=0;
+-#if IPL_RUNNER_DETAIL
++#if IPL_RUNNER_DETAIL || IPL_REVIEW_DETAIL
+         shell.TurnTo(ShellFace.Video);shell.Row=1;shell.Tick(1);
+         shell.Confirm();
+ #endif
+diff --git a/VideoMode/VideoMode.csproj b/VideoMode/VideoMode.csproj
+index 400195d8b9ab9442419fc2895a9b30697b199605..5ce6876cf2dac49df88cd37171e1c49feb074a0e 100644
+--- a/VideoMode/VideoMode.csproj
++++ b/VideoMode/VideoMode.csproj
+@@ -18,6 +18,10 @@
+     <DefineConstants Condition="'$(IplFrameLogDevice)' == 'SdSlotB'">$(DefineConstants);IPL_LOG_SDB</DefineConstants>
+     <DefineConstants Condition="'$(IplFrameLogDevice)' == 'GcLoader'">$(DefineConstants);IPL_LOG_GCLOADER</DefineConstants>
+     <DefineConstants Condition="'$(IplPerformanceReview)' == 'true'">$(DefineConstants);IPL_PERFORMANCE_REVIEW</DefineConstants>
++    <IplPerformanceReviewScene Condition="'$(IplPerformanceReviewScene)' == ''">Options</IplPerformanceReviewScene>
++    <DefineConstants Condition="'$(IplPerformanceReview)' == 'true' and '$(IplPerformanceReviewScene)' == 'Cube'">$(DefineConstants);IPL_REVIEW_CUBE</DefineConstants>
++    <DefineConstants Condition="'$(IplPerformanceReview)' == 'true' and '$(IplPerformanceReviewScene)' == 'Detail'">$(DefineConstants);IPL_REVIEW_DETAIL</DefineConstants>
++    <DefineConstants Condition="'$(IplPerformanceReview)' == 'true' and '$(IplPerformanceReviewScene)' == 'Oblique'">$(DefineConstants);IPL_VISUAL_REVIEW_ANGLE</DefineConstants>
+     <IplHardwareAntialiasing Condition="'$(IplHardwareAntialiasing)' == ''">false</IplHardwareAntialiasing>
+     <DefineConstants Condition="'$(IplHardwareAntialiasing)' == 'true'">$(DefineConstants);IPL_HARDWARE_AA</DefineConstants>
+     <DefineConstants Condition="'$(IplAntialiasingBenchmark)' == 'true'">$(DefineConstants);IPL_AA_BENCHMARK</DefineConstants>
+@@ -46,6 +50,8 @@
+            Text="IplFrameLogDevice must be None, Sd2Sp2, SdSlotA, SdSlotB or GcLoader. Select only an attached adapter; no absent-device probing is performed by default." />
+     <Error Condition="'$(IplPerformanceReview)' == 'true' and ('$(IplVisualReview)' == 'true' or '$(IplVideoModeReview)' == 'true')"
+            Text="Choose one deterministic review: performance, visual or scan." />
++    <Error Condition="'$(IplPerformanceReview)' == 'true' and '$(IplPerformanceReviewScene)' != 'Options' and '$(IplPerformanceReviewScene)' != 'Oblique' and '$(IplPerformanceReviewScene)' != 'Cube' and '$(IplPerformanceReviewScene)' != 'Detail'"
++           Text="IplPerformanceReviewScene must be Options, Oblique, Cube or Detail." />
+     <Error Condition="'$(IplHardwareAntialiasing)' == 'true' and '$(IplVisualReview)' != 'true' and '$(IplVideoModeReview)' != 'true'"
+            Text="Hardware AA remains experimental after a native transition stall. Use an explicit visual/scan review build; normal builds use the measured Dolphin edge-AA profile." />
+     <Error Condition="'$(IplAntialiasingBenchmark)' == 'true' and '$(IplVisualReview)' != 'true'"

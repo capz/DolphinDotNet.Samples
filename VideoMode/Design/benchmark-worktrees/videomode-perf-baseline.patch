@@ -1,0 +1,488 @@
+diff --git a/VideoMode/GameCubeCanvas.cs b/VideoMode/GameCubeCanvas.cs
+index 7fdbe9c78e6dfc18b0249478d12b60790a78f712..eba3a4e67b6b4aebda5eabd89ce50b0a1d570a71 100644
+--- a/VideoMode/GameCubeCanvas.cs
++++ b/VideoMode/GameCubeCanvas.cs
+@@ -22,13 +22,10 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
+     private readonly Color32[] glossColors=new Color32[GlassVertices];
+     private readonly IplPoint[] panelPoints=new IplPoint[PanelVertices];
+     private readonly VertexPositionColorTexture[] panelVertices=new VertexPositionColorTexture[PanelVertices];
+-    private readonly DynamicMesh panelMesh;
+-    private readonly UvTransform[] blurOffsets=new UvTransform[BlurTaps];
+-    private readonly Color32[] blurColors=new Color32[BlurTaps];
++    private readonly DynamicMesh[] panelMeshes=new DynamicMesh[BlurTaps];
+     private SceneCapture? capture;
+     private int glassCount,panelCount,captureWidth,captureHeight,copyWidth,copyHeight;
+     private float scale=1,offset,logicalWidth=640,logicalHeight=480;
+-    private float blurScaleX,blurScaleY;
+     internal GameCubeCanvas(GraphicsDevice device)
+     {
+         this.device=device;renderer=new Renderer(device);
+@@ -43,16 +40,7 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
+             indices[at++]=(ushort)(a+1);indices[at++]=(ushort)(a+26);indices[at++]=(ushort)(a+25);
+         }
+         for(int i=0;i<6;i++){glassMeshes[i]=DynamicMesh.Create(glass,indices);glossMeshes[i]=DynamicMesh.Create(glass,indices);}
+-        panelMesh=DynamicMesh.Create(panelVertices);
+-        // Allocate the optional native material options between frames, once.
+-        frostMaterial.TextureTransform=UvTransform.Identity;
+-        float accumulated=0;
+-        for(int tap=0;tap<BlurTaps;tap++)
+-        {
+-            float x=tap%BlurAxis-BlurAxis/2,y=tap/BlurAxis-BlurAxis/2;
+-            float weight=(float)Math.Exp(-(x*x+y*y)*.0555556f);accumulated+=weight;
+-            blurColors[tap]=new Color32(255,255,255,(byte)(255*weight/accumulated+.5f));
+-        }
++        for(int i=0;i<BlurTaps;i++)panelMeshes[i]=DynamicMesh.Create(panelVertices);
+         camera.LookAt(new Vector3(0,0,1),new Vector3(0,0,0),new Vector3(0,1,0));
+     }
+     internal void Prepare()
+@@ -69,13 +57,6 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
+             capture?.Dispose();capture=replacement;
+             captureWidth=device.Width;captureHeight=device.Height;frostMaterial.Texture=capture.Texture;
+         }
+-        float sx=scale/logicalWidth*device.Width/copyWidth,sy=scale/logicalHeight*device.Height/copyHeight;
+-        if(sx!=blurScaleX||sy!=blurScaleY)
+-        {
+-            blurScaleX=sx;blurScaleY=sy;
+-            for(int tap=0;tap<BlurTaps;tap++)
+-                blurOffsets[tap]=new UvTransform(new Vector2((tap%BlurAxis-BlurAxis/2)*3*sx,(tap/BlurAxis-BlurAxis/2)*3*sy),new Vector2(1,1));
+-        }
+     }
+     internal void Begin()=>draw.Begin();
+     internal void End()=>draw.End();
+@@ -98,18 +79,18 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
+     }
+     public void EndGlass()
+     {
+-        if(glassCount<1||glassCount>3)throw new InvalidOperationException("Incomplete glass geometry.");
++        if(glassCount!=6)throw new InvalidOperationException("Incomplete glass geometry.");
+     }
+     public void DrawGlass()
+     {
+         draw.End();renderer.Begin3D(camera);
+-        for(int i=0;i<glassCount;i++)renderer.DrawMesh(glassMeshes[i],glassMaterial,identity);
++        for(int i=0;i<6;i++)renderer.DrawMesh(glassMeshes[i],glassMaterial,identity);
+         renderer.End3D();draw.Begin();
+     }
+     public void DrawReflections()
+     {
+         draw.End();renderer.Begin3D(camera);
+-        for(int i=0;i<glassCount;i++)renderer.DrawMesh(glossMeshes[i],glossMaterial,identity);
++        for(int i=0;i<6;i++)renderer.DrawMesh(glossMeshes[i],glossMaterial,identity);
+         renderer.End3D();draw.Begin();
+     }
+     public void BeginPanels(){panelCount=0;}
+@@ -118,16 +99,20 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
+     public void EndPanels()
+     {
+         if(panelCount==0)return;
+-        // Upload the rounded mask once. GX texture coordinates supply each
+-        // sampling offset, instead of rebuilding 81 copies of identical geometry.
+-        for(int i=0;i<PanelVertices;i++)
++        // All blur meshes sample one immutable snapshot. Offsetting only UVs
++        // keeps the rounded silhouette fixed while averaging the backdrop.
++        for(int tap=0;tap<BlurTaps;tap++)
+         {
+-            if(i>=panelCount){panelVertices[i]=default;continue;}
+-            var p=panelPoints[i];
+-            var uv=new Vector2((offset+p.X*scale)/logicalWidth*device.Width/copyWidth,p.Y*scale/logicalHeight*device.Height/copyHeight);
+-            panelVertices[i]=new VertexPositionColorTexture(World(p),Color32.White,uv);
++            float dx=(tap%BlurAxis-BlurAxis/2)*3,dy=(tap/BlurAxis-BlurAxis/2)*3;
++            for(int i=0;i<PanelVertices;i++)
++            {
++                if(i>=panelCount){panelVertices[i]=default;continue;}
++                var p=panelPoints[i];
++                var uv=new Vector2((offset+(p.X+dx)*scale)/logicalWidth*device.Width/copyWidth,(p.Y+dy)*scale/logicalHeight*device.Height/copyHeight);
++                panelVertices[i]=new VertexPositionColorTexture(World(p),Color32.White,uv);
++            }
++            panelMeshes[tap].SetVertices(panelVertices);
+         }
+-        panelMesh.SetVertices(panelVertices);
+     }
+     public void CaptureBackdrop()
+     {
+@@ -140,18 +125,21 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
+         if(panelCount==0)return;
+         long start=IplFrameProfiler.Active?Clock.Timestamp:0;
+         draw.End();renderer.Begin3D(camera);
++        float accumulated=0;
+         for(int tap=0;tap<BlurTaps;tap++)
+         {
+             // Incremental Gaussian average of the immutable captured backdrop.
+             // Pass zero replaces the row; later taps normalize by running weight.
+-            frostMaterial.Color=blurColors[tap];frostMaterial.TextureTransform=blurOffsets[tap];
+-            renderer.DrawMesh(panelMesh,frostMaterial,identity);
++            float x=tap%BlurAxis-BlurAxis/2,y=tap/BlurAxis-BlurAxis/2;
++            float weight=(float)Math.Exp(-(x*x+y*y)*.0555556f);accumulated+=weight;
++            frostMaterial.Color=new Color32(255,255,255,(byte)(255*weight/accumulated+.5f));
++            renderer.DrawMesh(panelMeshes[tap],frostMaterial,identity);
+         }
+         renderer.End3D();draw.Begin();
+         if(IplFrameProfiler.Active)IplFrameProfiler.BlurUs=IplFrameProfiler.Since(start);
+     }
+     public void Triangle(float ax,float ay,float bx,float by,float cx,float cy,uint color)
+-    {if((color&255)!=0)draw.FillTriangle(new Vector2(offset+ax*scale,ay*scale),new Vector2(offset+bx*scale,by*scale),new Vector2(offset+cx*scale,cy*scale),Color(color));}
++    {draw.FillTriangle(new Vector2(offset+ax*scale,ay*scale),new Vector2(offset+bx*scale,by*scale),new Vector2(offset+cx*scale,cy*scale),Color(color));}
+     public void Text(string value,float x,float y,float size,uint color,float angle,float stretch=1)
+     {
+         float factor=size/28,co=(float)Math.Cos(angle*.017453293f),si=(float)Math.Sin(angle*.017453293f),advance=0;
+@@ -165,7 +153,7 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
+     }
+     public void Dispose()
+     {
+-        capture?.Dispose();panelMesh.Dispose();
++        capture?.Dispose();for(int i=0;i<panelMeshes.Length;i++)panelMeshes[i].Dispose();
+         for(int i=0;i<glassMeshes.Length;i++){glassMeshes[i].Dispose();glossMeshes[i].Dispose();}draw.Dispose();atlas.Dispose();glossMap.Dispose();glossEffect.Dispose();
+     }
+ }
+diff --git a/VideoMode/IplFrameProfiler.cs b/VideoMode/IplFrameProfiler.cs
+index e69f68170fd62727534d6b76c16b2958a05d839c..d004829ea470649ee917bdbfcb9229023a58ac91 100644
+--- a/VideoMode/IplFrameProfiler.cs
++++ b/VideoMode/IplFrameProfiler.cs
+@@ -9,7 +9,7 @@ using Dolphin.Timing;
+ // measured frame. Clock timestamps are unclamped microseconds, unlike shell dt.
+ internal static class IplFrameProfiler
+ {
+-    internal const string Variant="skip-transparent-triangles";
++    internal const string Variant="baseline-renderer";
+     internal const int Frames=96, Columns=17;
+     internal static readonly int[] Samples=new int[Frames*Columns];
+     private static readonly byte[] line=new byte[256];
+diff --git a/VideoMode/IplHardwareReporter.cs b/VideoMode/IplHardwareReporter.cs
+new file mode 100644
+index 0000000000000000000000000000000000000000..da1065f00eddd282071dd44315cf838a6ce47bd0
+--- /dev/null
++++ b/VideoMode/IplHardwareReporter.cs
+@@ -0,0 +1,46 @@
++#if IPL_HARDWARE_RUNNER
++using System;
++using System.Threading;
++using System.Threading.Tasks;
++using Dolphin.Network;
++
++// DNDP v1: post-window binary telemetry. No socket/file/debugger operation is
++// called while sampling. Keep payload and async allocations below the SDK heap.
++internal static class IplHardwareReporter
++{
++    internal static Task Initialize()=>NetworkRuntime.StartAsync(new NetworkOptions {OperationTimeoutMilliseconds=30000},CancellationToken.None);
++    private static void U32(byte[] bytes,int at,uint value)
++    {bytes[at]=(byte)(value>>24);bytes[at+1]=(byte)(value>>16);bytes[at+2]=(byte)(value>>8);bytes[at+3]=(byte)value;}
++    private static uint Crc(byte[] bytes,int count)
++    {
++        uint crc=0xffffffff;
++        for(int i=0;i<count;i++)
++        {crc^=bytes[i];for(int bit=0;bit<8;bit++)crc=(crc>>1)^((crc&1)!=0?0xedb88320u:0);}
++        return ~crc;
++    }
++    internal static async Task Send()
++    {
++        int length=IplFrameProfiler.Count*IplFrameProfiler.Columns*4;
++        var payload=new byte[length];var header=new byte[64];var ack=new byte[4];
++        for(int i=0;i<length/4;i++)U32(payload,i*4,(uint)IplFrameProfiler.Samples[i]);
++        header[0]=68;header[1]=78;header[2]=68;header[3]=80; // DNDP
++        header[5]=1;header[7]=64;
++        for(int i=0;i<32;i++)header[8+i]=(byte)IplHardwareRunConfig.Token[i];
++        U32(header,40,IplFrameProfiler.Columns);U32(header,44,(uint)IplFrameProfiler.Count);
++        U32(header,48,(uint)length);U32(header,52,Crc(payload,length));U32(header,56,Crc(header,56));
++        try
++        {
++            using var client=new TcpClient();
++            await client.ConnectAsync(IPAddress.Parse(IplHardwareRunConfig.Host),IplHardwareRunConfig.Port);
++            client.NoDelay=true;var stream=client.GetStream();
++            await stream.WriteAsync(header,0,header.Length,CancellationToken.None);
++            await stream.WriteAsync(payload,0,payload.Length,CancellationToken.None);
++            int read=0;
++            while(read<4)
++            {int n=await stream.ReadAsync(ack,read,4-read,CancellationToken.None);if(n==0)throw new InvalidOperationException("Bridge closed before telemetry acknowledgement.");read+=n;}
++            if(ack[0]!=79||ack[1]!=75||ack[2]!=65||ack[3]!=89)throw new InvalidOperationException("Bridge rejected frame telemetry.");
++        }
++        finally {if(NetworkRuntime.IsReady)NetworkRuntime.Stop();}
++    }
++}
++#endif
+diff --git a/VideoMode/IplRenderer.cs b/VideoMode/IplRenderer.cs
+index dce433fa41d9c9a9f628900feba6bb730787da57..e1e6889f6abb5f55ca2adde6f74a005b59422475 100644
+--- a/VideoMode/IplRenderer.cs
++++ b/VideoMode/IplRenderer.cs
+@@ -31,8 +31,8 @@ internal sealed class IplRenderer
+     private readonly IplPoint[] points=new IplPoint[6*25*25];
+     private readonly int[] faceOrder=new int[6];
+     private readonly float[] depth=new float[6];
+-    private readonly uint[] wallTints=new uint[16];
+-    private readonly IplPoint[] wallDirections=new IplPoint[4*13];
++    private readonly IplPoint[] projected=new IplPoint[6*25*25];
++    private readonly uint[] glassColors=new uint[6*25*25];
+     // A broad corner arc must remain visible at native resolution. The optical
+     // wall uses the same radius family as the underlying rounded solid.
+     private const float Round=.24f,Core=1-Round,WallCorner=.28f;
+@@ -41,21 +41,6 @@ internal sealed class IplRenderer
+         c=canvas;
+         for(int f=0;f<6;f++) for(int y=0;y<=24;y++) for(int x=0;x<=24;x++)
+             points[f*625+y*25+x]=Rounded(Surface(f,Coordinate(x),Coordinate(y)));
+-        for(int corner=0;corner<4;corner++)for(int j=0;j<=12;j++)
+-        {
+-            float a=(180-corner*90-j*90f/12)*.017453293f;
+-            wallDirections[corner*13+j]=new IplPoint((float)Math.Cos(a),(float)Math.Sin(a));
+-        }
+-        for(int band=0;band<16;band++)
+-        {
+-            float t=(band+.5f)/16;
+-            float polish=(float)Math.Exp(-Math.Pow((t-.10f)/.035f,2));
+-            float exit=(float)Math.Exp(-Math.Pow((t-.90f)/.035f,2));
+-            float secondary=(float)Math.Exp(-Math.Pow((t-.42f)/.035f,2));
+-            float spectrum=(float)Math.Sin(t*12.56637f),envelope=(float)Math.Sin(t*3.1415926f);
+-            int alpha=(int)((4+polish*205+secondary*110+exit*130)*Math.Sqrt(envelope));
+-            wallTints[band]=Rgba((int)(35+polish*150+secondary*90+exit*70+spectrum*20),(int)(52+polish*160+secondary*80+exit*70),(int)(72+polish*170+secondary*120+exit*85-spectrum*20),alpha);
+-        }
+     }
+     private static float Coordinate(int i) => i<6 ? -1+Round*(1-(float)Math.Cos(i/6f*1.5707963f)) : i>18 ? -Coordinate(24-i) : -Core+(i-6)*2*Core/12;
+     private static float Clamp(float a,float lo,float hi)=>Math.Max(lo,Math.Min(hi,a));
+@@ -85,12 +70,7 @@ internal sealed class IplRenderer
+         p=Rotate(p);float f=3.8f/(3.8f-p.Z);
+         return new IplPoint(322+p.X*scale*.975f*f,cy-p.Y*scale*f,p.Z);
+     }
+-    private void Tri(IplPoint a,IplPoint b,IplPoint d,uint color)
+-    {
+-        // Quantized optical lighting often produces exactly zero alpha. Skip
+-        // those triangles before virtual dispatch and native canvas staging.
+-        if((color&255)!=0)c.Triangle(a.X,a.Y,b.X,b.Y,d.X,d.Y,color);
+-    }
++    private void Tri(IplPoint a,IplPoint b,IplPoint d,uint color)=>c.Triangle(a.X,a.Y,b.X,b.Y,d.X,d.Y,color);
+     private void Rect(float x,float y,float w,float h,uint color)
+     {c.Triangle(x,y,x+w,y,x,y+h,color);c.Triangle(x+w,y,x+w,y+h,x,y+h,color);}
+     private void Line(float x,float y,float xx,float yy,float width,uint color)
+@@ -163,22 +143,23 @@ internal sealed class IplRenderer
+     private void Cube()
+     {
+         c.BeginGlass();
++        for(int i=0;i<points.Length;i++)
++        {
++            projected[i]=Project(points[i]);
++            float facing=Clamp((Rotate(Surface(i/625,0,0)).Z-.08f)/.20f,0,1);
++            facing=facing*facing*(3-2*facing);
++            uint color=GlassColor(points[i]);
++            glassColors[i]=(color&0xffffff00)|(uint)((color&255)*facing);
++        }
+         for(int f=0;f<6;f++){faceOrder[f]=f;depth[f]=Rotate(Surface(f,0,0)).Z;}
+         for(int i=1;i<6;i++){int j=i;while(j>0&&depth[faceOrder[j]]<depth[faceOrder[j-1]]){int v=faceOrder[j];faceOrder[j]=faceOrder[j-1];faceOrder[j-1]=v;j--;}}
+         for(int n=0;n<6;n++)
+         {
+             int face=faceOrder[n];
+-            // The old path uploaded and drew all six faces, even when their
+-            // complete transmission and reflection contribution was zero.
+-            float facing=Clamp((depth[face]-.08f)/.20f,0,1);
+-            if(facing<=0)continue;
+-            facing=facing*facing*(3-2*facing);
+             for(int i=0;i<625;i++)
+             {
+                 int at=face*625+i;var uv=ReflectionUv(points[at]);
+-                uint color=GlassColor(points[at]);
+-                color=(color&0xffffff00)|(uint)((color&255)*facing);
+-                c.GlassVertex(i,Project(points[at]),color,uv.X,uv.Y,uv.Z);
++                c.GlassVertex(i,projected[at],glassColors[at],uv.X,uv.Y,uv.Z);
+             }
+             c.EndGlassFace();
+         }
+@@ -219,7 +200,7 @@ internal sealed class IplRenderer
+         int blue=(int)(18+teal*140+amber*9+violet*133+fresnel*27);
+         return Rgba(r,g,blue,(int)(205-normal.Z*22));
+     }
+-    private static float Light(float x,float y,float spread)=>IplLighting.ExpNegative((x*x+y*y)/(spread*spread));
++    private static float Light(float x,float y,float spread)=>(float)Math.Exp(-(x*x+y*y)/(spread*spread));
+ 
+     // A shaded optical cross-section follows the rotating wall without strokes.
+     private void GlassRims()
+@@ -235,8 +216,16 @@ internal sealed class IplRenderer
+             // Broad transmission and two soft polish lobes have no hard seam.
+             for(int band=0;band<16;band++)
+             {
++                float t=(band+.5f)/16;
++                float polish=(float)Math.Exp(-Math.Pow((t-.10f)/.035f,2));
++                float exit=(float)Math.Exp(-Math.Pow((t-.90f)/.035f,2));
++                float secondary=(float)Math.Exp(-Math.Pow((t-.42f)/.035f,2));
++                float spectrum=(float)Math.Sin(t*12.56637f);
++                float envelope=(float)Math.Sin(t*3.1415926f);
++                int alpha=(int)((4+polish*205+secondary*110+exit*130)*Math.Sqrt(envelope));
++                uint tint=Rgba((int)(35+polish*150+secondary*90+exit*70+spectrum*20),(int)(52+polish*160+secondary*80+exit*70),(int)(72+polish*170+secondary*120+exit*85-spectrum*20),alpha);
+                 float outside=band/16f,inside=(band+1)/16f;
+-                GlassWall(face,.997f-outside*.147f,.997f-inside*.147f,1-outside*.050f,1-inside*.050f,wallTints[band]);
++                GlassWall(face,.997f-outside*.147f,.997f-inside*.147f,1-outside*.050f,1-inside*.050f,tint);
+             }
+         }
+     }
+@@ -247,23 +236,23 @@ internal sealed class IplRenderer
+         IplPoint previousOuter=default,previousInner=default,firstOuter=default,firstInner=default;
+         for(int corner=0;corner<4;corner++)for(int j=0;j<=12;j++)
+         {
+-            var direction=wallDirections[corner*13+j];
+-            var o=WallPoint(face,corner,direction,outer,WallCorner+(outer-.997f)/.147f*.015f,front);
+-            var n=WallPoint(face,corner,direction,inner,WallCorner+(inner-.997f)/.147f*.015f,back);
++            float a=(180-corner*90-j*90f/12)*.017453293f;
++            var o=WallPoint(face,corner,a,outer,WallCorner+(outer-.997f)/.147f*.015f,front);
++            var n=WallPoint(face,corner,a,inner,WallCorner+(inner-.997f)/.147f*.015f,back);
+             if(corner==0&&j==0){firstOuter=o;firstInner=n;}
+             else WallSegment(previousOuter,o,previousInner,n,color);
+             previousOuter=o;previousInner=n;
+         }
+         WallSegment(previousOuter,firstOuter,previousInner,firstInner,color);
+     }
+-    private static IplPoint WallPoint(int face,int corner,IplPoint direction,float extent,float radius,float depth)
++    private static IplPoint WallPoint(int face,int corner,float angle,float extent,float radius,float depth)
+     {
+         float x=corner==0||corner==3?-extent+radius:extent-radius;
+         float y=corner<2?extent-radius:-extent+radius;
+         // Offset the transmitted inner boundary inside the glass: the mockup
+         // shows more optical depth on the left than on the right.
+         float refraction=(1-depth)/.050f*.105f;
+-        var p=Surface(face,x+direction.X*radius+refraction,y+direction.Y*radius);
++        var p=Surface(face,x+(float)Math.Cos(angle)*radius+refraction,y+(float)Math.Sin(angle)*radius);
+         return new IplPoint(p.X*depth,p.Y*depth,p.Z*depth);
+     }
+     private static IplPoint Lerp(IplPoint a,IplPoint b,float t)=>new IplPoint(a.X+(b.X-a.X)*t,a.Y+(b.Y-a.Y)*t,a.Z+(b.Z-a.Z)*t);
+diff --git a/VideoMode/Program.cs b/VideoMode/Program.cs
+index e14c4de8b587e008f572e217f8e0212e44ad69fa..2bf36e2ff64af0ecdaeadef662c06464817c07a8 100644
+--- a/VideoMode/Program.cs
++++ b/VideoMode/Program.cs
+@@ -31,7 +31,20 @@ internal sealed class VideoModeOutput : IVideoModeOutput
+ }
+ internal static class Program
+ {
++#if IPL_HARDWARE_RUNNER
++    private static async System.Threading.Tasks.Task<int> Main()
++    {
++        // Finish BBA/DHCP initialization before warmup and measurement. Leaving
++        // it to the post-window sender lets native auto-network setup race frames.
++        await IplHardwareReporter.Initialize();
++        int result=RunFrames();
++        if(result==0)await IplHardwareReporter.Send();
++        return result;
++    }
++    private static int RunFrames()
++#else
+     private static int Main()
++#endif
+     {
+         var device=GraphicsDevice.Default;
+         DebugOverlay.TextVisible=false;
+@@ -51,6 +64,19 @@ internal static class Program
+ #if IPL_VISUAL_REVIEW || IPL_PERFORMANCE_REVIEW
+         device.ConfigureDisplay(new DisplayOptions {Resolution=GraphicsResolution.R640x480,Scan=ScanMode.Interlaced,Widescreen=false});
+ #endif
++#if IPL_HARDWARE_RUNNER
++#if IPL_RUNNER_576
++        const GraphicsResolution runnerResolution=GraphicsResolution.R640x576;
++#else
++        const GraphicsResolution runnerResolution=GraphicsResolution.R640x480;
++#endif
++#if IPL_RUNNER_PROGRESSIVE
++        const ScanMode runnerScan=ScanMode.Progressive;
++#else
++        const ScanMode runnerScan=ScanMode.Interlaced;
++#endif
++        device.ConfigureDisplay(new DisplayOptions {Resolution=runnerResolution,Scan=runnerScan,Widescreen=false});
++#endif
+ #if IPL_HARDWARE_AA
+         const bool hardwareAntialiasing=true;
+ #else
+@@ -61,14 +87,20 @@ internal static class Program
+ #if IPL_VIDEO_MODE_REVIEW
+         var scanReview=new VideoModeScanReview(shell,output,reviewResolution);
+ #endif
+-#if IPL_VISUAL_REVIEW || IPL_PERFORMANCE_REVIEW
++#if IPL_VISUAL_REVIEW || IPL_PERFORMANCE_REVIEW || IPL_HARDWARE_RUNNER
+         // Repeatable native review pose; normal builds retain the interactive IPL.
++#if !IPL_RUNNER_CUBE
+         shell.TurnTo(ShellFace.Options);shell.Row=1;shell.Tick(1);shell.Time=0;
++#if IPL_RUNNER_DETAIL
++        shell.TurnTo(ShellFace.Video);shell.Row=1;shell.Tick(1);
++        shell.Confirm();
++#endif
++#endif
+ #endif
+         using var canvas=new GameCubeCanvas(device);
+         var renderer=new IplRenderer(canvas);
+         var clock=new FrameClock {MaximumDeltaSeconds=.05f};
+-#if IPL_PERFORMANCE_REVIEW
++#if IPL_PERFORMANCE_REVIEW || IPL_HARDWARE_RUNNER
+         IplFrameProfiler.Start();
+ #endif
+ #if IPL_VISUAL_REVIEW && !IPL_AA_BENCHMARK
+@@ -80,13 +112,13 @@ internal static class Program
+             IplFrameProfiler.CaptureUs=IplFrameProfiler.BlurUs=0;
+             Controller.Update();var pad=Controller.GetState(0);float dt=clock.Tick();
+             shell.Tick(dt);
+-#if IPL_VISUAL_REVIEW || IPL_PERFORMANCE_REVIEW
++#if IPL_VISUAL_REVIEW || IPL_PERFORMANCE_REVIEW || IPL_HARDWARE_RUNNER
+             shell.Time=0;
+ #endif
+ #if IPL_VIDEO_MODE_REVIEW
+             scanReview.Tick();
+             scanReview.CheckAntialiasing(device.Display.Antialiasing,hardwareAntialiasing&&shell.Video.Applied.Resolution!=2);
+-#else
++#elif !IPL_HARDWARE_RUNNER
+             if(pad.Y.WasPressed&&!IplFrameProfiler.Active)IplFrameProfiler.Start();
+             if(pad.Start.WasPressed) {shell.Video.Revert();if(!shell.Video.Pending)return 0;}
+             if(pad.X.WasPressed)
+@@ -131,6 +163,11 @@ internal static class Program
+             // Keep the completed buffer stable for read-only debugger extraction.
+             if(IplFrameProfiler.Ready)while(Clock.Timestamp>=0) { }
+ #endif
++#if IPL_HARDWARE_RUNNER
++            // All rendering and timing finish before BBA reporting starts.
++            // Returning from the async entry point restores the resident loader.
++            if(IplFrameProfiler.Ready)return 0;
++#endif
+ #if IPL_VISUAL_REVIEW && !IPL_AA_BENCHMARK
+             // Freeze only after a complete native presentation, so window
+             // captures cannot stop between the cube and footer drawing passes.
+diff --git a/VideoMode/VideoMode.csproj b/VideoMode/VideoMode.csproj
+index b73364d0ddcb0df37566dc67abbbdb9441352dc8..400195d8b9ab9442419fc2895a9b30697b199605 100644
+--- a/VideoMode/VideoMode.csproj
++++ b/VideoMode/VideoMode.csproj
+@@ -3,6 +3,15 @@
+     <OutputType>Exe</OutputType>
+     <TargetFramework>net8.0</TargetFramework>
+     <Nullable>enable</Nullable>
++    <IplRunnerScene Condition="'$(IplRunnerScene)' == ''">Options</IplRunnerScene>
++    <IplRunnerVideo Condition="'$(IplRunnerVideo)' == ''">480i</IplRunnerVideo>
++    <IplRunnerPort Condition="'$(IplRunnerPort)' == ''">6281</IplRunnerPort>
++    <DefineConstants Condition="'$(IplHardwareRunner)' == 'true'">$(DefineConstants);IPL_HARDWARE_RUNNER</DefineConstants>
++    <DefineConstants Condition="'$(IplHardwareRunner)' == 'true' and '$(IplRunnerScene)' == 'Cube'">$(DefineConstants);IPL_RUNNER_CUBE</DefineConstants>
++    <DefineConstants Condition="'$(IplHardwareRunner)' == 'true' and '$(IplRunnerScene)' == 'Detail'">$(DefineConstants);IPL_RUNNER_DETAIL</DefineConstants>
++    <DefineConstants Condition="'$(IplHardwareRunner)' == 'true' and '$(IplRunnerScene)' == 'Oblique'">$(DefineConstants);IPL_VISUAL_REVIEW_ANGLE</DefineConstants>
++    <DefineConstants Condition="'$(IplHardwareRunner)' == 'true' and ('$(IplRunnerVideo)' == '576i' or '$(IplRunnerVideo)' == '576p')">$(DefineConstants);IPL_RUNNER_576</DefineConstants>
++    <DefineConstants Condition="'$(IplHardwareRunner)' == 'true' and ('$(IplRunnerVideo)' == '480p' or '$(IplRunnerVideo)' == '576p')">$(DefineConstants);IPL_RUNNER_PROGRESSIVE</DefineConstants>
+     <IplFrameLogDevice Condition="'$(IplFrameLogDevice)' == ''">None</IplFrameLogDevice>
+     <DefineConstants Condition="'$(IplFrameLogDevice)' == 'Sd2Sp2'">$(DefineConstants);IPL_LOG_SD2SP2</DefineConstants>
+     <DefineConstants Condition="'$(IplFrameLogDevice)' == 'SdSlotA'">$(DefineConstants);IPL_LOG_SDA</DefineConstants>
+@@ -18,10 +27,21 @@
+     <DefineConstants Condition="('$(IplVisualReview)' == 'true' or '$(IplPerformanceReview)' == 'true') and '$(IplVisualReviewAngle)' == 'true'">$(DefineConstants);IPL_VISUAL_REVIEW_ANGLE</DefineConstants>
+   </PropertyGroup>
+   <ItemGroup>
++    <Compile Include="$(IntermediateOutputPath)IplHardwareRunConfig.g.cs" Condition="'$(IplHardwareRunner)' == 'true'" />
+     <DndEffect Include="gloss.dndfx.json" GeneratedSource="IplGlossEffect.g.cs" ClassName="IplGlossEffect" />
+     <PackageReference Include="DolphinDotNet.GameCube" Version="$(DndPackageVersion)" />
+   </ItemGroup>
+   <Target Name="ValidateIplReviewModes" BeforeTargets="CoreCompile">
++    <Error Condition="'$(IplHardwareRunner)' == 'true' and ('$(Configuration)' != 'Release' or '$(DndDebugSymbols)' == 'true' or ('$(DndGdbTransport)' != '' and '$(DndGdbTransport)' != 'Off'))"
++           Text="Hardware performance runs require Release, DndDebugSymbols=false and DndGdbTransport=Off. A hardware GDB stub forces debug compiler flags." />
++    <Error Condition="'$(IplHardwareRunner)' == 'true' and ('$(IplVisualReview)' == 'true' or '$(IplPerformanceReview)' == 'true' or '$(IplVideoModeReview)' == 'true' or '$(IplFrameLogDevice)' != 'None')"
++           Text="Hardware runner owns the measurement window; disable other review modes and SD export." />
++    <Error Condition="'$(IplHardwareRunner)' == 'true' and '$(IplRunnerScene)' != 'Options' and '$(IplRunnerScene)' != 'Cube' and '$(IplRunnerScene)' != 'Detail' and '$(IplRunnerScene)' != 'Oblique'" Text="IplRunnerScene must be Options, Cube, Detail or Oblique." />
++    <Error Condition="'$(IplHardwareRunner)' == 'true' and '$(IplRunnerVideo)' != '480i' and '$(IplRunnerVideo)' != '480p' and '$(IplRunnerVideo)' != '576i' and '$(IplRunnerVideo)' != '576p'" Text="IplRunnerVideo must be 480i, 480p, 576i or 576p." />
++    <Error Condition="'$(IplHardwareRunner)' == 'true' and !$([System.Text.RegularExpressions.Regex]::IsMatch('$(IplRunnerHost)', '^([0-9]{1,3}\.){3}[0-9]{1,3}$'))" Text="IplRunnerHost must be the Windows bridge LAN IPv4 address." />
++    <Error Condition="'$(IplHardwareRunner)' == 'true' and !$([System.Text.RegularExpressions.Regex]::IsMatch('$(IplRunnerToken)', '^[a-f0-9]{32}$'))" Text="IplRunnerToken must be a per-job 128-bit lowercase hex token supplied through the environment." />
++    <Error Condition="'$(IplHardwareRunner)' == 'true' and !$([System.Text.RegularExpressions.Regex]::IsMatch('$(IplRunnerPort)', '^[0-9]{1,5}$'))" Text="IplRunnerPort must be a valid TCP port." />
++    <Error Condition="'$(IplHardwareRunner)' == 'true' and ('$(IplRunnerPort)' &lt; '1' or '$(IplRunnerPort)' &gt; '65535')" Text="IplRunnerPort must be between 1 and 65535." />
+     <Error Condition="'$(IplFrameLogDevice)' != 'None' and '$(IplFrameLogDevice)' != 'Sd2Sp2' and '$(IplFrameLogDevice)' != 'SdSlotA' and '$(IplFrameLogDevice)' != 'SdSlotB' and '$(IplFrameLogDevice)' != 'GcLoader'"
+            Text="IplFrameLogDevice must be None, Sd2Sp2, SdSlotA, SdSlotB or GcLoader. Select only an attached adapter; no absent-device probing is performed by default." />
+     <Error Condition="'$(IplPerformanceReview)' == 'true' and ('$(IplVisualReview)' == 'true' or '$(IplVideoModeReview)' == 'true')"
+@@ -35,5 +55,9 @@
+     <Error Condition="'$(IplVideoModeReview)' == 'true' and '$(IplVideoModeReviewResolution)' != '' and '$(IplVideoModeReviewResolution)' != '480' and '$(IplVideoModeReviewResolution)' != '576'"
+            Text="IplVideoModeReviewResolution must be 480 or 576." />
+   </Target>
++  <Target Name="GenerateIplHardwareConfig" BeforeTargets="CoreCompile" DependsOnTargets="ValidateIplReviewModes" Condition="'$(IplHardwareRunner)' == 'true'">
++    <WriteLinesToFile File="$(IntermediateOutputPath)IplHardwareRunConfig.g.cs" Overwrite="true" WriteOnlyWhenDifferent="true"
++      Lines="internal static class IplHardwareRunConfig { internal const string Host=&quot;$(IplRunnerHost)&quot;%3B internal const int Port=$(IplRunnerPort)%3B internal const string Token=&quot;$(IplRunnerToken)&quot;%3B }" />
++  </Target>
+   <Import Project="DolphinGraphics.targets" />
+ </Project>

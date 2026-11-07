@@ -1,0 +1,791 @@
+diff --git a/VideoMode/GameCubeCanvas.cs b/VideoMode/GameCubeCanvas.cs
+index a7aa3a9f2c8f8d145a315c19849283fc8509c427..eba3a4e67b6b4aebda5eabd89ce50b0a1d570a71 100644
+--- a/VideoMode/GameCubeCanvas.cs
++++ b/VideoMode/GameCubeCanvas.cs
+@@ -22,13 +22,10 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
+     private readonly Color32[] glossColors=new Color32[GlassVertices];
+     private readonly IplPoint[] panelPoints=new IplPoint[PanelVertices];
+     private readonly VertexPositionColorTexture[] panelVertices=new VertexPositionColorTexture[PanelVertices];
+-    private readonly DynamicMesh panelMesh;
+-    private readonly UvTransform[] blurOffsets=new UvTransform[BlurTaps];
+-    private readonly Color32[] blurColors=new Color32[BlurTaps];
++    private readonly DynamicMesh[] panelMeshes=new DynamicMesh[BlurTaps];
+     private SceneCapture? capture;
+     private int glassCount,panelCount,captureWidth,captureHeight,copyWidth,copyHeight;
+     private float scale=1,offset,logicalWidth=640,logicalHeight=480;
+-    private float blurScaleX,blurScaleY;
+     internal GameCubeCanvas(GraphicsDevice device)
+     {
+         this.device=device;renderer=new Renderer(device);
+@@ -43,16 +40,7 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
+             indices[at++]=(ushort)(a+1);indices[at++]=(ushort)(a+26);indices[at++]=(ushort)(a+25);
+         }
+         for(int i=0;i<6;i++){glassMeshes[i]=DynamicMesh.Create(glass,indices);glossMeshes[i]=DynamicMesh.Create(glass,indices);}
+-        panelMesh=DynamicMesh.Create(panelVertices);
+-        // Allocate the optional native material options between frames, once.
+-        frostMaterial.TextureTransform=UvTransform.Identity;
+-        float accumulated=0;
+-        for(int tap=0;tap<BlurTaps;tap++)
+-        {
+-            float x=tap%BlurAxis-BlurAxis/2,y=tap/BlurAxis-BlurAxis/2;
+-            float weight=(float)Math.Exp(-(x*x+y*y)*.0555556f);accumulated+=weight;
+-            blurColors[tap]=new Color32(255,255,255,(byte)(255*weight/accumulated+.5f));
+-        }
++        for(int i=0;i<BlurTaps;i++)panelMeshes[i]=DynamicMesh.Create(panelVertices);
+         camera.LookAt(new Vector3(0,0,1),new Vector3(0,0,0),new Vector3(0,1,0));
+     }
+     internal void Prepare()
+@@ -69,17 +57,9 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
+             capture?.Dispose();capture=replacement;
+             captureWidth=device.Width;captureHeight=device.Height;frostMaterial.Texture=capture.Texture;
+         }
+-        float sx=scale/logicalWidth*device.Width/copyWidth,sy=scale/logicalHeight*device.Height/copyHeight;
+-        if(sx!=blurScaleX||sy!=blurScaleY)
+-        {
+-            blurScaleX=sx;blurScaleY=sy;
+-            for(int tap=0;tap<BlurTaps;tap++)
+-                blurOffsets[tap]=new UvTransform(new Vector2((tap%BlurAxis-BlurAxis/2)*3*sx,(tap/BlurAxis-BlurAxis/2)*3*sy),new Vector2(1,1));
+-        }
+     }
+     internal void Begin()=>draw.Begin();
+     internal void End()=>draw.End();
+-    public void Section(IplRenderPhase phase)=>IplPerformanceOverlay.Section(phase);
+     private static Color32 Color(uint c)=>new Color32((byte)(c>>24),(byte)(c>>16),(byte)(c>>8),(byte)c);
+     private Vector3 World(IplPoint p)=>new Vector3((p.X-320)*scale,(240-p.Y)*scale,0);
+     public void BeginGlass(){glassCount=0;}
+@@ -99,18 +79,18 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
+     }
+     public void EndGlass()
+     {
+-        if(glassCount<1||glassCount>3)throw new InvalidOperationException("Incomplete glass geometry.");
++        if(glassCount!=6)throw new InvalidOperationException("Incomplete glass geometry.");
+     }
+     public void DrawGlass()
+     {
+         draw.End();renderer.Begin3D(camera);
+-        for(int i=0;i<glassCount;i++)renderer.DrawMesh(glassMeshes[i],glassMaterial,identity);
++        for(int i=0;i<6;i++)renderer.DrawMesh(glassMeshes[i],glassMaterial,identity);
+         renderer.End3D();draw.Begin();
+     }
+     public void DrawReflections()
+     {
+         draw.End();renderer.Begin3D(camera);
+-        for(int i=0;i<glassCount;i++)renderer.DrawMesh(glossMeshes[i],glossMaterial,identity);
++        for(int i=0;i<6;i++)renderer.DrawMesh(glossMeshes[i],glossMaterial,identity);
+         renderer.End3D();draw.Begin();
+     }
+     public void BeginPanels(){panelCount=0;}
+@@ -119,16 +99,20 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
+     public void EndPanels()
+     {
+         if(panelCount==0)return;
+-        // Upload the rounded mask once. GX texture coordinates supply each
+-        // sampling offset, instead of rebuilding 81 copies of identical geometry.
+-        for(int i=0;i<PanelVertices;i++)
++        // All blur meshes sample one immutable snapshot. Offsetting only UVs
++        // keeps the rounded silhouette fixed while averaging the backdrop.
++        for(int tap=0;tap<BlurTaps;tap++)
+         {
+-            if(i>=panelCount){panelVertices[i]=default;continue;}
+-            var p=panelPoints[i];
+-            var uv=new Vector2((offset+p.X*scale)/logicalWidth*device.Width/copyWidth,p.Y*scale/logicalHeight*device.Height/copyHeight);
+-            panelVertices[i]=new VertexPositionColorTexture(World(p),Color32.White,uv);
++            float dx=(tap%BlurAxis-BlurAxis/2)*3,dy=(tap/BlurAxis-BlurAxis/2)*3;
++            for(int i=0;i<PanelVertices;i++)
++            {
++                if(i>=panelCount){panelVertices[i]=default;continue;}
++                var p=panelPoints[i];
++                var uv=new Vector2((offset+(p.X+dx)*scale)/logicalWidth*device.Width/copyWidth,(p.Y+dy)*scale/logicalHeight*device.Height/copyHeight);
++                panelVertices[i]=new VertexPositionColorTexture(World(p),Color32.White,uv);
++            }
++            panelMeshes[tap].SetVertices(panelVertices);
+         }
+-        panelMesh.SetVertices(panelVertices);
+     }
+     public void CaptureBackdrop()
+     {
+@@ -141,20 +125,21 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
+         if(panelCount==0)return;
+         long start=IplFrameProfiler.Active?Clock.Timestamp:0;
+         draw.End();renderer.Begin3D(camera);
++        float accumulated=0;
+         for(int tap=0;tap<BlurTaps;tap++)
+         {
+             // Incremental Gaussian average of the immutable captured backdrop.
+             // Pass zero replaces the row; later taps normalize by running weight.
+-            frostMaterial.Color=blurColors[tap];frostMaterial.TextureTransform=blurOffsets[tap];
+-            renderer.DrawMesh(panelMesh,frostMaterial,identity);
++            float x=tap%BlurAxis-BlurAxis/2,y=tap/BlurAxis-BlurAxis/2;
++            float weight=(float)Math.Exp(-(x*x+y*y)*.0555556f);accumulated+=weight;
++            frostMaterial.Color=new Color32(255,255,255,(byte)(255*weight/accumulated+.5f));
++            renderer.DrawMesh(panelMeshes[tap],frostMaterial,identity);
+         }
+         renderer.End3D();draw.Begin();
+         if(IplFrameProfiler.Active)IplFrameProfiler.BlurUs=IplFrameProfiler.Since(start);
+     }
+     public void Triangle(float ax,float ay,float bx,float by,float cx,float cy,uint color)
+-    {if((color&255)!=0)draw.FillTriangle(new Vector2(offset+ax*scale,ay*scale),new Vector2(offset+bx*scale,by*scale),new Vector2(offset+cx*scale,cy*scale),Color(color));}
+-    public void Rectangle(float x,float y,float width,float height,uint color)
+-    {if((color&255)!=0)draw.FillRectangle(new RectF(offset+x*scale,y*scale,width*scale,height*scale),Color(color));}
++    {draw.FillTriangle(new Vector2(offset+ax*scale,ay*scale),new Vector2(offset+bx*scale,by*scale),new Vector2(offset+cx*scale,cy*scale),Color(color));}
+     public void Text(string value,float x,float y,float size,uint color,float angle,float stretch=1)
+     {
+         float factor=size/28,co=(float)Math.Cos(angle*.017453293f),si=(float)Math.Sin(angle*.017453293f),advance=0;
+@@ -166,22 +151,9 @@ internal sealed class GameCubeCanvas : IIplCanvas, IDisposable
+             advance+=IplFontData.Widths[ch]*factor*stretch;
+         }
+     }
+-    internal void TextAscii(byte[] value,int length,float right,float y,float size,uint color)
+-    {
+-        float factor=size/28,width=0;
+-        for(int i=0;i<length;i++)width+=IplFontData.Widths[value[i]-32]*factor;
+-        float x=right-width;
+-        for(int i=0;i<length;i++)
+-        {
+-            int ch=value[i]-32;
+-            draw.DrawTexture(atlas,new RectF(ch%16*32,ch/16*40,32,40),
+-                new RectF(offset+x*scale,y*scale,32*factor*scale,40*factor*scale),Color(color),0,new Vector2(0,0));
+-            x+=IplFontData.Widths[ch]*factor;
+-        }
+-    }
+     public void Dispose()
+     {
+-        capture?.Dispose();panelMesh.Dispose();
++        capture?.Dispose();for(int i=0;i<panelMeshes.Length;i++)panelMeshes[i].Dispose();
+         for(int i=0;i<glassMeshes.Length;i++){glassMeshes[i].Dispose();glossMeshes[i].Dispose();}draw.Dispose();atlas.Dispose();glossMap.Dispose();glossEffect.Dispose();
+     }
+ }
+diff --git a/VideoMode/IndexedRims.cs b/VideoMode/IndexedRims.cs
+new file mode 100644
+index 0000000000000000000000000000000000000000..4a3944530510037a4d6166c8fe3741cb3a559625
+--- /dev/null
++++ b/VideoMode/IndexedRims.cs
+@@ -0,0 +1,99 @@
++using System;
++using Dolphin.Graphics;
++using Dolphin.Graphics.Raw;
++using static Dolphin.Graphics.Raw.GXConstants;
++
++// Dynamic positions/colors live in native memory. Only one small chunk is staged
++// on the 256 KiB managed heap; GX replays an immutable indexed command list.
++internal sealed class IndexedRims : IDisposable
++{
++    private const int MaxQuads=32768;
++    private readonly float[] positions=new float[IplRimCommands.PositionFloats];
++    private readonly byte[] colors=new byte[IplRimCommands.ColorBytes];
++    private readonly float[] projection=new float[16],transform=new float[12];
++    private readonly NativeBuffer positionBuffer=NativeBuffer.Allocate(MaxQuads*32);
++    private readonly NativeBuffer colorBuffer=NativeBuffer.Allocate(MaxQuads*4);
++    private readonly NativeBuffer projectionBuffer=NativeBuffer.Allocate(64),transformBuffer=NativeBuffer.Allocate(48);
++    private readonly NativeBuffer commands;
++    private readonly int commandBytes;
++    private int pending,chunks;
++    private float previousWidth,previousHeight,previousScale,previousOffset;
++    internal IndexedRims()
++    {
++        var data=IplRimCommands.Create();commandBytes=data.Length;
++        commands=NativeBuffer.Allocate(data.Length);commands.Write(data);commands.Flush();
++    }
++    internal void Prepare(float width,float height,float scale,float offset)
++    {
++        if(width==previousWidth&&height==previousHeight&&scale==previousScale&&offset==previousOffset)return;
++        previousWidth=width;previousHeight=height;previousScale=scale;previousOffset=offset;
++        // Match the SDK's top-left 2D guOrtho(...,-1,1) and logical layout.
++        projection[0]=2/width;projection[3]=-1;projection[5]=-2/height;projection[7]=1;
++        projection[10]=-.5f;projection[11]=-.5f;projection[15]=1;
++        transform[0]=transform[5]=scale;transform[3]=offset;transform[10]=1;
++        projectionBuffer.Write(projection);transformBuffer.Write(transform);
++        projectionBuffer.Flush();transformBuffer.Flush();
++    }
++    internal void Begin(){pending=chunks=0;}
++    internal void Quad(IplPoint a,IplPoint b,IplPoint c,IplPoint d,uint color)
++    {
++        if((color&255)==0)return;
++        if(chunks*IplRimCommands.Quads+pending>=MaxQuads)throw new InvalidOperationException("Optical rim capacity exceeded.");
++        int at=pending*8;
++        positions[at]=a.X;positions[at+1]=a.Y;positions[at+2]=b.X;positions[at+3]=b.Y;
++        positions[at+4]=c.X;positions[at+5]=c.Y;positions[at+6]=d.X;positions[at+7]=d.Y;
++        at=pending*4;colors[at]=(byte)(color>>24);colors[at+1]=(byte)(color>>16);
++        colors[at+2]=(byte)(color>>8);colors[at+3]=(byte)color;
++        if(++pending==IplRimCommands.Quads)Upload();
++    }
++    private void Upload()
++    {
++        // Degenerate transparent padding keeps one fixed immutable command list.
++        if(pending<IplRimCommands.Quads)
++        {
++            Array.Clear(positions,pending*8,positions.Length-pending*8);
++            Array.Clear(colors,pending*4,colors.Length-pending*4);
++        }
++        positionBuffer.Write(positions,0,chunks*positions.Length*4);
++        colorBuffer.Write(colors,0,chunks*colors.Length);
++        chunks++;pending=0;
++    }
++    internal void End()
++    {
++        if(pending>0)Upload();
++        if(chunks==0)return;
++        positionBuffer.Flush(0,chunks*positions.Length*4);colorBuffer.Flush(0,chunks*colors.Length);
++    }
++    internal void Draw(GraphicsDevice device)
++    {
++        if(chunks==0)return;
++        device.BeginRaw();
++        GX.GX_SetViewport(0,0,device.Width,device.Height,0,1);
++        GX.GX_SetScissor(0,0,(uint)device.Width,(uint)device.Height);
++        GX.GX_LoadProjectionMtx(projectionBuffer.Address,GX_ORTHOGRAPHIC);
++        GX.GX_LoadPosMtxImm(transformBuffer.Address,GX_PNMTX0);GX.GX_SetCurrentMtx(GX_PNMTX0);
++        GX.GX_ClearVtxDesc();GX.GX_SetVtxDesc(GX_VA_POS,GX_INDEX16);GX.GX_SetVtxDesc(GX_VA_CLR0,GX_INDEX16);
++        GX.GX_SetVtxAttrFmt(0,GX_VA_POS,GX_POS_XY,GX_F32,0);GX.GX_SetVtxAttrFmt(0,GX_VA_CLR0,GX_CLR_RGBA,GX_RGBA8,0);
++        GX.GX_SetNumChans(1);GX.GX_SetChanCtrl(GX_COLOR0A0,0,GX_SRC_VTX,GX_SRC_VTX,0,GX_DF_NONE,GX_AF_NONE);
++        GX.GX_SetNumTexGens(0);GX.GX_SetNumTevStages(1);GX.GX_SetNumIndStages(0);
++        GX.GX_SetTevDirect(0);GX.GX_SetTevOrder(0,GX_TEXCOORDNULL,GX_TEXMAP_NULL,GX_COLOR0A0);GX.GX_SetTevOp(0,GX_PASSCLR);
++        GX.GX_SetCullMode(GX_CULL_NONE);GX.GX_SetZMode(0,GX_ALWAYS,0);GX.GX_SetZCompLoc(0);
++        GX.GX_SetAlphaCompare(GX_ALWAYS,0,GX_AOP_AND,GX_ALWAYS,0);
++        GX.GX_SetBlendMode(GX_BM_BLEND,GX_BL_SRCALPHA,GX_BL_INVSRCALPHA,GX_LO_CLEAR);
++        GX.GX_SetDstAlpha(0,0);GX.GX_SetColorUpdate(1);GX.GX_SetAlphaUpdate(1);
++        for(int i=0;i<chunks;i++)
++        {
++            GX.GX_InvVtxCache();
++            GX.GX_SetArray(GX_VA_POS,positionBuffer.Address.Add(i*positions.Length*4),8);
++            GX.GX_SetArray(GX_VA_CLR0,colorBuffer.Address.Add(i*colors.Length),4);
++            GX.GX_CallDispList(commands.Address,(uint)commandBytes);
++        }
++        device.EndRaw();
++        // SDK counters track managed draws. Include our raw batches and their
++        // degenerate padding without changing the hardware runner's CSV schema.
++        IplFrameProfiler.ExtraDraws=chunks;
++        IplFrameProfiler.ExtraTriangles=chunks*IplRimCommands.Quads*2;
++    }
++    public void Dispose()
++    {commands.Dispose();positionBuffer.Dispose();colorBuffer.Dispose();projectionBuffer.Dispose();transformBuffer.Dispose();}
++}
+diff --git a/VideoMode/IplFrameProfiler.cs b/VideoMode/IplFrameProfiler.cs
+index e69f68170fd62727534d6b76c16b2958a05d839c..286d5c0d4431e6fbc547fb9015a55bc3c47e7b6e 100644
+--- a/VideoMode/IplFrameProfiler.cs
++++ b/VideoMode/IplFrameProfiler.cs
+@@ -16,7 +16,7 @@ internal static class IplFrameProfiler
+     private static readonly int[] ordered=new int[Frames];
+     internal static int Count;
+     internal static bool Active,Ready,NeedsExport;
+-    internal static int CaptureUs,BlurUs;
++    internal static int CaptureUs,BlurUs,ExtraDraws,ExtraTriangles;
+     private static int warmup;
+     internal static string Status="";
+     internal static string Summary="";
+@@ -32,7 +32,7 @@ internal static class IplFrameProfiler
+         Samples[at]=Since(start);Samples[at+1]=prepare;Samples[at+2]=submit;Samples[at+3]=end;
+         Samples[at+4]=GpuProfiler.GpuWaitMicroseconds;Samples[at+5]=GpuProfiler.RetraceWaitMicroseconds;
+         Samples[at+6]=CaptureUs;Samples[at+7]=BlurUs;
+-        Samples[at+8]=gpu.DrawSubmissions;Samples[at+9]=gpu.Triangles;
++        Samples[at+8]=gpu.DrawSubmissions+ExtraDraws;Samples[at+9]=gpu.Triangles+ExtraTriangles;
+         Samples[at+10]=GpuProfiler.BeginFrameCopyMicroseconds;Samples[at+11]=GpuProfiler.GateReacquireMicroseconds;
+         Samples[at+12]=device.Width;Samples[at+13]=device.Height;Samples[at+14]=(int)device.Display.Scan;
+         Samples[at+15]=(int)shell.Face;Samples[at+16]=shell.Editing?1:0;
+diff --git a/VideoMode/IplPerformanceOverlay.cs b/VideoMode/IplPerformanceOverlay.cs
+index c6c581b4ca4b006b836e3e1752d1aa4c05d9ff47..4347a946f3cfd086701b83bc373da3c921275394 100644
+--- a/VideoMode/IplPerformanceOverlay.cs
++++ b/VideoMode/IplPerformanceOverlay.cs
+@@ -28,6 +28,7 @@ internal static class IplPerformanceOverlay
+         Stats.Current[IplPerformanceStats.Retrace]=GpuProfiler.RetraceWaitMicroseconds;
+         Stats.CompleteFrame();
+     }
++#if !IPL_HARDWARE_RUNNER
+     private static void Row(GameCubeCanvas canvas,string label,int metric,float y,bool total=false)
+     {
+         uint color=total?0x9ce7dcffu:0xd6dde7ffu;
+@@ -38,29 +39,31 @@ internal static class IplPerformanceOverlay
+     }
+     internal static void Draw(GameCubeCanvas canvas)
+     {
+-        canvas.Triangle(12,12,278,12,12,435,0x07111bf5u);
+-        canvas.Triangle(278,12,278,435,12,435,0x07111bf5u);
++        canvas.Triangle(12,12,278,12,12,453,0x07111bf5u);
++        canvas.Triangle(278,12,278,453,12,453,0x07111bf5u);
+         canvas.Text("PERFORMANCE / Z to hide",22,20,15,0xc7f8efffu,0);
+         canvas.Text("Mean ~250 ms / CPU submission",22,43,11,0x9eaebfffu,0);
+         Row(canvas,"Frame (with overlay)",IplPerformanceStats.Frame,65,true);
+         Row(canvas,"Prepare total",IplPerformanceStats.Prepare,83,true);
+         Row(canvas,"  Glass geometry",(int)IplRenderPhase.GlassGeometry,101);
+         Row(canvas,"  Row geometry",(int)IplRenderPhase.FrostGeometry,119);
+-        Row(canvas,"Submit (app only)",IplPerformanceStats.Submit,137,true);
+-        Row(canvas,"  Glass transmission",(int)IplRenderPhase.Transmission,155);
+-        Row(canvas,"  Optical rims",(int)IplRenderPhase.Rims,173);
+-        Row(canvas,"  Gloss reflections",(int)IplRenderPhase.Reflections,191);
+-        Row(canvas,"  Menu icons",(int)IplRenderPhase.Icons,209);
+-        Row(canvas,"  Backdrop copy",(int)IplRenderPhase.Capture,227);
+-        Row(canvas,"  Frosted row blur",(int)IplRenderPhase.Frost,245);
+-        Row(canvas,"  Row tint",(int)IplRenderPhase.PanelTint,263);
+-        Row(canvas,"  Menu text",(int)IplRenderPhase.Labels,281);
+-        Row(canvas,"  Footer",(int)IplRenderPhase.Footer,299);
+-        Row(canvas,"  Flat editor",(int)IplRenderPhase.Editor,317);
+-        Row(canvas,"Finish / present",IplPerformanceStats.Finish,335,true);
+-        Row(canvas,"  GX completion wait",IplPerformanceStats.GpuWait,353);
+-        Row(canvas,"  VSync wait",IplPerformanceStats.Retrace,371);
+-        Row(canvas,"Overlay CPU",IplPerformanceStats.Overlay,389,true);
+-        canvas.Text("GX wait != full GPU time. Waits include overlay.",22,414,10,0x9eaebfffu,0);
++        Row(canvas,"  Rim geometry",(int)IplRenderPhase.RimGeometry,137);
++        Row(canvas,"Submit (app only)",IplPerformanceStats.Submit,155,true);
++        Row(canvas,"  Glass transmission",(int)IplRenderPhase.Transmission,173);
++        Row(canvas,"  Optical rims",(int)IplRenderPhase.Rims,191);
++        Row(canvas,"  Gloss reflections",(int)IplRenderPhase.Reflections,209);
++        Row(canvas,"  Menu icons",(int)IplRenderPhase.Icons,227);
++        Row(canvas,"  Backdrop copy",(int)IplRenderPhase.Capture,245);
++        Row(canvas,"  Frosted row blur",(int)IplRenderPhase.Frost,263);
++        Row(canvas,"  Row tint",(int)IplRenderPhase.PanelTint,281);
++        Row(canvas,"  Menu text",(int)IplRenderPhase.Labels,299);
++        Row(canvas,"  Footer",(int)IplRenderPhase.Footer,317);
++        Row(canvas,"  Flat editor",(int)IplRenderPhase.Editor,335);
++        Row(canvas,"Finish / present",IplPerformanceStats.Finish,353,true);
++        Row(canvas,"  GX completion wait",IplPerformanceStats.GpuWait,371);
++        Row(canvas,"  VSync wait",IplPerformanceStats.Retrace,389);
++        Row(canvas,"Overlay CPU",IplPerformanceStats.Overlay,407,true);
++        canvas.Text("GX wait != full GPU time. Waits include overlay.",22,432,10,0x9eaebfffu,0);
+     }
++#endif
+ }
+diff --git a/VideoMode/IplPerformanceStats.cs b/VideoMode/IplPerformanceStats.cs
+index a110dbf86c610ff4e4766abaf35a0dd10df8f5fe..6ae70ca8a303efd034428bfa5a4cfffdba660739 100644
+--- a/VideoMode/IplPerformanceStats.cs
++++ b/VideoMode/IplPerformanceStats.cs
+@@ -3,7 +3,7 @@ using System;
+ // CPU scopes are exclusive; totals and presentation waits are listed separately.
+ internal enum IplRenderPhase
+ {
+-    None, GlassGeometry, FrostGeometry, Transmission, Rims, Reflections, Icons,
++    None, GlassGeometry, FrostGeometry, RimGeometry, Transmission, Rims, Reflections, Icons,
+     Capture, Frost, PanelTint, Labels, Footer, Editor, Count
+ }
+ 
+diff --git a/VideoMode/IplRenderer.cs b/VideoMode/IplRenderer.cs
+index 2145a6a0a313beb0a2e9cde1154f3b8ad16f018b..e1e6889f6abb5f55ca2adde6f74a005b59422475 100644
+--- a/VideoMode/IplRenderer.cs
++++ b/VideoMode/IplRenderer.cs
+@@ -3,9 +3,7 @@ using System;
+ // The native adapter and the visual proof exporter consume the same geometry.
+ internal interface IIplCanvas
+ {
+-    void Section(IplRenderPhase phase);
+     void Triangle(float ax,float ay,float bx,float by,float cx,float cy,uint color);
+-    void Rectangle(float x,float y,float width,float height,uint color);
+     void Text(string value,float x,float y,float size,uint color,float angle,float stretch=1);
+     void BeginGlass();
+     void GlassVertex(int index,IplPoint point,uint color,float u,float v,float reflection);
+@@ -30,56 +28,19 @@ internal sealed class IplRenderer
+     private float yaw,pitch,cy,scale,rimVisibility;
+     private float cosYaw,sinYaw,cosPitch,sinPitch;
+     private const uint White=0xf3f4faff, Green=0x15f88cff, Block=0x60db18ff;
+-    // Cube faces are signed permutations of one grid. Cache its invariant unit
+-    // normals and curvature, rather than renormalizing every moving vertex.
+-    // Together these use 17,500 data bytes, versus 45,000 for six position grids.
+-    private readonly IplPoint[] points=new IplPoint[25*25],normals=new IplPoint[25*25];
+-    private readonly float[] curvatures=new float[25*25];
++    private readonly IplPoint[] points=new IplPoint[6*25*25];
+     private readonly int[] faceOrder=new int[6];
+     private readonly float[] depth=new float[6];
+-    private readonly uint[] wallTints=new uint[16];
+-    private readonly IplPoint[] wallDirections=new IplPoint[4*13];
+-    private readonly IplPoint[] circleDirections=new IplPoint[33],panelDirections=new IplPoint[4*9];
++    private readonly IplPoint[] projected=new IplPoint[6*25*25];
++    private readonly uint[] glassColors=new uint[6*25*25];
+     // A broad corner arc must remain visible at native resolution. The optical
+     // wall uses the same radius family as the underlying rounded solid.
+     private const float Round=.24f,Core=1-Round,WallCorner=.28f;
+     internal IplRenderer(IIplCanvas canvas)
+     {
+         c=canvas;
+-        for(int y=0;y<=24;y++)for(int x=0;x<=24;x++)
+-        {
+-            int at=y*25+x;var point=Rounded(Surface(0,Coordinate(x),Coordinate(y)));
+-            points[at]=point;
+-            var local=new IplPoint(point.X-Clamp(point.X,-Core,Core),point.Y-Clamp(point.Y,-Core,Core),point.Z-Clamp(point.Z,-Core,Core));
+-            float length=(float)Math.Sqrt(local.X*local.X+local.Y*local.Y+local.Z*local.Z);
+-            normals[at]=new IplPoint(local.X/length,local.Y/length,local.Z/length);
+-            curvatures[at]=Clamp((1-Math.Max(Math.Max(Math.Abs(local.X),Math.Abs(local.Y)),Math.Abs(local.Z))/length)*3,0,1);
+-        }
+-        for(int corner=0;corner<4;corner++)for(int j=0;j<=12;j++)
+-        {
+-            float a=(180-corner*90-j*90f/12)*.017453293f;
+-            wallDirections[corner*13+j]=new IplPoint((float)Math.Cos(a),(float)Math.Sin(a));
+-        }
+-        for(int i=0;i<=32;i++)
+-        {
+-            float a=i*6.2831853f/32;
+-            circleDirections[i]=new IplPoint((float)Math.Cos(a),(float)Math.Sin(a));
+-        }
+-        for(int corner=0;corner<4;corner++)for(int j=0;j<=8;j++)
+-        {
+-            float a=(180-corner*90-j*90f/8)*.017453293f;
+-            panelDirections[corner*9+j]=new IplPoint((float)Math.Cos(a),(float)Math.Sin(a));
+-        }
+-        for(int band=0;band<16;band++)
+-        {
+-            float t=(band+.5f)/16;
+-            float polish=(float)Math.Exp(-Math.Pow((t-.10f)/.035f,2));
+-            float exit=(float)Math.Exp(-Math.Pow((t-.90f)/.035f,2));
+-            float secondary=(float)Math.Exp(-Math.Pow((t-.42f)/.035f,2));
+-            float spectrum=(float)Math.Sin(t*12.56637f),envelope=(float)Math.Sin(t*3.1415926f);
+-            int alpha=(int)((4+polish*205+secondary*110+exit*130)*Math.Sqrt(envelope));
+-            wallTints[band]=Rgba((int)(35+polish*150+secondary*90+exit*70+spectrum*20),(int)(52+polish*160+secondary*80+exit*70),(int)(72+polish*170+secondary*120+exit*85-spectrum*20),alpha);
+-        }
++        for(int f=0;f<6;f++) for(int y=0;y<=24;y++) for(int x=0;x<=24;x++)
++            points[f*625+y*25+x]=Rounded(Surface(f,Coordinate(x),Coordinate(y)));
+     }
+     private static float Coordinate(int i) => i<6 ? -1+Round*(1-(float)Math.Cos(i/6f*1.5707963f)) : i>18 ? -Coordinate(24-i) : -Core+(i-6)*2*Core/12;
+     private static float Clamp(float a,float lo,float hi)=>Math.Max(lo,Math.Min(hi,a));
+@@ -92,15 +53,6 @@ internal sealed class IplRenderer
+         if(f==4)return new IplPoint(u,-1,v);
+         return new IplPoint(-u,v,-1);
+     }
+-    private static IplPoint Orient(int face,IplPoint p)
+-    {
+-        if(face==0)return p;
+-        if(face==1)return new IplPoint(p.Z,p.Y,-p.X);
+-        if(face==2)return new IplPoint(-p.Z,p.Y,p.X);
+-        if(face==3)return new IplPoint(p.X,p.Z,-p.Y);
+-        if(face==4)return new IplPoint(p.X,-p.Z,p.Y);
+-        return new IplPoint(-p.X,p.Y,-p.Z);
+-    }
+     private static IplPoint Rounded(IplPoint p)
+     {
+         float x=Clamp(p.X,-Core,Core), y=Clamp(p.Y,-Core,Core), z=Clamp(p.Z,-Core,Core);
+@@ -115,21 +67,12 @@ internal sealed class IplRenderer
+     }
+     private IplPoint Project(IplPoint p)
+     {
+-        return ProjectView(Rotate(p));
+-    }
+-    private IplPoint ProjectView(IplPoint p)
+-    {
+-        float f=3.8f/(3.8f-p.Z);
++        p=Rotate(p);float f=3.8f/(3.8f-p.Z);
+         return new IplPoint(322+p.X*scale*.975f*f,cy-p.Y*scale*f,p.Z);
+     }
+-    private void Tri(IplPoint a,IplPoint b,IplPoint d,uint color)
+-    {
+-        // Quantized optical lighting often produces exactly zero alpha. Skip
+-        // those triangles before virtual dispatch and native canvas staging.
+-        if((color&255)!=0)c.Triangle(a.X,a.Y,b.X,b.Y,d.X,d.Y,color);
+-    }
++    private void Tri(IplPoint a,IplPoint b,IplPoint d,uint color)=>c.Triangle(a.X,a.Y,b.X,b.Y,d.X,d.Y,color);
+     private void Rect(float x,float y,float w,float h,uint color)
+-    {if((color&255)!=0)c.Rectangle(x,y,w,h,color);}
++    {c.Triangle(x,y,x+w,y,x,y+h,color);c.Triangle(x+w,y,x+w,y+h,x,y+h,color);}
+     private void Line(float x,float y,float xx,float yy,float width,uint color)
+     {
+         float dx=xx-x,dy=yy-y, d=(float)Math.Sqrt(dx*dx+dy*dy);if(d<.001f)return;
+@@ -141,9 +84,9 @@ internal sealed class IplRenderer
+     {
+         for(int i=0;i<32;i++)
+         {
+-            var a=circleDirections[i];var b=circleDirections[i+1];
+-            float ax=x+a.X*r,ay=y+a.Y*r;
+-            float bx=x+b.X*r,by=y+b.Y*r;
++            float a=i*6.2831853f/32,b=(i+1)*6.2831853f/32;
++            float ax=x+(float)Math.Cos(a)*r,ay=y+(float)Math.Sin(a)*r;
++            float bx=x+(float)Math.Cos(b)*r,by=y+(float)Math.Sin(b)*r;
+             if(fill)c.Triangle(x,y,ax,ay,bx,by,color);else Line(ax,ay,bx,by,1,color);
+         }
+     }
+@@ -161,7 +104,6 @@ internal sealed class IplRenderer
+     internal void Prepare(IplShell shell)
+     {
+         if(shell.Editing)return;
+-        c.Section(IplRenderPhase.GlassGeometry);
+         float t=shell.Turn, ease=1-(float)Math.Pow(1-t,3);
+         if(t<1)ease+=(float)Math.Sin(t*3.1415926f)*.045f;
+         yaw=PoseYaw(shell.PreviousFace)+(PoseYaw(shell.Face)-PoseYaw(shell.PreviousFace))*ease;
+@@ -174,78 +116,77 @@ internal sealed class IplRenderer
+         cosYaw=(float)Math.Cos(yaw);sinYaw=(float)Math.Sin(yaw);cosPitch=(float)Math.Cos(pitch);sinPitch=(float)Math.Sin(pitch);
+         cy=202+(shell.ReducedMotion?0:(float)Math.Sin(shell.Time*.7f)*3);scale=106;
+         Cube();
+-        c.Section(IplRenderPhase.FrostGeometry);
+         c.BeginPanels();
+         if(shell.Page==ShellPage.Face&&shell.Face!=ShellFace.Play&&shell.Face!=ShellFace.Memory)
+             for(int i=0;i<shell.Rows;i++)FacePanel(shell,i);
+         c.EndPanels();
+-        c.Section(IplRenderPhase.None);
+     }
+     internal void Present(IplShell shell)
+     {
+         Rect(0,0,640,480,0x000000ff);
+-        if(shell.Editing)
+-        {
+-            c.Section(IplRenderPhase.Editor);Detail(shell);
+-            c.Section(IplRenderPhase.Footer);Footer(shell);c.Section(IplRenderPhase.None);return;
+-        }
+-        c.Section(IplRenderPhase.Transmission);
++        if(shell.Editing) { Detail(shell); Footer(shell); return; }
+         c.DrawGlass();
+-        c.Section(IplRenderPhase.Rims);GlassRims();
+-        c.Section(IplRenderPhase.Reflections);c.DrawReflections();
++        GlassRims();c.DrawReflections();
+         if(shell.Turn>.85f)
+         {
+-            c.Section(IplRenderPhase.Icons);FaceIcon(shell);
++            FaceIcon(shell);
+             if(shell.Page==ShellPage.Face&&shell.Face!=ShellFace.Play&&shell.Face!=ShellFace.Memory)
+             {
+-                c.Section(IplRenderPhase.Capture);c.CaptureBackdrop();
+-                c.Section(IplRenderPhase.Frost);c.DrawFrostedPanels();
+-                c.Section(IplRenderPhase.PanelTint);
++                c.CaptureBackdrop();c.DrawFrostedPanels();
+                 for(int i=0;i<shell.Rows;i++)if(shell.Face!=ShellFace.Play&&shell.Face!=ShellFace.Memory)PanelTint(shell,i);
+             }
+-            c.Section(IplRenderPhase.Labels);
+             if(shell.Page==ShellPage.Cube) MenuLabels(shell);
+             else FaceMenu(shell);
+         }
+-        c.Section(IplRenderPhase.Footer);Footer(shell);c.Section(IplRenderPhase.None);
++        Footer(shell);
+     }
+     private void Cube()
+     {
+         c.BeginGlass();
++        for(int i=0;i<points.Length;i++)
++        {
++            projected[i]=Project(points[i]);
++            float facing=Clamp((Rotate(Surface(i/625,0,0)).Z-.08f)/.20f,0,1);
++            facing=facing*facing*(3-2*facing);
++            uint color=GlassColor(points[i]);
++            glassColors[i]=(color&0xffffff00)|(uint)((color&255)*facing);
++        }
+         for(int f=0;f<6;f++){faceOrder[f]=f;depth[f]=Rotate(Surface(f,0,0)).Z;}
+         for(int i=1;i<6;i++){int j=i;while(j>0&&depth[faceOrder[j]]<depth[faceOrder[j-1]]){int v=faceOrder[j];faceOrder[j]=faceOrder[j-1];faceOrder[j-1]=v;j--;}}
+         for(int n=0;n<6;n++)
+         {
+             int face=faceOrder[n];
+-            // The old path uploaded and drew all six faces, even when their
+-            // complete transmission and reflection contribution was zero.
+-            float facing=Clamp((depth[face]-.08f)/.20f,0,1);
+-            if(facing<=0)continue;
+-            facing=facing*facing*(3-2*facing);
+             for(int i=0;i<625;i++)
+             {
+-                var p=Rotate(Orient(face,points[i]));var normal=Rotate(Orient(face,normals[i]));
+-                var uv=ReflectionUv(p,normal,curvatures[i]);
+-                uint color=GlassColor(p,normal);
+-                color=(color&0xffffff00)|(uint)((color&255)*facing);
+-                c.GlassVertex(i,ProjectView(p),color,uv.X,uv.Y,uv.Z);
++                int at=face*625+i;var uv=ReflectionUv(points[at]);
++                c.GlassVertex(i,projected[at],glassColors[at],uv.X,uv.Y,uv.Z);
+             }
+             c.EndGlassFace();
+         }
+         c.EndGlass();
+     }
+-    private static IplPoint ReflectionUv(IplPoint p,IplPoint n,float curvature)
++    private IplPoint ReflectionUv(IplPoint point)
+     {
++        var p=Rotate(point);
++        var local=new IplPoint(point.X-Clamp(point.X,-Core,Core),point.Y-Clamp(point.Y,-Core,Core),point.Z-Clamp(point.Z,-Core,Core));
++        float length=(float)Math.Sqrt(local.X*local.X+local.Y*local.Y+local.Z*local.Z);
++        float curvature=Clamp((1-Math.Max(Math.Max(Math.Abs(local.X),Math.Abs(local.Y)),Math.Abs(local.Z))/length)*3,0,1);
++        var n=Rotate(local);
++        n=new IplPoint(n.X/length,n.Y/length,n.Z/length);
+         var eye=new IplPoint(-p.X,-p.Y,3.8f-p.Z);
+-        float length=(float)Math.Sqrt(eye.X*eye.X+eye.Y*eye.Y+eye.Z*eye.Z);
++        length=(float)Math.Sqrt(eye.X*eye.X+eye.Y*eye.Y+eye.Z*eye.Z);
+         eye=new IplPoint(eye.X/length,eye.Y/length,eye.Z/length);
+         float dot=n.X*eye.X+n.Y*eye.Y+n.Z*eye.Z;
+         float grazing=Clamp(1-dot,0,1);
+         return new IplPoint(Clamp(.5f+(2*dot*n.X-eye.X)*.5f,.002f,.998f),Clamp(.5f+(2*dot*n.Y-eye.Y)*.5f,.002f,.998f),Clamp(.04f+1.8f*grazing,0,1)*(.12f+.88f*curvature));
+     }
+-    private static uint GlassColor(IplPoint p,IplPoint normal)
++    private uint GlassColor(IplPoint point)
+     {
++        float nx=point.X-Clamp(point.X,-Core,Core),ny=point.Y-Clamp(point.Y,-Core,Core),nz=point.Z-Clamp(point.Z,-Core,Core);
++        float len=(float)Math.Sqrt(nx*nx+ny*ny+nz*nz);
++        var normal=Rotate(new IplPoint(nx/len,ny/len,nz/len));
+         if(normal.Z<=0)return 0;
++        var p=Rotate(point);
+         // Soft environment lobes, anchored in world space, move across the glass
+         // during the idle float. These are light, not an opaque blue coating.
+         float teal=Light(p.X-.70f,p.Y-.65f,.68f);
+@@ -259,7 +200,7 @@ internal sealed class IplRenderer
+         int blue=(int)(18+teal*140+amber*9+violet*133+fresnel*27);
+         return Rgba(r,g,blue,(int)(205-normal.Z*22));
+     }
+-    private static float Light(float x,float y,float spread)=>IplLighting.ExpNegative((x*x+y*y)/(spread*spread));
++    private static float Light(float x,float y,float spread)=>(float)Math.Exp(-(x*x+y*y)/(spread*spread));
+ 
+     // A shaded optical cross-section follows the rotating wall without strokes.
+     private void GlassRims()
+@@ -275,8 +216,16 @@ internal sealed class IplRenderer
+             // Broad transmission and two soft polish lobes have no hard seam.
+             for(int band=0;band<16;band++)
+             {
++                float t=(band+.5f)/16;
++                float polish=(float)Math.Exp(-Math.Pow((t-.10f)/.035f,2));
++                float exit=(float)Math.Exp(-Math.Pow((t-.90f)/.035f,2));
++                float secondary=(float)Math.Exp(-Math.Pow((t-.42f)/.035f,2));
++                float spectrum=(float)Math.Sin(t*12.56637f);
++                float envelope=(float)Math.Sin(t*3.1415926f);
++                int alpha=(int)((4+polish*205+secondary*110+exit*130)*Math.Sqrt(envelope));
++                uint tint=Rgba((int)(35+polish*150+secondary*90+exit*70+spectrum*20),(int)(52+polish*160+secondary*80+exit*70),(int)(72+polish*170+secondary*120+exit*85-spectrum*20),alpha);
+                 float outside=band/16f,inside=(band+1)/16f;
+-                GlassWall(face,.997f-outside*.147f,.997f-inside*.147f,1-outside*.050f,1-inside*.050f,wallTints[band]);
++                GlassWall(face,.997f-outside*.147f,.997f-inside*.147f,1-outside*.050f,1-inside*.050f,tint);
+             }
+         }
+     }
+@@ -287,46 +236,44 @@ internal sealed class IplRenderer
+         IplPoint previousOuter=default,previousInner=default,firstOuter=default,firstInner=default;
+         for(int corner=0;corner<4;corner++)for(int j=0;j<=12;j++)
+         {
+-            var direction=wallDirections[corner*13+j];
+-            var o=WallPoint(face,corner,direction,outer,WallCorner+(outer-.997f)/.147f*.015f,front);
+-            var n=WallPoint(face,corner,direction,inner,WallCorner+(inner-.997f)/.147f*.015f,back);
++            float a=(180-corner*90-j*90f/12)*.017453293f;
++            var o=WallPoint(face,corner,a,outer,WallCorner+(outer-.997f)/.147f*.015f,front);
++            var n=WallPoint(face,corner,a,inner,WallCorner+(inner-.997f)/.147f*.015f,back);
+             if(corner==0&&j==0){firstOuter=o;firstInner=n;}
+             else WallSegment(previousOuter,o,previousInner,n,color);
+             previousOuter=o;previousInner=n;
+         }
+         WallSegment(previousOuter,firstOuter,previousInner,firstInner,color);
+     }
+-    private static IplPoint WallPoint(int face,int corner,IplPoint direction,float extent,float radius,float depth)
++    private static IplPoint WallPoint(int face,int corner,float angle,float extent,float radius,float depth)
+     {
+         float x=corner==0||corner==3?-extent+radius:extent-radius;
+         float y=corner<2?extent-radius:-extent+radius;
+         // Offset the transmitted inner boundary inside the glass: the mockup
+         // shows more optical depth on the left than on the right.
+         float refraction=(1-depth)/.050f*.105f;
+-        var p=Surface(face,x+direction.X*radius+refraction,y+direction.Y*radius);
++        var p=Surface(face,x+(float)Math.Cos(angle)*radius+refraction,y+(float)Math.Sin(angle)*radius);
+         return new IplPoint(p.X*depth,p.Y*depth,p.Z*depth);
+     }
+     private static IplPoint Lerp(IplPoint a,IplPoint b,float t)=>new IplPoint(a.X+(b.X-a.X)*t,a.Y+(b.Y-a.Y)*t,a.Z+(b.Z-a.Z)*t);
+     private void WallSegment(IplPoint a,IplPoint b,IplPoint innerA,IplPoint innerB,uint color)
+     {
+-        // Rotation is linear: transform four endpoints once, then interpolate
+-        // in view space. Projection and lighting share each interpolated point.
+-        a=Rotate(a);b=Rotate(b);innerA=Rotate(innerA);innerB=Rotate(innerB);
+-        var start=ProjectView(a);var end=ProjectView(b);
++        var start=Project(a);var end=Project(b);
+         float dx=end.X-start.X,dy=end.Y-start.Y;
+         int steps=Math.Max(1,(int)Math.Ceiling(Math.Sqrt(dx*dx+dy*dy)/5));
+-        var previousOuter=start;var previousInner=ProjectView(innerA);
++        var previousOuter=start;var previousInner=Project(innerA);
+         for(int i=1;i<=steps;i++)
+         {
+-            var p=Lerp(a,b,i/(float)steps);var outer=ProjectView(p);
+-            var inner=ProjectView(Lerp(innerA,innerB,i/(float)steps));
++            var p=Lerp(a,b,i/(float)steps);var outer=Project(p);
++            var inner=Project(Lerp(innerA,innerB,i/(float)steps));
+             uint shade=RimColor(p,color);
+             Tri(previousOuter,outer,previousInner,shade);Tri(outer,inner,previousInner,shade);
+             previousOuter=outer;previousInner=inner;
+         }
+     }
+-    private uint RimColor(IplPoint p,uint color)
++    private uint RimColor(IplPoint point,uint color)
+     {
++        var p=Rotate(point);
+         float top=Light(p.X-.55f,(p.Y-1)*2,.28f);
+         float corner=Light(p.X+.91f,(p.Y-.92f)*1.4f,.17f);
+         // Localized reflected lights reveal each curved return. Avoid a uniform
+@@ -382,8 +329,8 @@ internal sealed class IplRenderer
+         {
+             float x=corner==0||corner==3?left+radius:right-radius;
+             float y=corner<2?top-radius:bottom+radius;
+-            var direction=panelDirections[corner*9+j];
+-            var point=FacePoint(s,x+direction.X*radius,y+direction.Y*radius);
++            float a=(180-corner*90-j*90f/8)*.017453293f;
++            var point=FacePoint(s,x+(float)Math.Cos(a)*radius,y+(float)Math.Sin(a)*radius);
+             if(corner==0&&j==0)first=point;
+             else if(tint==0)c.PanelTriangle(center,previous,point);else Tri(center,previous,point,tint);
+             previous=point;
+@@ -417,8 +364,8 @@ internal sealed class IplRenderer
+         {
+             float x=corner==0||corner==3?u+radius:u+width-radius;
+             float y=corner<2?v-radius:v-height+radius;
+-            var direction=wallDirections[corner*13+j*4];
+-            var p=FacePoint(s,x+direction.X*radius,y+direction.Y*radius);
++            float angle=(180-corner*90-j*30)*.017453293f;
++            var p=FacePoint(s,x+(float)Math.Cos(angle)*radius,y+(float)Math.Sin(angle)*radius);
+             if(corner==0&&j==0)first=p;else Tri(center,previous,p,color);
+             previous=p;
+         }
+@@ -457,7 +404,7 @@ internal sealed class IplRenderer
+         {
+             float fade=Clamp(1-(float)Math.Sqrt((x-320)*(x-320)/115600f+(y-240)*(y-240)/78400f),0,1);
+             uint color=Rgba(61,65,67,(int)(fade*165));
+-            Rect(x-.5f,y,1,16,color);Rect(x,y-.5f,16,1,color);
++            Line(x,y,x,y+16,1,color);Line(x,y,x+16,y,1,color);
+         }
+     }
+     private void Detail(IplShell s)
+@@ -532,12 +479,12 @@ internal sealed class IplRenderer
+         float stick=s.Page==ShellPage.Cube?214:111;
+         for(int r=15;r>3;r-=3)Circle(stick,y,r,Rgba(210,214,217,130),false);
+         Circle(stick,y,3,0xd7d9dfff,true);
+-        Text(s.Page==ShellPage.Cube?"... Menu Selection":s.Face==ShellFace.Calendar&&s.Editing?"... Part / Value":"... Select",stick+24,y-13,s.Page==ShellPage.Cube?20:17,White);
++        Text("... "+(s.Page==ShellPage.Cube?"Menu Selection":s.Face==ShellFace.Calendar&&s.Editing?"Part / Value":"Select"),stick+24,y-13,s.Page==ShellPage.Cube?20:17,White);
+         if(s.Page==ShellPage.Cube)return;
+         for(int r=22;r>10;r-=3)Circle(320,y,r,Rgba(255,35,107,10),true);
+-        Circle(320,y,11,0xa42351ff,true);Center("B",320,y-14,20,White);Text(s.Editing?"... Cancel":"... Back",340,y-13,17,White);
++        Circle(320,y,11,0xa42351ff,true);Center("B",320,y-14,20,White);Text("... "+(s.Editing?"Cancel":"Back"),340,y-13,17,White);
+         if(s.Video.Reverting)return;
+         for(int r=23;r>12;r-=3)Circle(470,y,r,Rgba(15,245,196,10),true);
+-        Circle(470,y,13,0x168a73ff,true);Center("A",470,y-14,20,White);Text(s.Editing?"... Confirm":"... Open",492,y-13,17,White);
++        Circle(470,y,13,0x168a73ff,true);Center("A",470,y-14,20,White);Text("... "+(s.Editing?"Confirm":"Open"),492,y-13,17,White);
+     }
+ }
+diff --git a/VideoMode/IplRimCommands.cs b/VideoMode/IplRimCommands.cs
+new file mode 100644
+index 0000000000000000000000000000000000000000..c83a3c801ef86a7762f847b3bc3835c1afb71b5b
+--- /dev/null
++++ b/VideoMode/IplRimCommands.cs
+@@ -0,0 +1,22 @@
++using System;
++
++// A reusable GX_TRIANGLES command list. Position and color have independent
++// 16-bit indices, so one flat segment color covers both triangles of each quad.
++internal static class IplRimCommands
++{
++    internal const int Quads=128,PositionFloats=Quads*8,ColorBytes=Quads*4;
++    internal static byte[] Create()
++    {
++        var bytes=new byte[(3+Quads*6*4+31)/32*32];
++        bytes[0]=0x90;bytes[1]=(byte)(Quads*6>>8);bytes[2]=(byte)(Quads*6&255);
++        int at=3;
++        for(int quad=0;quad<Quads;quad++)for(int vertex=0;vertex<6;vertex++)
++        {
++            int corner=vertex==0?0:vertex==1||vertex==3?1:vertex==4?3:2;
++            int position=quad*4+corner;
++            bytes[at++]=(byte)(position>>8);bytes[at++]=(byte)position;
++            bytes[at++]=(byte)(quad>>8);bytes[at++]=(byte)quad;
++        }
++        return bytes;
++    }
++}
+diff --git a/VideoMode/Program.cs b/VideoMode/Program.cs
+index 97c371505b1d4a3d24548395c9d2009cde85173f..01d69adf4e3df09c4330dc8a605a393807ad5722 100644
+--- a/VideoMode/Program.cs
++++ b/VideoMode/Program.cs
+@@ -111,6 +111,7 @@ internal static class Program
+         {
+             long frameStart=Clock.Timestamp;
+             IplFrameProfiler.CaptureUs=IplFrameProfiler.BlurUs=0;
++            IplFrameProfiler.ExtraDraws=IplFrameProfiler.ExtraTriangles=0;
+             Controller.Update();var pad=Controller.GetState(0);float dt=clock.Tick();
+             shell.Tick(dt);
+ #if IPL_VISUAL_REVIEW || IPL_PERFORMANCE_REVIEW || IPL_HARDWARE_RUNNER
+@@ -160,12 +161,14 @@ internal static class Program
+ #endif
+             canvas.End();
+             int submit=timing?IplFrameProfiler.Since(phaseStart):0;
++#if !IPL_HARDWARE_RUNNER
+             if(IplPerformanceOverlay.Stats.Visible)
+             {
+                 long overlayStart=Clock.Timestamp;
+                 canvas.Begin();IplPerformanceOverlay.Draw(canvas);canvas.End();
+                 IplPerformanceOverlay.Stats.Current[IplPerformanceStats.Overlay]=IplFrameProfiler.Since(overlayStart);
+             }
++#endif
+             phaseStart=timing?Clock.Timestamp:0;
+             device.EndFrame();
+             int end=timing?IplFrameProfiler.Since(phaseStart):0;
