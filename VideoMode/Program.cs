@@ -148,8 +148,12 @@ internal static class Program
                 // The SDK also toggles its generic panel in Controller.Update.
                 // Use the app's detailed panel instead of drawing both.
                 DebugOverlay.PerformanceVisible=false;
-                IplPerformanceOverlay.DrawEnabled=true;
-                IplPerformanceOverlay.Stats.Toggle();
+                if(shell.Page==ShellPage.Browser&&browser.Compact)browser.ToggleView();
+                else
+                {
+                    IplPerformanceOverlay.DrawEnabled=true;
+                    IplPerformanceOverlay.Stats.Toggle();
+                }
             }
             if(pad.Y.WasPressed){if(shell.Page==ShellPage.Browser){if(browser.Compact)browser.ToggleView();else browser.Refresh();}else if(!IplFrameProfiler.Active)IplFrameProfiler.Start();}
             bool refreshHeld=pad.CStick.Y>.55f;
