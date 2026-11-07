@@ -5,7 +5,6 @@ internal sealed partial class IplRenderer
     private int storageTextRevision=-1,storageTextSelection=-1;
     private readonly string[] storageNames=new string[IplStorageLayout.ListRows],storageGames=new string[IplStorageLayout.ListRows];
     private string storageName="",storageGame="",storageSize="";
-    private int storageLabelRevision=-1,storageLabelSelection=-1;private string storageLabelStatus="";
     private void StorageSurface(IIplBrowserCanvas? mask,bool body)
     {
         const float x=38,y=93,width=564,height=263,radius=9;
@@ -45,9 +44,6 @@ internal sealed partial class IplRenderer
             storageTextRevision=browser.Revision;storageTextSelection=browser.Selection;
         }
         string mode=IplSwiss.VideoMode(shell.Video.Applied);if(mode!=lastVideoMode){lastVideoMode=mode;browserVideoMode="Video mode: "+mode;}
-        if(c is IIplBrowserCanvas text){bool changed=storageLabelRevision!=browser.Revision||storageLabelSelection!=browser.Selection||storageLabelStatus!=browserStatus;
-            if(text.BeginStorageTextCache(changed)){StorageFixedText(browser);text.EndStorageTextCache();}
-            storageLabelRevision=browser.Revision;storageLabelSelection=browser.Selection;storageLabelStatus=browserStatus;}
 #if IPL_CACHED_FOOTER_TEXT
         if(c.BeginFooterTextCache()){Footer(shell);c.EndFooterTextCache();}
 #endif
@@ -84,15 +80,16 @@ internal sealed partial class IplRenderer
             Bubble(browser.ListView?40:x-1,y-1,browser.ListView?560:size+2,size+2,browser.ListView?7:6,0x54dfc657u);
         }
         if(c is IIplBrowserCanvas art)art.DrawArtworks();
+        c.Section(IplRenderPhase.Footer);Footer(shell);c.Section(IplRenderPhase.Editor);
         if(browser.ListView){
             for(int i=0;i<browser.Count;i++){
                 var item=browser.Items[i]!;float y=IplStorageLayout.Y(i,true),focus=browser.Focus(i);focus=focus*focus*(3-2*focus);
                 uint color=i==browser.Selection?White:0xbfcfd9ffu;Text(storageNames[i]??"",78,y+5,12.2f*(1+.13f*focus),color);
             }
         }
-        if(!(c is IIplBrowserCanvas fixedText)||!fixedText.DrawStorageTextCache())StorageFixedText(browser);
+        StorageFixedText(browser);
         if(browser.Selected==null)Center(browser.Busy?"Reading storage...":"No entries",320,217,18,0xaacbd3ffu);
         if(browser.Panel!=IplBrowserPanel.Grid)BrowserDialog(shell,browser);
-        c.Section(IplRenderPhase.Footer);Footer(shell);c.Section(IplRenderPhase.None);
+        c.Section(IplRenderPhase.None);
     }
 }

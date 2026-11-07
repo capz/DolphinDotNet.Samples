@@ -30,6 +30,7 @@ parser.add_argument('--dense-storage',action='store_true',help='Compact native c
 parser.add_argument('--storage',action='store_true',help='Actual native card services and original DVD file fixtures')
 parser.add_argument('--native-boundaries',action='store_true',help='Pause at actual native presentation boundaries; capture the complete X11 client')
 parser.add_argument('--sdk',type=Path)
+parser.add_argument('--sd-only',action='store_true',help='Final SD-only smoke on the DVD-backed native review build')
 parser.add_argument('--dense-quick',action='store_true',help='Final native fixed-label/cache smoke sequence instead of full paging acceptance')
 parser.add_argument('--memory-only',action='store_true',help='Skip SD review when validating a normal DOL without physical GC Loader')
 parser.add_argument('--disc',type=Path)
@@ -39,6 +40,7 @@ parser.add_argument('--system-clock',action='store_true',help='Adjust isolated c
 args=parser.parse_args()
 if sum([args.calendar,args.widescreen,args.selector_motion,args.selector_scan,args.directional_return,args.system_clock,args.library,args.storage,args.flat_pages,args.dense_storage])>1:parser.error('Choose one review sequence')
 if args.native_boundaries and args.sdk is None:parser.error('--native-boundaries requires --sdk')
+if args.sd_only and (not args.dense_storage or not args.dense_quick or args.memory_only):parser.error('--sd-only requires --dense-storage --dense-quick')
 if args.memory_only and not args.dense_storage:parser.error('--memory-only requires --dense-storage')
 root=args.logs.resolve()
 if root.exists() and any(root.iterdir()):raise ValueError('Use a fresh capture directory')
@@ -52,6 +54,8 @@ if args.storage or args.flat_pages or args.dense_storage:
 if args.native_boundaries:
     with (config/'Dolphin.ini').open('a') as f:f.write('[General]\nGDBPort = 2174\n[Interface]\nDebugModeEnabled = True\n[Movie]\nDumpFrames = False\n')
 (config/'GFX.ini').write_text('[Settings]\nDumpFramesAsImages = True\nInternalResolution = 1\nMSAA = 1\nSSAA = False\nAspectRatio = 2\n[Enhancements]\nPostProcessingShader = IplEdgeAA\n[Hacks]\nForceProgressive = True\n')
+if args.native_boundaries:
+    with (config/'GFX.ini').open('a') as f:f.write('[Hacks]\nXFBToTextureEnable = False\nDeferEFBCopies = False\n')
 (config/'GCPadNew.ini').write_text('[GCPad1]\nDevice = XInput2/0/Virtual core pointer\nButtons/Z = Z\nButtons/A = A\nButtons/B = B\nButtons/X = X\nButtons/Y = Y\nTriggers/L = Q\nTriggers/R = W\nD-Pad/Left = Left\nD-Pad/Right = Right\nD-Pad/Up = Up\nD-Pad/Down = Down\nMain Stick/Up = I\nMain Stick/Down = K\nMain Stick/Left = J\nMain Stick/Right = L\nC-Stick/Up = U\n')
 shaders=root/'user/Shaders';shaders.mkdir()
 shutil.copyfile(Path(__file__).parents[1]/'VideoMode/Assets/IplEdgeAA.glsl',shaders/'IplEdgeAA.glsl')
@@ -107,6 +111,9 @@ def shot(name):
             event['efb_source']=frame.name;event['efb_sha256']=hashlib.sha256(raw).hexdigest()
             break
     if native_frames is not None:event.update(capture_source='Complete X11 client, guest paused at VIDEO_WaitVSync after GX_CopyDisp/GX_DrawDone',native_boundaries=boundary)
+    if native_frames is not None:
+        event['xfb']=native_frames.capture_xfb(root/(name+'-xfb.yuv'))
+        if native_frames.stable_frame()!=boundary:raise RuntimeError('Native frame advanced during framebuffer read')
     events.append(event)
     if native_frames is None:p.send_signal(signal.SIGCONT)
 try:
@@ -152,11 +159,14 @@ try:
         key('x');shot('19-safe-interlaced-preview-side')
     elif args.dense_storage:
         if args.dense_quick:
-            wait_frames(frame_count(),30);key('w');key('a');key('a');wait_frames(frame_count(),160);shot('01-memory-dense-grid')
-            key('y');shot('02-memory-list');key('Down');key('y');shot('03-memory-grid-preserved-selection')
-            key('Left');key('Left');shot('04-memory-last-page-grid');key('y');shot('05-memory-last-page-list')
-            key('b');shot('06-memory-b-to-cube')
+            if not args.sd_only:
+                wait_frames(frame_count(),30);key('w');key('a');key('a');wait_frames(frame_count(),160);shot('01-memory-dense-grid')
+                key('y');shot('02-memory-list');key('Down');key('y');shot('03-memory-grid-preserved-selection')
+                key('Left');key('Left');shot('04-memory-last-page-grid');key('y');shot('05-memory-last-page-list')
+                key('w');shot('05b-memory-slot-b-list');key('q');shot('05c-memory-slot-a-list')
+                key('b');shot('06-memory-b-to-cube')
             if not args.memory_only:
+                if args.sd_only:wait_frames(frame_count(),30);key('w')
                 key('a');key('Down');key('a');wait_frames(frame_count(),160);shot('08-sd-dense-grid')
                 key('y');shot('09-sd-list');key('Down');key('y');wait_frames(frame_count(),160);shot('10-sd-grid-file-details')
                 key('y');shot('11-sd-list-same-file');key('b');shot('12-sd-b-to-cube')

@@ -19,7 +19,6 @@ internal sealed partial class GameCubeCanvas : IIplCanvas, IIplBrowserCanvas, ID
     private readonly Renderer renderer;
     private readonly CachedFooter footer;
     private readonly CachedFooter browserCards;
-    private readonly CachedStorageText storageText;
     private readonly DynamicMesh browserMask;
     private int browserMaskVertices;
     private readonly UvTransform[] browserBlurOffsets=new UvTransform[9];
@@ -103,7 +102,6 @@ internal sealed partial class GameCubeCanvas : IIplCanvas, IIplBrowserCanvas, ID
         renderer=new Renderer(device);
         footer=new CachedFooter(glass);
         browserCards=new CachedFooter(glass,6,24);
-        storageText=new CachedStorageText(glass,atlas);
 #if IPL_CACHED_GRID
         editorGrid=new CachedFooter(glass,1,32);
 #endif
@@ -483,9 +481,6 @@ internal sealed partial class GameCubeCanvas : IIplCanvas, IIplBrowserCanvas, ID
 #endif
         renderer.End3D();draw.Begin();if(IplFrameProfiler.Active)IplFrameProfiler.BlurUs+=IplFrameProfiler.Since(began);
     }
-    public bool BeginStorageTextCache(bool changed){if(storageText.Ready&&!changed)return false;storageText.Begin();return true;}
-    public void EndStorageTextCache()=>storageText.End();
-    public bool DrawStorageTextCache(){if(!storageText.Ready)return false;draw.End();renderer.Begin3D(camera);storageText.Draw(renderer);renderer.End3D();draw.Begin();return true;}
     public bool BeginBrowserCache(int style){if(browserCards.Ready(style))return false;browserCards.Begin(style);return true;}
     public void EndBrowserCache()=>browserCards.End();
     public bool DrawBrowserCache(int style){if(!browserCards.Ready(style))return false;draw.End();renderer.Begin3D(camera);browserCards.Draw(renderer,style,scale);renderer.End3D();draw.Begin();return true;}
@@ -611,7 +606,6 @@ internal sealed partial class GameCubeCanvas : IIplCanvas, IIplBrowserCanvas, ID
     {glyphVertices[at]=x;glyphVertices[at+1]=y;glyphVertices[at+2]=u;glyphVertices[at+3]=v;}
     public void Text(string value,float x,float y,float size,uint color,float angle,float stretch=1)
     {
-        if(storageText.Recording){storageText.Add(value,x,y,size,color,angle,stretch,scale);return;}
 #if IPL_CACHED_FOOTER_TEXT
         if(footerText.Recording){footerText.Add(value,x,y,size,color,angle,stretch,scale);return;}
 #endif
@@ -641,7 +635,6 @@ internal sealed partial class GameCubeCanvas : IIplCanvas, IIplBrowserCanvas, ID
 #else
     public void Text(string value,float x,float y,float size,uint color,float angle,float stretch=1)
     {
-        if(storageText.Recording){storageText.Add(value,x,y,size,color,angle,stretch,scale);return;}
 #if IPL_CACHED_FOOTER_TEXT
         if(footerText.Recording){footerText.Add(value,x,y,size,color,angle,stretch,scale);return;}
 #endif
@@ -674,7 +667,7 @@ internal sealed partial class GameCubeCanvas : IIplCanvas, IIplBrowserCanvas, ID
 #if IPL_CACHED_SELECTORS
         for(int i=0;i<selectors.Length;i++)selectors[i]?.Dispose();
 #endif
-        ReleaseStorageArtwork();storageText.Dispose();browserMask.Dispose();browserBannerQuad.Dispose();browserIconQuad.Dispose();
+        ReleaseStorageArtwork();browserMask.Dispose();browserBannerQuad.Dispose();browserIconQuad.Dispose();
         footer.Dispose();browserCards.Dispose();for(int i=0;i<artwork.Length;i++)artwork[i]?.Dispose();icons.Dispose();
 #if IPL_CACHED_GRID
         editorGrid.Dispose();

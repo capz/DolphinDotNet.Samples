@@ -53,7 +53,7 @@
     <DefineConstants Condition="('$(IplVisualReview)' == 'true' or '$(IplPerformanceReview)' == 'true') and '$(IplVisualReviewAngle)' == 'true'">$(DefineConstants);IPL_VISUAL_REVIEW_ANGLE</DefineConstants>
   </PropertyGroup>
   <ItemGroup Condition="'$(IplHistoricalRenderer)' == 'true'">
-    <Compile Remove="IplBrowserRenderer.cs;IplFlatMenuRenderer.cs;IplStorageRenderer.cs;GameCubeStorageCanvas.cs;CachedStorageText.cs" />
+    <Compile Remove="IplBrowserRenderer.cs;IplFlatMenuRenderer.cs;IplStorageRenderer.cs;GameCubeStorageCanvas.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(IntermediateOutputPath)IplHardwareRunConfig.g.cs" Condition="'$(IplHardwareRunner)' == 'true'" />
