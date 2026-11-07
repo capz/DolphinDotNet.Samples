@@ -38,3 +38,12 @@ record those separately on the actual hardware.
 
 The managed automatic-defrag default remains disabled. The harness enables
 it explicitly for benchmark and power cycles, and disables it after BENCH.
+
+## Large ISO defragmentation feature plan
+
+The phased proposal for full-size (~1.36 GiB) GameCube ISO relocation,
+external scratch devices (SD2SP2, SD Gecko, writable GC Loader), recovery,
+and optional experimental in-place relocation is in
+[ISO_DEFRAGMENTATION_FEATURE_PLAN.md](ISO_DEFRAGMENTATION_FEATURE_PLAN.md).
+SDK implementation belongs in [capz/DolphinDotNet](https://github.com/capz/DolphinDotNet),
+not this Samples repository. This is a plan, not yet supported sample functionality.
