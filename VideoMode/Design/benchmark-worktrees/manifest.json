@@ -1,0 +1,143 @@
+{
+  "schema": 1,
+  "purpose": "Exact remaining local-only benchmark worktree edits; historical reproduction inputs, not applied to the interactive app.",
+  "archive_base": "6559ac9ca26b1e71c3d378c53d9961ef9f553234",
+  "variants": [
+    {
+      "name": "videomode-perf-baseline",
+      "base": "9198b85aa8bab53850fead8115440825d862d9e8",
+      "patch": "videomode-perf-baseline.patch",
+      "patch_bytes": 29807,
+      "patch_sha256": "b0cf35f75ad499c18dfd2ead0ab6d16de798d169abd90cf45ee409add38be24c",
+      "files": [
+        {
+          "path": "VideoMode/GameCubeCanvas.cs",
+          "bytes": 8723,
+          "sha256": "275edeb69027d13a1602f63d7018c0f33889222f96171cf34d6a2cd103bbb7ba"
+        },
+        {
+          "path": "VideoMode/IplFrameProfiler.cs",
+          "bytes": 4979,
+          "sha256": "936e207a49c04c27a267d3e8e50ed3b6f3acde07c052c1e420035d9f021f9177"
+        },
+        {
+          "path": "VideoMode/IplHardwareReporter.cs",
+          "bytes": 2415,
+          "sha256": "1109aec9179feba227dea20e78142e433390890df4ff531b0bfa3b0203d53847"
+        },
+        {
+          "path": "VideoMode/IplRenderer.cs",
+          "bytes": 27487,
+          "sha256": "bf0fe0c3d46a790115a8969d86dfb4e302dd978e293b87c18cb67d65c422f6da"
+        },
+        {
+          "path": "VideoMode/Program.cs",
+          "bytes": 7907,
+          "sha256": "3eb95d690471c352f85275c8bfd3920f3ef083f6fdf79db386c273f80cd1cfe9"
+        },
+        {
+          "path": "VideoMode/VideoMode.csproj",
+          "bytes": 7738,
+          "sha256": "09b473696159279ea922a749c2a6e7e051c03604b1c50ccae8ef0104120b6637"
+        }
+      ]
+    },
+    {
+      "name": "videomode-followup-baseline",
+      "base": "9269a00ef0856481f728d7e980274297f840cc14",
+      "patch": "videomode-followup-baseline.patch",
+      "patch_bytes": 3525,
+      "patch_sha256": "7c6d566e734bcac16d3863886b3b85eaf2dd44d6a017efe0300e87a2e2c35bb9",
+      "files": [
+        {
+          "path": "VideoMode/Program.cs",
+          "bytes": 8794,
+          "sha256": "15e2d8822be8af21f0b256e6a20dc235d862452a930ea4de356499c50af27eb2"
+        },
+        {
+          "path": "VideoMode/VideoMode.csproj",
+          "bytes": 8706,
+          "sha256": "00719d16cd20fe56be618c2d0c291bf5eab31f0d20fe77be0845ac445a1a9701"
+        }
+      ]
+    },
+    {
+      "name": "videomode-indexed-baseline",
+      "base": "30f925616c78e7a18bc3286259ec9a95b8531143",
+      "patch": "videomode-indexed-baseline.patch",
+      "patch_bytes": 44443,
+      "patch_sha256": "27f9f95623f5d0469cd7625aba39fcb4741e39e555850c567fdf92c19ad9bcc3",
+      "files": [
+        {
+          "path": "VideoMode/GameCubeCanvas.cs",
+          "bytes": 8723,
+          "sha256": "275edeb69027d13a1602f63d7018c0f33889222f96171cf34d6a2cd103bbb7ba"
+        },
+        {
+          "path": "VideoMode/IndexedRims.cs",
+          "bytes": 5443,
+          "sha256": "cdb7f23c45adfa9de4c4b5ab77b437b32c2bd53f2c5bb62a928d99e8ee3723ed"
+        },
+        {
+          "path": "VideoMode/IplFrameProfiler.cs",
+          "bytes": 5040,
+          "sha256": "430c18f05570faf794a5327723616e3b2e3c40b2f40104e9446888b5df1acfdd"
+        },
+        {
+          "path": "VideoMode/IplPerformanceOverlay.cs",
+          "bytes": 3585,
+          "sha256": "003c2e3eb4d7905e4784d09b329dbfc9417fe630778f45852056c3d81b3b802a"
+        },
+        {
+          "path": "VideoMode/IplPerformanceStats.cs",
+          "bytes": 2124,
+          "sha256": "78680c2a3ac8c64d37af47df361cbc45bca5235ca95f325c9683f5648f769312"
+        },
+        {
+          "path": "VideoMode/IplRenderer.cs",
+          "bytes": 27487,
+          "sha256": "bf0fe0c3d46a790115a8969d86dfb4e302dd978e293b87c18cb67d65c422f6da"
+        },
+        {
+          "path": "VideoMode/IplRimCommands.cs",
+          "bytes": 856,
+          "sha256": "5abc951cb076bff1913bee5446df08b08cee3d6b4c2922ef7d72a58b87793211"
+        },
+        {
+          "path": "VideoMode/Program.cs",
+          "bytes": 8901,
+          "sha256": "74bd373f684be00e7281fae17589bbb6d21a40bcd0f9a53c40ffd82a3ddfd430"
+        }
+      ]
+    },
+    {
+      "name": "videomode-overlay-baseline",
+      "base": "7845b9da12ee59dd45aa9d1246ae167b549223a1",
+      "patch": "videomode-overlay-baseline.patch",
+      "patch_bytes": 10887,
+      "patch_sha256": "fa8e712885c2eacd3c77b1071b80d69ca79fcf16da22869178e0d4ee1009ffde",
+      "files": [
+        {
+          "path": "VideoMode/IplFrameProfiler.cs",
+          "bytes": 5704,
+          "sha256": "f84fbae07fb77fd0de8c3d3ab3600f3c1c7cb06e917b40b55e740b33e63f7dcd"
+        },
+        {
+          "path": "VideoMode/IplPerformanceOverlay.cs",
+          "bytes": 4637,
+          "sha256": "0476c6a69ea2ade27d0876b2ff285b11f9a7cab39bf09a68941151ee97dcc793"
+        },
+        {
+          "path": "VideoMode/Program.cs",
+          "bytes": 9382,
+          "sha256": "2fec179cd23c9c466b856f606ba996fbea9cf37c20aea3d83b138941778c3c58"
+        },
+        {
+          "path": "VideoMode/VideoMode.csproj",
+          "bytes": 9487,
+          "sha256": "470fb4a92194530801c516c1e373587b5d347c5820a3d7277db6371eb6508373"
+        }
+      ]
+    }
+  ]
+}
