@@ -1,0 +1,22 @@
+{
+  "review_dol_sha256": "e4cd942835351412bcec48af90a53f5b8db86675fb3cc86d149e2d78c2a1bb64",
+  "review_note": "StorageReview selects original DVD file fixtures, not physical GC Loader storage. Real SDK card manager on isolated raw cards.",
+  "seed_dol_sha256": "106ed7874c5f4b63fce95cf2219054884fe2e3eba1c7e30125a908c7a8f3992e",
+  "disc_sha256": "dba8c51d11553d560cf1a7490e031e81cb03e67c96185281583f271d5803135d",
+  "seed_card_hashes": {
+    "MemoryCardA.EUR.raw": "6fe0c205475e4c9b94e59333a93a0548c8bbcada5d34b4a730bb04ab3180d319",
+    "MemoryCardB.EUR.raw": "36a2014d43740ddd43d31096b53dfad7bb6b929c618a09113b2652f31d03588b"
+  },
+  "rejected_review_dol_sha256": "cb2593cf3edc2b610e761ae24c486ecf6dcf3e02e903c4e52909d5f7472a3d1e",
+  "rejected_review_note": "Initial native run exhausted the 256 KiB heap when all grid metadata was retained; replaced by native catalog and lazy selected/list records.",
+  "review_captures": "sd-accepted",
+  "managed_heap_bytes": 262144,
+  "native_read_only_card_hashes_unchanged": true,
+  "native_read_only_disc_hash_unchanged": true,
+  "capture_source": "Completed native GX_CopyDisp framebuffer read in Dolphin after GX_DrawDone; original YUYV422 bytes retained, unscaled BT.601 RGB PNG decoding",
+  "native_capture_count": 13,
+  "full_functional_capture_artifacts": "/workspace/artifacts/videomode-dense-storage/native-review-06",
+  "full_functional_capture_count": 21,
+  "final_source_commit": "07fc77881b16ca29b3afb6c04d012dfe7770f1a0",
+  "normal_captures": "normal-accepted"
+}

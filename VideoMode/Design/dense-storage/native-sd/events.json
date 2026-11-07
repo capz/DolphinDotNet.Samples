@@ -1,0 +1,87 @@
+[
+  {
+    "capture": "08-sd-dense-grid",
+    "completed_frames": 0,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "capture_source": "Complete X11 client, guest paused at VIDEO_WaitVSync after GX_CopyDisp/GX_DrawDone",
+    "native_boundaries": 465,
+    "xfb": {
+      "width": 640,
+      "height": 480,
+      "format": "YUYV422",
+      "source": "Native GX_CopyDisp output, read after GX_DrawDone before VIDEO_WaitVSync"
+    },
+    "xfb_source": "/workspace/artifacts/videomode-dense-storage/sd-accepted/08-sd-dense-grid-xfb.yuv",
+    "xfb_sha256": "75097a7f62900547959876b08c1002c5d2d6e1d92923e8e877312536ca23b2e3",
+    "png_sha256": "93dbb0e1640daf75101bdc8cd3100ce7281662cadd4d76bd3b060470b8146486",
+    "conversion": "BT.601 limited-range YUYV422 to RGB8; no crop/resize/composition"
+  },
+  {
+    "capture": "09-sd-list",
+    "completed_frames": 0,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "capture_source": "Complete X11 client, guest paused at VIDEO_WaitVSync after GX_CopyDisp/GX_DrawDone",
+    "native_boundaries": 518,
+    "xfb": {
+      "width": 640,
+      "height": 480,
+      "format": "YUYV422",
+      "source": "Native GX_CopyDisp output, read after GX_DrawDone before VIDEO_WaitVSync"
+    },
+    "xfb_source": "/workspace/artifacts/videomode-dense-storage/sd-accepted/09-sd-list-xfb.yuv",
+    "xfb_sha256": "2323ca38760f1406deccd3965ce432bdb7061b278ba14b13905f88e831e237e2",
+    "png_sha256": "e6fabb4bfe28d9e9a1b94b0f62ea822b3fc9f3ec9f35fef01fc618e24a32d299",
+    "conversion": "BT.601 limited-range YUYV422 to RGB8; no crop/resize/composition"
+  },
+  {
+    "capture": "10-sd-grid-file-details",
+    "completed_frames": 0,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "capture_source": "Complete X11 client, guest paused at VIDEO_WaitVSync after GX_CopyDisp/GX_DrawDone",
+    "native_boundaries": 784,
+    "xfb": {
+      "width": 640,
+      "height": 480,
+      "format": "YUYV422",
+      "source": "Native GX_CopyDisp output, read after GX_DrawDone before VIDEO_WaitVSync"
+    },
+    "xfb_source": "/workspace/artifacts/videomode-dense-storage/sd-accepted/10-sd-grid-file-details-xfb.yuv",
+    "xfb_sha256": "21c65b84c0802be096475b70175fbec6fd0e246c0498c094b1b325f722f61540",
+    "png_sha256": "84c1dd174189c663a066c58308844dd19a0c916832d78fb383e7bbf9200b0622",
+    "conversion": "BT.601 limited-range YUYV422 to RGB8; no crop/resize/composition"
+  },
+  {
+    "capture": "11-sd-list-same-file",
+    "completed_frames": 0,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "capture_source": "Complete X11 client, guest paused at VIDEO_WaitVSync after GX_CopyDisp/GX_DrawDone",
+    "native_boundaries": 836,
+    "xfb": {
+      "width": 640,
+      "height": 480,
+      "format": "YUYV422",
+      "source": "Native GX_CopyDisp output, read after GX_DrawDone before VIDEO_WaitVSync"
+    },
+    "xfb_source": "/workspace/artifacts/videomode-dense-storage/sd-accepted/11-sd-list-same-file-xfb.yuv",
+    "xfb_sha256": "cc17db6d047379c3ab4ee603181f7e1b52ac1810ac5f6a1bb1f5894878f1f133",
+    "png_sha256": "048a04b6d0000fd34fbcac3537fb59e9fc019234ae1b649a6eaa179529834325",
+    "conversion": "BT.601 limited-range YUYV422 to RGB8; no crop/resize/composition"
+  },
+  {
+    "capture": "12-sd-b-to-cube",
+    "completed_frames": 0,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "capture_source": "Complete X11 client, guest paused at VIDEO_WaitVSync after GX_CopyDisp/GX_DrawDone",
+    "native_boundaries": 887,
+    "xfb": {
+      "width": 640,
+      "height": 480,
+      "format": "YUYV422",
+      "source": "Native GX_CopyDisp output, read after GX_DrawDone before VIDEO_WaitVSync"
+    },
+    "xfb_source": "/workspace/artifacts/videomode-dense-storage/sd-accepted/12-sd-b-to-cube-xfb.yuv",
+    "xfb_sha256": "78ed3534387337d50c713185203bbf11fad57e769bb339e6a07882930e5c1dbf",
+    "png_sha256": "6f3ab45f37408be2d468be9288ccfc5bc4a4145c004ce79d62f0e80c48c92996",
+    "conversion": "BT.601 limited-range YUYV422 to RGB8; no crop/resize/composition"
+  }
+]

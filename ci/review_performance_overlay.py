@@ -25,15 +25,38 @@ parser.add_argument('--calendar',action='store_true',help='Review two-row blur a
 parser.add_argument('--selector-motion',action='store_true',help='Record active hour/minute/month/year motion, A/B and Reduced Motion')
 parser.add_argument('--selector-scan',action='store_true',help='Exercise animated scan values across progressive/interlaced preview, keep, rollback and safe mode')
 parser.add_argument('--directional-return',action='store_true',help='Review reverse stick return, hold latching and D-pad Calendar rows')
+parser.add_argument('--flat-pages',action='store_true',help='Read-only sides, full flat option lists and single-B exit from editors/browsers/dialogs')
+parser.add_argument('--dense-storage',action='store_true',help='Compact native card/SD grid, list, paging and preserved selection')
+parser.add_argument('--storage',action='store_true',help='Actual native card services and original DVD file fixtures')
+parser.add_argument('--native-boundaries',action='store_true',help='Pause at actual native presentation boundaries; capture the complete X11 client')
+parser.add_argument('--sdk',type=Path)
+parser.add_argument('--sd-only',action='store_true',help='Final SD-only smoke on the DVD-backed native review build')
+parser.add_argument('--dense-quick',action='store_true',help='Final native fixed-label/cache smoke sequence instead of full paging acceptance')
+parser.add_argument('--memory-only',action='store_true',help='Skip SD review when validating a normal DOL without physical GC Loader')
+parser.add_argument('--disc',type=Path)
+parser.add_argument('--card-user',type=Path)
+parser.add_argument('--library',action='store_true',help='Native library layout/navigation using explicitly labeled synthetic UI data')
+parser.add_argument('--system-clock',action='store_true',help='Adjust isolated clock, inspect SRAM and Dolphin restart policy, then decrement')
 args=parser.parse_args()
-if sum([args.calendar,args.widescreen,args.selector_motion,args.selector_scan,args.directional_return])>1:parser.error('Choose one review sequence')
+if sum([args.calendar,args.widescreen,args.selector_motion,args.selector_scan,args.directional_return,args.system_clock,args.library,args.storage,args.flat_pages,args.dense_storage])>1:parser.error('Choose one review sequence')
+if args.native_boundaries and args.sdk is None:parser.error('--native-boundaries requires --sdk')
+if args.sd_only and (not args.dense_storage or not args.dense_quick or args.memory_only):parser.error('--sd-only requires --dense-storage --dense-quick')
+if args.memory_only and not args.dense_storage:parser.error('--memory-only requires --dense-storage')
 root=args.logs.resolve()
 if root.exists() and any(root.iterdir()):raise ValueError('Use a fresh capture directory')
 root.mkdir(parents=True,exist_ok=True)
 config=root/'user/Config';config.mkdir(parents=True)
 (config/'Dolphin.ini').write_text('[Core]\nGFXBackend = OGL\nCPUCore = 1\nCPUThread = False\nSIDevice0 = 6\n[DSP]\nBackend = No Audio Output\n[Display]\nRenderWindowXPos = 0\nRenderWindowYPos = 0\nRenderWindowWidth = 640\nRenderWindowHeight = 480\n[Interface]\nOnScreenDisplayMessages = False\n[Movie]\nDumpFrames = True\nDumpFramesSilent = True\n')
+if args.storage or args.flat_pages or args.dense_storage:
+    with (config/'Dolphin.ini').open('a') as f:f.write('[Core]\nSlotA = 1\nSlotB = 1\n'+('DefaultISO = '+str(args.disc.resolve())+'\n' if args.disc else ''))
+    if args.card_user:
+        shutil.copytree(args.card_user/'GC',root/'user/GC')
+if args.native_boundaries:
+    with (config/'Dolphin.ini').open('a') as f:f.write('[General]\nGDBPort = 2174\n[Interface]\nDebugModeEnabled = True\n[Movie]\nDumpFrames = False\n')
 (config/'GFX.ini').write_text('[Settings]\nDumpFramesAsImages = True\nInternalResolution = 1\nMSAA = 1\nSSAA = False\nAspectRatio = 2\n[Enhancements]\nPostProcessingShader = IplEdgeAA\n[Hacks]\nForceProgressive = True\n')
-(config/'GCPadNew.ini').write_text('[GCPad1]\nDevice = XInput2/0/Virtual core pointer\nButtons/Z = Z\nButtons/A = A\nButtons/B = B\nButtons/X = X\nD-Pad/Left = Left\nD-Pad/Right = Right\nD-Pad/Up = Up\nD-Pad/Down = Down\nMain Stick/Up = I\nMain Stick/Down = K\nMain Stick/Left = J\nMain Stick/Right = L\n')
+if args.native_boundaries:
+    with (config/'GFX.ini').open('a') as f:f.write('[Hacks]\nXFBToTextureEnable = False\nDeferEFBCopies = False\n')
+(config/'GCPadNew.ini').write_text('[GCPad1]\nDevice = XInput2/0/Virtual core pointer\nButtons/Z = Z\nButtons/A = A\nButtons/B = B\nButtons/X = X\nButtons/Y = Y\nTriggers/L = Q\nTriggers/R = W\nD-Pad/Left = Left\nD-Pad/Right = Right\nD-Pad/Up = Up\nD-Pad/Down = Down\nMain Stick/Up = I\nMain Stick/Down = K\nMain Stick/Left = J\nMain Stick/Right = L\nC-Stick/Up = U\n')
 shaders=root/'user/Shaders';shaders.mkdir()
 shutil.copyfile(Path(__file__).parents[1]/'VideoMode/Assets/IplEdgeAA.glsl',shaders/'IplEdgeAA.glsl')
 x=C.CDLL('libX11.so.6');xt=C.CDLL('libXtst.so.6')
@@ -42,10 +65,14 @@ x.XStringToKeysym.argtypes=[C.c_char_p];x.XStringToKeysym.restype=C.c_ulong
 x.XKeysymToKeycode.argtypes=[C.c_void_p,C.c_ulong];x.XKeysymToKeycode.restype=C.c_uint
 xt.XTestFakeKeyEvent.argtypes=[C.c_void_p,C.c_uint,C.c_int,C.c_ulong]
 x.XSync.argtypes=[C.c_void_p,C.c_int]
+native_frames=None
 def frame_count():
+    if native_frames is not None:return native_frames.count
     return len(list((root/'user/Dump/Frames').glob('*.png')))
 
 def wait_frames(start,count):
+    if native_frames is not None:
+        native_frames.advance(max(0,start+count-native_frames.count));return
     deadline=time.monotonic()+45
     while frame_count()<start+count:
         if p.poll() is not None:raise RuntimeError('Dolphin exited while awaiting input frames')
@@ -62,11 +89,17 @@ def key(name,held=.15):
 
 log=(root/'emulator.log').open('w')
 p=subprocess.Popen(['/usr/games/dolphin-emu-nogui','--platform','x11','-u',str(root/'user'),'-C','SYSCONF.IPL.PGS=True','-e',str(args.dol.resolve())],stdout=log,stderr=subprocess.STDOUT)
+if args.native_boundaries:
+    from native_frame_boundary import NativeFrames
+    native_frames=NativeFrames(args.sdk,args.dol,p)
 events=[]
 def shot(name):
     if p.poll() is not None:raise RuntimeError('Dolphin exited')
-    p.send_signal(signal.SIGSTOP);time.sleep(.2)
+    boundary=native_frames.stable_frame() if native_frames is not None else None
+    if native_frames is None:p.send_signal(signal.SIGSTOP)
+    time.sleep(.3)
     capture(root/(name+'.ppm'))
+    if native_frames is not None and native_frames.stable_frame()!=boundary:raise RuntimeError('Native frame advanced during screenshot')
     frames=sorted((root/'user/Dump/Frames').glob('*.png'),key=lambda a:a.stat().st_mtime_ns)
     event={'capture':name,'completed_frames':len(frames),'input':'XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)'}
     # SIGSTOP may interrupt the movie writer. Keep the newest complete PNG,
@@ -77,17 +110,118 @@ def shot(name):
             (root/(name+'-efb.png')).write_bytes(raw)
             event['efb_source']=frame.name;event['efb_sha256']=hashlib.sha256(raw).hexdigest()
             break
+    if native_frames is not None:event.update(capture_source='Complete X11 client, guest paused at VIDEO_WaitVSync after GX_CopyDisp/GX_DrawDone',native_boundaries=boundary)
+    if native_frames is not None:
+        event['xfb']=native_frames.capture_xfb(root/(name+'-xfb.yuv'))
+        if native_frames.stable_frame()!=boundary:raise RuntimeError('Native frame advanced during framebuffer read')
     events.append(event)
-    p.send_signal(signal.SIGCONT)
+    if native_frames is None:p.send_signal(signal.SIGCONT)
 try:
-    time.sleep(15);capture(root/'unused.ppm',True);time.sleep(2)
-    if args.directional_return:
+    if native_frames is None:time.sleep(15)
+    else:wait_frames(frame_count(),60)
+    capture(root/'unused.ppm',True);time.sleep(.3)
+    if args.system_clock:
+        key('Down');shot('01-real-clock')
+        key('a');key('a');key('Up');key('Right');key('Up');shot('02-clock-draft')
+        key('a');shot('03-clock-committed')
+        p.terminate();p.wait(timeout=15)
+        for saved in (root/'user').rglob('*SRAM*'):
+            if saved.is_file():shutil.copyfile(saved,root/('committed-'+saved.name))
+        shutil.move(root/'user/Dump/Frames',root/'before-restart-frames')
+        p=subprocess.Popen(['/usr/games/dolphin-emu-nogui','--platform','x11','-u',str(root/'user'),'-C','SYSCONF.IPL.PGS=True','-e',str(args.dol.resolve())],stdout=log,stderr=subprocess.STDOUT)
+        time.sleep(15);capture(root/'restart-unused.ppm',True);time.sleep(2)
+        key('Down');shot('04-clock-after-restart')
+        key('a');key('a');key('Down');key('Right');key('Down');key('a');shot('05-clock-decremented-after-emulator-reset')
+    elif args.directional_return:
         key('i');shot('01-up-play');key('k',2);shot('02-down-return-held')
-        key('k');key('Up');shot('03-calendar-dpad-date');key('i');shot('04-up-return')
+        key('k');key('Up');shot('03-calendar-read-only-preview');key('i');shot('04-up-return')
         key('l');shot('05-right-video');key('j');shot('06-left-return')
         key('j');shot('07-left-options');key('l');shot('08-right-return')
+    elif args.flat_pages:
+        key('Left');key('Down');shot('01-options-side-read-only')
+        key('a');shot('02-options-flat-list')
+        key('Down');key('a');shot('03-motion-changed-on-flat-page');key('a')
+        key('b');shot('04-flat-list-b-to-cube')
+        key('b');key('Right');key('a');shot('05-video-flat-list')
+        key('Down');key('a');shot('06-scan-field-editor')
+        key('Up');key('a');shot('07-progressive-preview')
+        key('b');shot('08-b-reverts-before-cube')
+        key('b');key('Right');key('a');key('Down');key('a');key('Up');key('a');key('a');shot('09-kept-progressive-flat-list')
+        key('b');key('b');key('Down');key('a');shot('10-calendar-flat-list')
+        key('a');key('Up');shot('11-hour-draft')
+        key('b');shot('12-editor-b-discards-to-cube')
+        key('b');key('w');key('a');shot('13-storage-flat-list')
+        key('a');shot('14-native-memory-card-grid')
+        key('a');shot('15-native-card-action-dialog')
+        key('b');shot('16-dialog-b-closes-to-cube')
+        key('b');key('Up');key('a');shot('17-game-browser')
+        key('b');shot('18-browser-b-to-cube')
+        key('x');shot('19-safe-interlaced-preview-side')
+    elif args.dense_storage:
+        if args.dense_quick:
+            if not args.sd_only:
+                wait_frames(frame_count(),30);key('w');key('a');key('a');wait_frames(frame_count(),160);shot('01-memory-dense-grid')
+                key('y');shot('02-memory-list');key('Down');key('y');shot('03-memory-grid-preserved-selection')
+                key('Left');key('Left');shot('04-memory-last-page-grid');key('y');shot('05-memory-last-page-list')
+                key('w');shot('05b-memory-slot-b-list');key('q');shot('05c-memory-slot-a-list')
+                key('b');shot('06-memory-b-to-cube')
+            if not args.memory_only:
+                if args.sd_only:wait_frames(frame_count(),30);key('w')
+                key('a');key('Down');key('a');wait_frames(frame_count(),160);shot('08-sd-dense-grid')
+                key('y');shot('09-sd-list');key('Down');key('y');wait_frames(frame_count(),160);shot('10-sd-grid-file-details')
+                key('y');shot('11-sd-list-same-file');key('b');shot('12-sd-b-to-cube')
+        else:
+            wait_frames(frame_count(),30)
+            key('w');key('a');key('a');wait_frames(frame_count(),160);shot('01-memory-dense-grid')
+            key('y');shot('02-memory-list')
+            for _ in range(6):key('Down')
+            key('y');shot('03-memory-grid-preserved-selection')
+            for _ in range(6):key('Down')
+            for _ in range(9):key('Right')
+            shot('04-memory-second-grid-page')
+            key('y');shot('05-memory-second-page-list')
+            key('w');shot('05b-memory-slot-b-list');key('q');shot('05c-memory-slot-a-list')
+            key('a');shot('06-memory-actions-default-cancel')
+            key('b');shot('07-memory-dialog-b-to-cube')
+            if not args.memory_only:
+                key('a');key('Down');key('a');wait_frames(frame_count(),160);shot('08-sd-dense-grid')
+                key('y');shot('09-sd-list')
+                key('a');shot('10-sd-folder-list')
+                key('a');shot('11-sd-bounded-file-preview')
+                key('a');key('q');wait_frames(frame_count(),160);shot('12-sd-parent-list')
+                key('y');wait_frames(frame_count(),160);shot('13-sd-grid-view-remembered')
+                for _ in range(7):key('Down')
+                wait_frames(frame_count(),160);shot('14-sd-second-grid-page')
+                for _ in range(20):key('Right')
+                shot('14b-sd-large-file-size');key('Right');shot('14c-sd-filename-not-header')
+                key('y');wait_frames(frame_count(),160);shot('15-sd-list-same-file')
+                key('u');wait_frames(frame_count(),160);shot('16-c-stick-refresh')
+                key('b');shot('17-sd-b-to-cube')
+    elif args.storage:
+        key('w');shot('01-storage-cube-face')
+        key('a');key('a');shot('02-card-slot-a')
+        key('a');shot('03-save-actions')
+        key('Right');key('a');shot('04-copy-confirm-cancel')
+        key('Right');key('a');shot('05-native-copy-complete')
+        key('w');shot('06-card-slot-b')
+        key('a');key('Left');key('a');shot('07-delete-confirm-cancel')
+        key('b');shot('08-dialog-b-to-cube')
+        if args.disc:
+            key('a');key('Down');key('a');shot('09-sd-style-file-grid')
+            key('a');shot('10-folder-open')
+            key('a');shot('11-text-preview')
+            key('a');key('q');shot('12-l-parent-folder')
+            key('b');shot('13-file-browser-b-to-cube')
+    elif args.library:
+        key('Up');shot('01-play-library')
+        key('a');shot('02-six-glass-game-cards')
+        key('Down');key('Down');shot('03-next-library-page')
+        key('a');shot('04-swiss-confirm-default-cancel')
+        key('Right');key('a');shot('05-fixture-launch-refused')
+        key('b');shot('06-browser-b-to-cube')
+        key('k');shot('07-reverse-stick-to-cube')
     elif args.selector_scan:
-        key('Right');key('Down');key('a');shot('01-interlaced-editor')
+        key('Right');key('a');key('Down');key('a');shot('01-interlaced-editor')
         key('Up');shot('02-progressive-editor')
         key('a');shot('03-progressive-preview')
         key('a');shot('04-progressive-kept')
@@ -96,34 +230,35 @@ try:
         key('x');shot('07-safe-interlaced')
     elif args.selector_motion:
         key('Down');shot('01-calendar')
-        key('a');shot('02-hour-a');wait_frames(frame_count(),45);shot('03-hour-b')
+        key('a');key('a');shot('02-hour-a');wait_frames(frame_count(),45);shot('03-hour-b')
         key('Up');shot('04-hour-edited')
         key('Right');key('Up');shot('05-minute-edited')
         key('a');shot('06-time-committed')
         key('Down');key('a');key('Right');key('Up');shot('07-month-edited')
         key('Right');key('Up');shot('08-year-edited')
         key('b');shot('09-date-cancelled')
-        key('b');key('Left');key('Down');key('a');key('b');key('Down');key('a')
+        key('b');key('Left');key('a');key('Down');key('a');key('b');key('b');key('Down');key('a');key('a')
         shot('10-reduced-a');wait_frames(frame_count(),45);shot('11-reduced-b')
     elif args.calendar:
         key('Down');shot('01-calendar-two-rows')
-        key('a');key('Up');key('Right');key('Up');shot('02-time-parts')
-        key('b');key('Down');key('a');key('Right');key('Up');shot('03-date-parts')
+        key('a');key('a');key('Up');key('Right');key('Up');shot('02-time-parts')
+        key('b');key('a');key('Down');key('a');key('Right');key('Up');shot('03-date-parts')
         key('b');shot('04-calendar-cancelled')
     else:
         shot('01-default-hidden')
         key('z',2);shot('02-z-held-visible')
         key('Left');shot('03-options-visible')
-        key('a');shot('04-editor-visible')
+        key('a');key('a');shot('04-editor-visible')
         key('z',1);shot('05-z-hidden-editor')
-        key('b');key('z');time.sleep(12);shot('06-reopened-options')
+        key('b');key('z');time.sleep(12);shot('06-overlay-visible-cube')
         if args.widescreen:
-            key('x');key('Down');key('Down')
+            key('x');key('a');key('Down');key('Down')
             key('a');key('Up');key('a');key('a');shot('07-widescreen-kept')
             key('z');shot('08-widescreen-hidden')
             key('x');shot('09-safe-mode')
     (root/'events.json').write_text(json.dumps(events,indent=2)+'\n')
 finally:
+    if native_frames is not None:native_frames.close()
     if p.poll() is None:
         p.send_signal(signal.SIGCONT);p.terminate()
         try:p.wait(timeout=5)

@@ -41,13 +41,16 @@ Physical hardware performance has not been measured in this cloud session.
   available for row selection, including Calendar's Time and Date rows.
 - On a face: up/down selects a row; A opens its flat configuration screen.
 - In a configuration screen: up/down changes the draft value; A confirms;
-  B discards and returns to the same face and row.
+  B discards and returns directly to the same cube side.
 - In Time/Date: left/right selects an independent segment; up/down changes
   only that segment. Day counts follow the selected month and leap year.
-- B from a face returns to the cube. Memory Card returns to Options first.
+- B from a cube side returns to the front cube menu.
 - Both the analog stick and D-pad work, with delayed directional repeat.
 - X requests 640x480 interlaced, 4:3. Start exits after safely reverting a preview.
-- Z toggles a live performance overlay (off at startup). Y still records the
+- In memory-card/SD browsers, Y switches between a 105-icon grid and a nine-row
+  list; C-stick Up refreshes. Memory cards show game, blocks and KB. SD shows
+  filenames and file sizes. See [compact storage views](Design/dense-storage/README.md).
+- Z toggles a live performance overlay (off at startup). Outside browsers, Y records the
   bounded frame-time sample independently.
 - Options > Motion disables idle floating and turning overshoot.
 
@@ -73,9 +76,22 @@ to include the fix in the DOL. [Native scan-mode evidence, package provenance an
 limitations](Design/scan-mode-review.md) cover both resolution sequences and retain
 the earlier failure for comparison. Physical console/cable/display testing remains open.
 
-Time, date and sound are explicitly session-only interaction demonstrations.
-They do not write the console RTC or system SRAM. Game Play and Memory Card are
-honest empty demonstration faces, not a disc launcher or card manager. The sample
+Confirmed video settings, sound and Reduced Motion are stored in alternating
+32-byte checksummed records on GC Loader SD (`videomode/settings-a.bin` and
+`settings-b.bin`). Startup loads the newest valid record and applies its video
+mode, with a boot-output fallback on unsupported modes. Hold X during startup to
+bypass saved video. Preview drafts and reverted modes are never saved. A read-only
+or missing card is reported without changing another storage device.
+
+Source builds with `IplConsoleServices=true` use the SDK console-services APIs to
+read the real local console calendar and write IPL SRAM clock bias and sound.
+A confirms Time/Date; B discards. Time edits preserve the current date/seconds;
+date edits preserve the current time. The clock refreshes once a second and uses
+an independent monotonic animation timer. Builds using the older published SDK
+show these services as unavailable. [Native validation and limits](Design/console-settings/README.md).
+
+Game Play now opens a paged GC Loader game library with native banner artwork
+and Swiss video-mode launch integration. [Library design, validation and limits](Design/game-library/README.md). Memory Card remains the next storage integration. The sample
 does not include Nintendo firmware, fonts, logos or game-save artwork.
 
 ## Build and validation

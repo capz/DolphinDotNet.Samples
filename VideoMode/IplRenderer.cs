@@ -48,7 +48,7 @@ internal struct IplPoint
     internal float X,Y,Z;
     internal IplPoint(float x,float y,float z=0) { X=x;Y=y;Z=z; }
 }
-internal sealed class IplRenderer
+internal sealed partial class IplRenderer
 {
     private readonly IIplCanvas c;
     private float yaw,pitch,cy,scale,rimVisibility;
@@ -218,6 +218,10 @@ internal sealed class IplRenderer
             iconBuilding=false;iconReady=true;
         }
 #endif
+        if(shell.Page==ShellPage.Browser){flatMaskReady=false;PrepareBrowser(shell);return;}
+        browserMaskReady=false;
+        if(shell.FlatMenu){PrepareFlatMenu(shell);return;}
+        flatMaskReady=false;
         if(shell.Editing){
 #if IPL_CACHED_GRID
             if(!gridReady&&c.BeginGridCache()){Grid();c.EndGridCache();gridReady=true;}
@@ -240,7 +244,7 @@ internal sealed class IplRenderer
         Cube();
         c.Section(IplRenderPhase.FrostGeometry);
         c.BeginPanels();
-        if(shell.Page==ShellPage.Face&&shell.Face!=ShellFace.Play&&shell.Face!=ShellFace.Memory)
+        if(shell.Page==ShellPage.Face)
             for(int i=0;i<shell.Rows;i++)FacePanel(shell,i);
         c.EndPanels();
 #if IPL_RETAINED_TINT
@@ -262,10 +266,14 @@ internal sealed class IplRenderer
     internal void Present(IplShell shell)
     {
         Rect(0,0,640,480,0x000000ff);
+        if(shell.Page==ShellPage.Browser){PresentBrowser(shell);return;}
+        if(shell.FlatMenu){PresentFlatMenu(shell);return;}
         if(shell.Editing)
         {
             c.Section(IplRenderPhase.Editor);Detail(shell);
-            c.Section(IplRenderPhase.Footer);Footer(shell);c.Section(IplRenderPhase.None);return;
+            c.Section(IplRenderPhase.Footer);Footer(shell);c.Section(IplRenderPhase.None);
+            if(shell.SystemStatus.Length>0)Center(shell.SystemStatus,320,463,11,0xaabbd0ddu);
+            return;
         }
         c.Section(IplRenderPhase.Transmission);
         c.DrawGlass();
@@ -274,7 +282,7 @@ internal sealed class IplRenderer
         if(shell.Turn>.85f)
         {
             c.Section(IplRenderPhase.Icons);FaceIcon(shell);
-            if(shell.Page==ShellPage.Face&&shell.Face!=ShellFace.Play&&shell.Face!=ShellFace.Memory)
+            if(shell.Page==ShellPage.Face)
             {
                 c.Section(IplRenderPhase.Capture);c.CaptureBackdrop();
                 c.Section(IplRenderPhase.Frost);c.DrawFrostedPanels();
@@ -289,6 +297,7 @@ internal sealed class IplRenderer
             else FaceMenu(shell);
         }
         c.Section(IplRenderPhase.Footer);Footer(shell);c.Section(IplRenderPhase.None);
+        if(shell.SystemStatus.Length>0)Center(shell.SystemStatus,320,463,11,0xaabbd0ddu);
     }
     private void Cube()
     {
@@ -537,11 +546,6 @@ internal sealed class IplRenderer
     private void FaceMenu(IplShell s)
     {
         FaceText(s,s.Title,.045f,.79f,26,White,0,.95f);
-        if(s.Face==ShellFace.Memory||s.Face==ShellFace.Play)
-        {
-            FaceText(s,s.Face==ShellFace.Play?"No disc selected.":"No card selected.",0,.1f,16,White);
-            FaceText(s,"Preview only.",0,-.16f,12,0xb5b9c9ff);return;
-        }
         for(int i=0;i<s.Rows;i++)
         {
             float y=.35f-i*.43f;
@@ -551,7 +555,7 @@ internal sealed class IplRenderer
             string value=s.Value(i);
             // Keep both edge anchors fixed as the type grows/shrinks.
             float maximum=TextWidth(s.Label(i),size)+TextWidth(value,size);
-            if(maximum>193)size*=193/maximum;
+            if(maximum>176)size*=176/maximum;
             FaceAlignedText(s,s.Label(i),-.695f,y,size,color,false);
             FaceAlignedText(s,value,.735f,y,size,color,true);
         }
@@ -580,14 +584,14 @@ internal sealed class IplRenderer
         Center(s.Label(s.Row),320,104,23,Green);
         Selectors(s,false);
         if(s.Face==ShellFace.Calendar)
-            Center("Calendar demonstration. Changes last for this session.",320,351,14,0xc4c9deff);
+            Center(s.RealCalendar?"A sets the clock. B discards changes and returns to the cube.":"Calendar demonstration. B discards changes and returns to the cube.",320,351,14,0xc4c9deff);
         else if(s.Face==ShellFace.Video&&!s.Video.Pending)
         {
             string status=s.Video.Status;
             if(status=="UNSUPPORTED MODE OR CABLE"||status=="NOT ENOUGH MEMORY FOR MODE")Banner(status=="UNSUPPORTED MODE OR CABLE"?"Unsupported mode or cable.":"Not enough memory for this mode.",true);
-            else Center("A previews the mode. B discards changes.",320,350,16,White);
+            else Center("A previews the mode. B returns to the cube.",320,350,16,White);
         }
-        else if(s.Face==ShellFace.Options)Center("Sound demonstration. Changes last for this session.",320,351,14,0xc4c9deff);
+        else if(s.Face==ShellFace.Options)Center("A confirms. B discards changes and returns to the cube.",320,351,14,0xc4c9deff);
     }
     private void Selectors(IplShell s,bool preparing)
     {
@@ -673,16 +677,18 @@ internal sealed class IplRenderer
     private void Footer(IplShell s)
     {
         const float y=428;
-        int style=s.Page==ShellPage.Cube?0:s.Video.Reverting?2:1;
+        int style=s.Page==ShellPage.Cube?0:s.Video.Reverting||s.Page==ShellPage.Browser&&s.Browser?.Busy==true?2:1;
         if(!c.DrawFooterCache(style))FooterShapes(style);
 #if IPL_CACHED_FOOTER_TEXT
         if(c.DrawFooterTextCache())return;
 #endif
         float stick=style==0?214:111;
         Text(s.Page==ShellPage.Cube?"... Menu Selection":s.Face==ShellFace.Calendar&&s.Editing?"... Part / Value":"... Select",stick+24,y-13,s.Page==ShellPage.Cube?20:17,White);
-        if(s.Page==ShellPage.Cube)return;
-        Center("B",320,y-14,20,White);Text(s.Editing?"... Cancel":"... Back",340,y-13,17,White);
-        if(s.Video.Reverting)return;
-        Center("A",470,y-14,20,White);Text(s.Editing?"... Confirm":"... Open",492,y-13,17,White);
+        if(s.Page==ShellPage.Cube){Text("R  Storage",486,y-12,16,White);return;}
+        bool modal=s.Page==ShellPage.Browser&&s.Browser?.Panel!=IplBrowserPanel.Grid;
+        Center("B",320,y-14,20,White);Text(s.Video.Reverting?"... Wait":s.Page==ShellPage.Detail||s.Page==ShellPage.Browser?"... Cube":"... Back",340,y-13,17,White);
+        if(style==2)return;
+        string action=s.Page==ShellPage.Browser&&s.Browser?.Panel==IplBrowserPanel.Info?"... Close":s.Editing||modal?"... Confirm":"... Open";
+        Center("A",470,y-14,20,White);Text(action,492,y-13,17,White);
     }
 }

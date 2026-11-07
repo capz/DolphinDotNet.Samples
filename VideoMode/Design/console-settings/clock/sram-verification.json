@@ -1,0 +1,19 @@
+{
+  "positive": {
+    "bias_seconds": 3660,
+    "checksum": 3704,
+    "computed_checksum": 3704,
+    "inverse_checksum": 61828,
+    "computed_inverse": 61828
+  },
+  "negative_after_dolphin_reset": {
+    "bias_seconds": -3660,
+    "checksum": 61919,
+    "computed_checksum": 61919,
+    "inverse_checksum": 3613,
+    "computed_inverse": 3613
+  },
+  "restart_limitation": "Dolphin2503 CEXIIPL constructor resets sram.settings.rtc_bias=0 and fixes checksums. The unchanged restart time is emulator policy, not demonstrated hardware persistence failure.",
+  "source": "https://github.com/dolphin-emu/dolphin/blob/2503/Source/Core/Core/HW/EXI/EXI_DeviceIPL.cpp",
+  "final_frame": "After emulator reset, final relative decrement writes -3660; does not restore previous bias. All writes only in isolated emulator user directory."
+}

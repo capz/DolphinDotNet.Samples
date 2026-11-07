@@ -1,0 +1,26 @@
+// Test-only: build/run exclusively with new isolated Dolphin card images.
+// Never included in the VideoMode DOL or copied to a physical console.
+using System;
+using Dolphin.Storage;
+internal static class Program
+{
+    internal static readonly int[] Result=new int[2],Probe=new int[2];
+    internal static int Steps;internal static string Status="Starting isolated dense fixture";
+    private static byte[] Icon(int seed){var bytes=new byte[2048];int at=0;for(int ty=0;ty<32;ty+=4)for(int tx=0;tx<32;tx+=4)for(int y=0;y<4;y++)for(int x=0;x<4;x++){
+        int color=0x8000|(((tx+x+seed*3)%32)<<10)|(((ty+y+seed*5)%32)<<5)|(seed*7%32);bytes[at++]=(byte)(color>>8);bytes[at++]=(byte)color;}return bytes;}
+    private static void Save(StorageDevice device,int i){string number=(i<10?"00":i<100?"0":"")+i.ToString();int game=i%3;
+        using(var card=MemoryCard.Mount(device,new MemoryCardIdentity(game==0?"GOD1":game==1?"CGD1":"TRD1","01")))
+            card.WriteSave("Save-"+number,new byte[2048+(i%3)*8192],new MemoryCardSaveOptions{Title=game==0?"Glass Orbit Demo":game==1?"Color Garden Demo":"Tiny Racer Demo",Comment="Original dense UI fixture",Icon=Icon(i)});
+    }
+    private static int Main(){var display=Dolphin.Graphics.GraphicsDevice.Default;
+        try{
+            for(int i=0;i<24;i++){display.BeginFrame(Dolphin.Graphics.Color32.Black);display.EndFrame();}
+            for(int i=0;i<2;i++)using(var card=MemoryCardManager.Open(i==0?StorageDevice.MemoryCardSlotA:StorageDevice.MemoryCardSlotB)){
+                Probe[i]=card.MountResult;if(!card.IsReady)card.Format();if(card.Count!=0)throw new InvalidOperationException("Fresh isolated emulator cards required");}
+            for(int i=1;i<=117;i++){Save(StorageDevice.MemoryCardSlotA,i);Steps=i;}
+            Save(StorageDevice.MemoryCardSlotB,118);Save(StorageDevice.MemoryCardSlotB,119);
+            Result[0]=1;Result[1]=2;Status="117 original saves in A; two in B. One, two and three blocks.";
+        }catch(Exception e){Result[0]=-1;Status=e.Message??"Dense fixture seed failed";}
+        while(true){display.BeginFrame(Dolphin.Graphics.Color32.Black);display.EndFrame();}
+    }
+}

@@ -1,0 +1,16 @@
+{
+  "samples_code_revision": "d979e2b24eb8d0d673b997a9a4dc38ffde5a5833",
+  "sdk_revision": "4dc80bd10faae69d5b288c7bc227ce6be0e9c750",
+  "engine_revision": "1fa7b6207450ea45732a09d649af8729e7298b5c",
+  "configuration": "Release O3/LTO; normal interactive app; all rendering caches and console/card services; VSync enabled",
+  "review_fixtures": false,
+  "dol_sha256": "9bd11f21c2fbd00df7b3f45dbb2e7e350ec2505e4231a91adcbaac7718f6e962",
+  "dol_bytes": 2583360,
+  "native_capture_phases": 19,
+  "isolated_card_files_unchanged_after_browsing_and_dialog_exit": {
+    "A": true,
+    "B": true
+  },
+  "capture_selection": "Original completed native EFB PNG bytes selected for visible body and all footer legends; no pixel edits; original window captures/dumps retained in cloud artifacts",
+  "physical_hardware_acceptance": false
+}

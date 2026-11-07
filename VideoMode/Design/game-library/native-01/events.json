@@ -1,0 +1,51 @@
+[
+  {
+    "capture": "01-play-library",
+    "completed_frames": 539,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_538.png",
+    "efb_sha256": "a3211f8b663e7603b4f94a852221d7e996cd8eb4a256180d5c22da5d301d14a5"
+  },
+  {
+    "capture": "02-six-glass-game-cards",
+    "completed_frames": 591,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_590.png",
+    "efb_sha256": "48a7dfe396bca0a1e8caf402ffacae3c17fd19f667901baa745fd03b00802bcb"
+  },
+  {
+    "capture": "03-next-library-page",
+    "completed_frames": 693,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_692.png",
+    "efb_sha256": "394cfe12d1b7004ac558af34129997e6840ee75371c00dde3fc7c89dcf93ee81"
+  },
+  {
+    "capture": "04-swiss-confirm-default-cancel",
+    "completed_frames": 744,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_743.png",
+    "efb_sha256": "a71373a222142ffb83a06948a1004cabdcc01a95c01417e5f1da27c39313429a"
+  },
+  {
+    "capture": "05-fixture-launch-refused",
+    "completed_frames": 847,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_846.png",
+    "efb_sha256": "da31d5c240907e8c4fb26f9c752c396bcc5795384e54fdc9eba52930a723ac8c"
+  },
+  {
+    "capture": "06-back-to-play",
+    "completed_frames": 950,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_949.png",
+    "efb_sha256": "4d85c6c3adaecf083d92d237c0145052bb252cf0c3cf6564e291eadf33322a45"
+  },
+  {
+    "capture": "07-reverse-stick-to-cube",
+    "completed_frames": 1003,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_1002.png",
+    "efb_sha256": "1a6a652d2c167606900fc7eb6c6098b5ae2a0c853f86bb21ef076b40aea189cc"
+  }
+]

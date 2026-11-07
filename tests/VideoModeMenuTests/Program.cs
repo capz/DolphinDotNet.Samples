@@ -28,6 +28,12 @@ internal static class Program
     {
         IplNumberCacheStateTests.Run();
         IplSelectorPoseTests.Run();
+        IplPreferencesTests.Run();
+        IplLibraryTests.Run();
+        IplBrowserTests.Run();
+        IplStorageTests.Run();
+        IplDenseStorageTests.Run();
+        IplPreferencesDiskTests.Run();
         var output=new FakeOutput(); var menu=new VideoModeMenu(output);
         Check(output.Changes==0 && !menu.Pending,"Opening the menu must retain the boot mode");
         menu.Move(-1); Check(menu.Row==2,"Selection wraps up"); menu.Move(1);

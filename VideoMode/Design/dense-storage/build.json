@@ -1,0 +1,26 @@
+{
+  "samples_source_commit": "07fc77881b16ca29b3afb6c04d012dfe7770f1a0",
+  "sdk_source_commit": "4dc80bd10faae69d5b288c7bc227ce6be0e9c750",
+  "hypercube_source_commit": "1fa7b6207450ea45732a09d649af8729e7298b5c",
+  "normal_dol_sha256": "390071e2fc997ef03888e1e0bf43028143d55abfd6d6ee4c1eb1438a1a942e15",
+  "normal_dol_bytes": 2820352,
+  "native_build": "normal interactive; all existing rendering optimizations; console/card services; no fixture/review switch",
+  "build_command": "python ci/build_videomode_source_sdk.py --sdk /workspace/DolphinDotNet-card --hypercube /workspace/hypercube-passes --output OUT --normal --icons --glass --blur --glyphs --tints --numbers --footer-text --grid --selectors --console-services --memory-cards",
+  "managed_heap_bytes": 262144,
+  "vsync": true,
+  "normal_native_log": "/workspace/artifacts/videomode-dense-storage/normal-text-last.log",
+  "host_validation": [
+    "VideoModeMenuTests including dense catalog/navigation/size/SD read-only tests",
+    "pinned managed build",
+    "pinned compiler --aot",
+    "historical renderer compatibility",
+    "validate_samples.py",
+    "validate_run_configs.py",
+    "validate_sample_tests.py",
+    "git diff --check"
+  ],
+  "native_visual_status": "Functional checks pass; intermittent missing captions in cloud Dolphin remain unresolved; physical hardware visual confirmation unavailable.",
+  "normal_native_capture_artifacts": "/workspace/artifacts/videomode-dense-storage/normal-accepted",
+  "normal_native_capture_count": 8,
+  "normal_native_read_only_card_hashes_unchanged": true
+}

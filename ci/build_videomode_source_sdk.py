@@ -16,6 +16,7 @@ def main():
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--samples', type=Path, default=Path(__file__).resolve().parents[1])
     parser.add_argument('--scene', choices=['Options', 'Oblique', 'Detail', 'Cube'], default='Options')
+    parser.add_argument('--managed-only',action='store_true',help='Generate/build the source integration project without invoking the native toolchain')
     parser.add_argument('--normal', action='store_true')
     parser.add_argument('--icons', action='store_true')
     parser.add_argument('--glass', action='store_true')
@@ -26,6 +27,10 @@ def main():
     parser.add_argument('--footer-text', action='store_true')
     parser.add_argument('--grid', action='store_true')
     parser.add_argument('--selectors', action='store_true')
+    parser.add_argument('--storage-review',action='store_true')
+    parser.add_argument('--memory-cards',action='store_true')
+    parser.add_argument('--browser-review',action='store_true')
+    parser.add_argument('--console-services', action='store_true')
     parser.add_argument('--hypercube', type=Path,
                         help='Link OrderedMeshPasses from this engine checkout with its native backend')
     args = parser.parse_args()
@@ -42,6 +47,7 @@ def main():
     for child in original.find('PropertyGroup'):
         props.append(ET.fromstring(ET.tostring(child)))
     settings = {
+        'DndBuildNative': str(not args.managed_only).lower(),
         'TargetFramework': 'net8.0', 'AssemblyName': 'VideoMode',
         'IplPerformanceReview': str(not args.normal).lower(),
         'IplPerformanceReviewScene': args.scene,
@@ -55,6 +61,10 @@ def main():
         'IplCachedFooterText': str(args.footer_text).lower(),
         'IplCachedGrid': str(args.grid).lower(),
         'IplCachedSelectors': str(args.selectors).lower(),
+        'IplStorageReview': str(args.storage_review).lower(),
+        'IplMemoryCardServices': str(args.memory_cards).lower(),
+        'IplBrowserReview': str(args.browser_review).lower(),
+        'IplConsoleServices': str(args.console_services).lower(),
         'IplNextSdk': 'true', 'DndSampleControls': 'true', 'DndBuildBackend': 'Docker',
     }
     for key, value in settings.items():
@@ -77,7 +87,7 @@ def main():
     # Global properties must be visible before the copied conditional constants
     # are evaluated. AssemblyName must remain local to avoid renaming SDK refs.
     flags = ['-p:' + key + '=' + value for key, value in settings.items()
-             if key.startswith('Ipl') or key in ['DndSampleControls', 'DndBuildBackend']]
+             if key.startswith('Ipl') or key in ['DndSampleControls', 'DndBuildBackend','DndBuildNative']]
     subprocess.run(['dotnet', 'build', str(project), '-c', 'Release', *flags], check=True)
 
 

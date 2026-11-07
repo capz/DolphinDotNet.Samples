@@ -106,8 +106,8 @@ internal sealed class IplProof : IIplCanvas
         Directory.CreateDirectory(dir);var p=new IplProof();var s=new IplShell(new FakeOutput());s.Time=1;
         p.Save(Path.Combine(dir,"ipl-menu.svg"),s);
         s.TurnTo(ShellFace.Video);s.Tick(.7f);p.Save(Path.Combine(dir,"ipl-video.svg"),s);
-        s.Row=2;s.Confirm();p.Save(Path.Combine(dir,"ipl-aspect.svg"),s);
-        s.Back();s.TurnTo(ShellFace.Calendar);s.Tick(.7f);s.Row=1;s.Confirm();s.Direction(1,0,.016f);
+        s.Confirm();s.Row=2;s.Confirm();p.Save(Path.Combine(dir,"ipl-aspect.svg"),s);
+        s.Back();s.TurnTo(ShellFace.Calendar);s.Tick(.7f);s.Confirm();s.Row=1;s.Confirm();s.Direction(1,0,.016f);
         p.Save(Path.Combine(dir,"ipl-date.svg"),s);
         File.WriteAllText(Path.Combine(dir,"index.html"),"<!doctype html><meta charset='utf-8'><title>Native IPL scene proofs</title><style>body{background:#161616;color:white;font:16px sans-serif}section{display:inline-block;margin:12px}img{width:640px;height:480px}</style><h1>Native scene geometry proofs</h1><p>Shared C# renderer and glyph atlas. These are host exports, not emulator captures.</p><section><h2>Cube</h2><img src='ipl-menu.svg'></section><section><h2>Video face</h2><img src='ipl-video.svg'></section><section><h2>Flat selector</h2><img src='ipl-aspect.svg'></section><section><h2>Independent date segments</h2><img src='ipl-date.svg'></section>");
     }

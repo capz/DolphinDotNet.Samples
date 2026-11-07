@@ -1,0 +1,51 @@
+[
+  {
+    "capture": "01-play-library",
+    "completed_frames": 573,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_572.png",
+    "efb_sha256": "735fd93e91faf7dd5fe9b9d04bdae8670cb6d0f3c530e11ac5b9154bda4146f0"
+  },
+  {
+    "capture": "02-six-glass-game-cards",
+    "completed_frames": 625,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_624.png",
+    "efb_sha256": "83b462283c4acfb8bec6b1aafa309175abffdfa75924394513c9ba966d071c6d"
+  },
+  {
+    "capture": "03-next-library-page",
+    "completed_frames": 727,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_726.png",
+    "efb_sha256": "5d1fad9f8bb29cb9cdf8dc5536c24ab4d01812c1fdd062cc467db166893e80fe"
+  },
+  {
+    "capture": "04-swiss-confirm-default-cancel",
+    "completed_frames": 778,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_778.png",
+    "efb_sha256": "afc3fc37a4a60d224a35b0c5069b79ac8e2cfce93430d51ece770f6b425bba74"
+  },
+  {
+    "capture": "05-fixture-launch-refused",
+    "completed_frames": 880,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_879.png",
+    "efb_sha256": "4daef81bacc37cba4b4a15f243de8349ed400f7a483ec21a79296ab60f880320"
+  },
+  {
+    "capture": "06-back-to-play",
+    "completed_frames": 983,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_982.png",
+    "efb_sha256": "ca1f51d57ba7faa5fce4e8eda39ab4f4667e7815ff5756eb58e7b03076adafb9"
+  },
+  {
+    "capture": "07-reverse-stick-to-cube",
+    "completed_frames": 1035,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "efb_source": "framedump_1034.png",
+    "efb_sha256": "789383be6a602a143e2a798372dd391fb24ba6d6f01250b0b676f4138055c2f2"
+  }
+]
