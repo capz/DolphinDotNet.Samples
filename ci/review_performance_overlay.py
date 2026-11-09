@@ -21,6 +21,9 @@ parser=argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--logs',type=Path,required=True)
 parser.add_argument('--dol',type=Path,required=True)
 parser.add_argument('--widescreen',action='store_true',help='Also preview/keep 16:9, hide Z, and return through X safe mode')
+parser.add_argument('--glass-profile','--rim-profile',dest='rim_profile',action='store_true',help='After glass captures, log an uninterrupted normal-DOL Y profile')
+parser.add_argument('--glass-review','--rim-review',dest='rim_review',action='store_true',help='Native Calendar/front, rotating corner and Video/front glass captures')
+parser.add_argument('--glass-modes',action='store_true',help='Closed-shell rendering after 480p, widescreen, 576i, 240-line, rollback and safe-mode switches')
 parser.add_argument('--calendar',action='store_true',help='Review two-row blur and independent time/date editing instead of the overlay sequence')
 parser.add_argument('--selector-motion',action='store_true',help='Record active hour/minute/month/year motion, A/B and Reduced Motion')
 parser.add_argument('--selector-scan',action='store_true',help='Exercise animated scan values across progressive/interlaced preview, keep, rollback and safe mode')
@@ -38,7 +41,9 @@ parser.add_argument('--card-user',type=Path)
 parser.add_argument('--library',action='store_true',help='Native library layout/navigation using explicitly labeled synthetic UI data')
 parser.add_argument('--system-clock',action='store_true',help='Adjust isolated clock, inspect SRAM and Dolphin restart policy, then decrement')
 args=parser.parse_args()
-if sum([args.calendar,args.widescreen,args.selector_motion,args.selector_scan,args.directional_return,args.system_clock,args.library,args.storage,args.flat_pages,args.dense_storage])>1:parser.error('Choose one review sequence')
+if sum([args.rim_review,args.glass_modes,args.calendar,args.widescreen,args.selector_motion,args.selector_scan,args.directional_return,args.system_clock,args.library,args.storage,args.flat_pages,args.dense_storage])>1:parser.error('Choose one review sequence')
+if args.rim_profile and not args.rim_review:parser.error('--rim-profile requires --rim-review')
+if args.rim_review and not args.native_boundaries:parser.error('--rim-review requires --native-boundaries')
 if args.native_boundaries and args.sdk is None:parser.error('--native-boundaries requires --sdk')
 if args.sd_only and (not args.dense_storage or not args.dense_quick or args.memory_only):parser.error('--sd-only requires --dense-storage --dense-quick')
 if args.memory_only and not args.dense_storage:parser.error('--memory-only requires --dense-storage')
@@ -113,6 +118,14 @@ def shot(name):
     if native_frames is not None:event.update(capture_source='Complete X11 client, guest paused at VIDEO_WaitVSync after GX_CopyDisp/GX_DrawDone',native_boundaries=boundary)
     if native_frames is not None:
         event['xfb']=native_frames.capture_xfb(root/(name+'-xfb.yuv'))
+        if args.glass_modes:
+            expected_height=576 if name.startswith('05-') else 240 if name.startswith('06-') else 480
+            info=event['xfb'];expected_width=320 if expected_height==240 else 640
+            if (info['width'],info['height'])!=(expected_width,expected_height):
+                raise RuntimeError(f'{name}: native VI dimensions do not match the applied mode: {info}')
+            # 240p is VI double-strike (NON_INTERLACE=1), not 480p's PROGRESSIVE=2.
+            expected_scan=1 if name.startswith('06-') else 2 if name.startswith(('02-','03-','04-')) else 0
+            if info['vi_scan_bits']!=expected_scan:raise RuntimeError(f'{name}: native VI scan mode is wrong: {info}')
         if native_frames.stable_frame()!=boundary:raise RuntimeError('Native frame advanced during framebuffer read')
     events.append(event)
     if native_frames is None:p.send_signal(signal.SIGCONT)
@@ -220,6 +233,17 @@ try:
         key('Right');key('a');shot('05-fixture-launch-refused')
         key('b');shot('06-browser-b-to-cube')
         key('k');shot('07-reverse-stick-to-cube')
+    elif args.glass_modes:
+        key('x');shot('01-safe-480i-cube')
+        key('a');key('Down');key('a');key('Up');key('a');shot('02-480p-preview')
+        key('a');key('b');shot('03-480p-cube')
+        key('a');key('Down');key('a');key('Up');key('a');key('a');key('b');shot('04-wide-480p-cube')
+        key('x');key('a');key('a');key('Up');key('a');key('a');key('b');shot('05-576i-cube')
+        # The SDK correctly rejects 240i. Select progressive before applying 240p.
+        key('x');key('a');key('Down');key('a');key('Up');key('a');key('a')
+        key('Up');key('a');key('Down');key('a');key('a');key('b');shot('06-240-line-cube')
+        key('x');key('a');key('Down');key('a');key('Up');key('a');key('b');shot('07-b-rolls-back-to-480i-cube')
+        key('x');shot('08-safe-mode-cube')
     elif args.selector_scan:
         key('Right');key('a');key('Down');key('a');shot('01-interlaced-editor')
         key('Up');shot('02-progressive-editor')
@@ -239,6 +263,25 @@ try:
         key('b');shot('09-date-cancelled')
         key('b');key('Left');key('a');key('Down');key('a');key('b');key('b');key('Down');key('a');key('a')
         shot('10-reduced-a');wait_frames(frame_count(),45);shot('11-reduced-b')
+    elif args.rim_review:
+        key('Down');shot('01-calendar-front')
+        key('b')
+        code=x.XKeysymToKeycode(d,x.XStringToKeysym(b'Right'))
+        assert xt.XTestFakeKeyEvent(d,code,1,0)
+        x.XSync(d,0);native_frames.advance(4)
+        assert xt.XTestFakeKeyEvent(d,code,0,0)
+        x.XSync(d,0);shot('02-rotating-corner')
+        native_frames.advance(60);shot('03-video-front')
+        if args.rim_profile:
+            key('a');shot('04-video-flat')
+            key('b');shot('05-flat-b-to-cube')
+            from profile_interactive_rim import collect
+            code=x.XKeysymToKeycode(d,x.XStringToKeysym(b'Y'))
+            def profile_key(down):
+                assert xt.XTestFakeKeyEvent(d,code,down,0)
+                x.XSync(d,0)
+            collect(native_frames,args.dol.resolve(),root,lambda:profile_key(1),lambda:profile_key(0))
+            key('z');shot('06-sealed-glass-overlay')
     elif args.calendar:
         key('Down');shot('01-calendar-two-rows')
         key('a');key('a');key('Up');key('Right');key('Up');shot('02-time-parts')

@@ -1,0 +1,53 @@
+[
+  {
+    "capture": "01-calendar-front",
+    "completed_frames": 0,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "capture_source": "Complete X11 client, guest paused at VIDEO_WaitVSync after GX_CopyDisp/GX_DrawDone",
+    "native_boundaries": 111,
+    "xfb": {
+      "width": 640,
+      "height": 480,
+      "format": "YUYV422",
+      "source": "Native GX_CopyDisp output, read after GX_DrawDone before VIDEO_WaitVSync"
+    },
+    "xfb_source": "/workspace/artifacts/hollow-glass/second-native/01-calendar-front-xfb.yuv",
+    "xfb_sha256": "cd3711b69443d633a3b2fe08ad41d18ff72c10e69ec2a95ede2cb67da4c0057a",
+    "png_sha256": "474245720d5236021106c01a69c1638fd7d7cc08c51788df5da1b6ac1da48a2f",
+    "conversion": "BT.601 limited-range YUYV422 to RGB8; no crop/resize/composition"
+  },
+  {
+    "capture": "02-rotating-corner",
+    "completed_frames": 0,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "capture_source": "Complete X11 client, guest paused at VIDEO_WaitVSync after GX_CopyDisp/GX_DrawDone",
+    "native_boundaries": 166,
+    "xfb": {
+      "width": 640,
+      "height": 480,
+      "format": "YUYV422",
+      "source": "Native GX_CopyDisp output, read after GX_DrawDone before VIDEO_WaitVSync"
+    },
+    "xfb_source": "/workspace/artifacts/hollow-glass/second-native/02-rotating-corner-xfb.yuv",
+    "xfb_sha256": "7a342931ea8feaddbfbf4664842f229018909237085a4eb4349af8cf2bed4303",
+    "png_sha256": "2ce6cf6b6179881c893144763516989647936cbc6be4e139c538d1034df9dbeb",
+    "conversion": "BT.601 limited-range YUYV422 to RGB8; no crop/resize/composition"
+  },
+  {
+    "capture": "03-video-front",
+    "completed_frames": 0,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "capture_source": "Complete X11 client, guest paused at VIDEO_WaitVSync after GX_CopyDisp/GX_DrawDone",
+    "native_boundaries": 226,
+    "xfb": {
+      "width": 640,
+      "height": 480,
+      "format": "YUYV422",
+      "source": "Native GX_CopyDisp output, read after GX_DrawDone before VIDEO_WaitVSync"
+    },
+    "xfb_source": "/workspace/artifacts/hollow-glass/second-native/03-video-front-xfb.yuv",
+    "xfb_sha256": "a6e39a51871c72b1575ee68262bc55a91321d51b145542eaae9fbdf80ce76a38",
+    "png_sha256": "c45ebf4681d31a5fe5b8edff4c3d516eb0d5eadb10d96901cbd0da858357dcc5",
+    "conversion": "BT.601 limited-range YUYV422 to RGB8; no crop/resize/composition"
+  }
+]

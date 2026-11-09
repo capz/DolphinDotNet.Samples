@@ -1,0 +1,53 @@
+[
+  {
+    "capture": "01-calendar-front",
+    "completed_frames": 0,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "capture_source": "Complete X11 client, guest paused at VIDEO_WaitVSync after GX_CopyDisp/GX_DrawDone",
+    "native_boundaries": 113,
+    "xfb": {
+      "width": 640,
+      "height": 480,
+      "format": "YUYV422",
+      "source": "Native GX_CopyDisp output, read after GX_DrawDone before VIDEO_WaitVSync"
+    },
+    "xfb_source": "/workspace/artifacts/tight-rim/native/01-calendar-front-xfb.yuv",
+    "xfb_sha256": "88385a6e7c7047fc6b50b19e9e832fe8713f8f4905cdbf2a6f60b38402bd6ce5",
+    "png_sha256": "a024b3a8ddc4b2a569a5a2b909df2f1f170126ce1bb12426a891a944616aeea2",
+    "conversion": "BT.601 limited-range YUYV422 to RGB8; no crop/resize/composition"
+  },
+  {
+    "capture": "02-rotating-corner",
+    "completed_frames": 0,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "capture_source": "Complete X11 client, guest paused at VIDEO_WaitVSync after GX_CopyDisp/GX_DrawDone",
+    "native_boundaries": 122,
+    "xfb": {
+      "width": 640,
+      "height": 480,
+      "format": "YUYV422",
+      "source": "Native GX_CopyDisp output, read after GX_DrawDone before VIDEO_WaitVSync"
+    },
+    "xfb_source": "/workspace/artifacts/tight-rim/native/02-rotating-corner-xfb.yuv",
+    "xfb_sha256": "6a106b54cd9af3122e4e42b71845cdf3610c5236c11312d7828763342e06ee5e",
+    "png_sha256": "5ae8fb8173b02a81de023cd6d8183c06091585c12b728dfae41495f85af6b308",
+    "conversion": "BT.601 limited-range YUYV422 to RGB8; no crop/resize/composition"
+  },
+  {
+    "capture": "03-video-front",
+    "completed_frames": 0,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "capture_source": "Complete X11 client, guest paused at VIDEO_WaitVSync after GX_CopyDisp/GX_DrawDone",
+    "native_boundaries": 183,
+    "xfb": {
+      "width": 640,
+      "height": 480,
+      "format": "YUYV422",
+      "source": "Native GX_CopyDisp output, read after GX_DrawDone before VIDEO_WaitVSync"
+    },
+    "xfb_source": "/workspace/artifacts/tight-rim/native/03-video-front-xfb.yuv",
+    "xfb_sha256": "1237f008b760e1dd5c5a1e83b52472fa84a38dad6ac3e907bcbfc9825d1f0ae8",
+    "png_sha256": "71189e60163077824f037086bfe0c02f9df222305ea46099ed363ef83f2631e8",
+    "conversion": "BT.601 limited-range YUYV422 to RGB8; no crop/resize/composition"
+  }
+]

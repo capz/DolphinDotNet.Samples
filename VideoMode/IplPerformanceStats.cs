@@ -3,7 +3,7 @@ using System;
 // CPU scopes are exclusive; totals and presentation waits are listed separately.
 internal enum IplRenderPhase
 {
-    None, GlassGeometry, FrostGeometry, RimGeometry, Transmission, Rims, Reflections, Icons,
+    None, GlassGeometry, FrostGeometry, Transmission, Icons,
     Capture, Frost, PanelTint, Labels, Footer, Editor, Count
 }
 
