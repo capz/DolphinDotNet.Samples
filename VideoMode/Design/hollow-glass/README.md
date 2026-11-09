@@ -65,8 +65,34 @@ each window; this is not a fixed-pose causal benchmark.
 | 06: GPU gradient interpolation | 33.364 ms | 29.224 ms | 31.234 ms |
 | 07: shared projected boundaries, joined walls | 33.364 ms | 25.680 ms | 27.593 ms |
 | 08: six body bands + two fine polish bands | 33.364 ms | 26.351 ms | 28.263 ms |
+| Final: wider native-resolution polish | 33.364 ms | 26.351 ms | 28.263 ms |
 
 These windows also differ in material, pose and tessellation; their deltas are
 not isolated causal measurements of a single optimization. Native frames and
 CSV/provenance for each captured iteration are preserved. Physical hardware
 acceptance is pending.
+
+## Final result and limitations
+
+[Final native captures](final) include Calendar, the rotating cube corner,
+Video, A opening its flat page and B returning to the cube. All five saved
+frames were inspected. [Build provenance](final/build.json) identifies the exact
+interactive DOL. The final profile p95 is 33.367 ms, with 170,416 bytes of the
+262,144-byte managed arena used after sampling and zero collections. This is
+not a peak-memory measurement or a hardware frame-rate certification.
+
+![Final native Calendar](final/01-calendar-front-xfb.png)
+![Final native turn](final/02-rotating-corner-xfb.png)
+
+[Normalized mockup/native comparison](final/delivered-comparison.jpg) and
+[focused comparison](final/delivered-focus.jpg) retain the visual differences.
+The native walls are hollow and rounded, but reflection complexity, corner
+junctions and fine-edge antialiasing remain below the generated mockup. The
+root `design-qa.md` records these as remaining fidelity work. This PR remains a
+draft; it does not claim pixel-perfect or physical-hardware acceptance.
+
+Validation passed: complete menu/model tests, vertex-index color/winding/bounds
+checks, 81 independent perspective-midpoint checks, pinned managed build, full
+normal native build, generated-AOT/DOL/PowerPC-ELF verification, the three
+repository validators, Python syntax and whitespace checks. Earlier captures
+use real native outputs and are retained even where they expose regressions.

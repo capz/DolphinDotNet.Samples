@@ -1,0 +1,17 @@
+{
+  "source_commit": "f492ef313e3e964668955a6446f5c1792d7f4b42",
+  "dol_sha256": "60b5981e6f4bd47d939a7ce8c73d8eeb03502b0120be2787ce1cd3a1f2b529a8",
+  "dol_bytes": 2839872,
+  "sdk_commit": "4dc80bd10faae69d5b288c7bc227ce6be0e9c750",
+  "engine_commit": "1fa7b6207450ea45732a09d649af8729e7298b5c",
+  "source_sha256": {
+    "VideoMode/IplRenderer.cs": "f98149ed1f7afc1d35a20b1b6fae2a921ba0873a5ba080f08fe904b9fbfca62f",
+    "VideoMode/GameCubeCanvas.cs": "829ec616b06f4dcec3c6a40cc13761b7c732861338e5f3657757fd25b8d9d9a5",
+    "VideoMode/IndexedRims.cs": "48eda2566ac7cf07c95b1ce2901cfa8ac401bbf5a4ffb91c10a21418a45a6f48",
+    "VideoMode/IplRimCommands.cs": "3d927b72140f9c4b29d15343f3185db70af62abaa32694da378b74daf60a1d42"
+  },
+  "build": "Normal interactive Release DOL, source SDK, retained icon/glass/blur/glyph/tint/number/footer/grid/selector paths, console and memory-card services",
+  "native": "Dolphin 2503; 640x480i; completed original XFBs; BT.601 decode without resizing or composition",
+  "hardware_verified": false,
+  "visual_fidelity": "Core hollow glass direction implemented; detailed reflection/edge fidelity remains below the approved mockup."
+}
