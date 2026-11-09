@@ -3,7 +3,7 @@ using Dolphin.Graphics;
 using Dolphin.Graphics.Raw;
 using static Dolphin.Graphics.Raw.GXConstants;
 
-// Canonical face-plane triangles never change. GX performs the cube transform
+// Canonical centered icon-plane triangles never change. GX performs the cube transform
 // and perspective divide; only two small matrices are uploaded between frames.
 internal sealed class IndexedIcons : IDisposable
 {

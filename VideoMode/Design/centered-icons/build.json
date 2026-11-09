@@ -1,0 +1,12 @@
+{
+  "samples_parent_commit": "f124c17b998c4746064b5bfaa39cb0b200147ed9",
+  "sdk_commit": "4dc80bd10faae69d5b288c7bc227ce6be0e9c750",
+  "engine_commit": "1fa7b6207450ea45732a09d649af8729e7298b5c",
+  "dol_sha256": "469e8a0124ac709f8e18830d204dfd220e4b8e769e045e0959915cfad4bf45d6",
+  "build": "ci/build_videomode_source_sdk.py --normal --icons --glass --blur --glyphs --tints --numbers --footer-text --grid --selectors --console-services --memory-cards",
+  "modified_native_source_sha256": {
+    "VideoMode/IplRenderer.cs": "5fae1ced380c3a3405689b7d6b65862a4eca418a84f8ccd9d078c0919b9879e2",
+    "VideoMode/IplIconLayout.cs": "c2385d9f878b5c25e4b92bbec594dc989b561782d26d146360f4ed5c4bd458ee",
+    "VideoMode/IndexedIcons.cs": "29b97e7011e7eee5533600c0b081d218c4dbcd75d0021f05f90ab9e05dc34cec"
+  }
+}

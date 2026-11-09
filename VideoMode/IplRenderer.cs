@@ -203,8 +203,7 @@ internal sealed partial class IplRenderer
 #endif
 
 #if IPL_CACHED_ICONS
-        int iconFace=SurfaceIndex(shell.Face);
-        c.PrepareIcon(Rotate(Surface(iconFace,0,0)),Rotate(Surface(iconFace,1,0)),Rotate(Surface(iconFace,0,1)),scale,cy);
+        c.PrepareIcon(Rotate(IplIconLayout.Point(shell.Face,0,0)),Rotate(IplIconLayout.Point(shell.Face,1,0)),Rotate(IplIconLayout.Point(shell.Face,0,1)),scale,cy);
 #endif
         c.Section(IplRenderPhase.None);
 #if IPL_CACHED_FOOTER_TEXT
@@ -366,26 +365,27 @@ internal sealed partial class IplRenderer
     private static readonly string[] memory={"011111110","111111111","110111011","110111011","110111011","110111011","110000011","111111111","111111111","111111111","111111111"};
     private static readonly string[] home={"00011110000","01110011100","11100001110","11111011110","11111111110","11101110110","11100100110","01111111100","00011110000"};
     private void FaceIcon(IplShell s)=>FaceIcon(s.Face,s);
-    private IplPoint IconPoint(IplShell s,float u,float v)=>iconBuilding?new IplPoint(u,v):FacePoint(s,u,v);
+    private IplPoint IconPoint(IplShell s,float u,float v)=>iconBuilding?new IplPoint(u,v):Project(IplIconLayout.Point(s.Face,u,v));
+    internal static string[] IconBitmap(ShellFace face)=>face==ShellFace.Video?monitor:face==ShellFace.Calendar?calendar:face==ShellFace.Options?options:face==ShellFace.Play?play:face==ShellFace.Memory?memory:home;
     private void FaceIcon(ShellFace face,IplShell s)
     {
 #if IPL_CACHED_ICONS
         if(!iconBuilding&&c.DrawIconCache((int)face))return;
 #endif
-        var bitmap=face==ShellFace.Video?monitor:face==ShellFace.Calendar?calendar:face==ShellFace.Options?options:face==ShellFace.Play?play:face==ShellFace.Memory?memory:home;
+        var bitmap=IconBitmap(face);var layout=IplIconLayout.Create(bitmap);
         uint color=face==ShellFace.Video?0x3f6ed54bu:face==ShellFace.Calendar?0x39a88148u:face==ShellFace.Options?0xd878dc55u:face==ShellFace.Play?0xe0a34d48u:face==ShellFace.Memory?0x6788d54bu:0x708fc535u;
-        const float cell=.122f,rowStep=.114f;float left=-bitmap[0].Length*cell/2,top=bitmap.Length*rowStep/2+.075f;
+        float cell=layout.Cell,rowStep=layout.RowStep,left=layout.Left,top=layout.Top,factor=cell/.122f;
         for(int y=0;y<bitmap.Length;y++)for(int x=0;x<bitmap[y].Length;x++)if(bitmap[y][x]=='1')
         {
             float u=left+x*cell,v=top-y*rowStep;
-            FaceBlock(s,u,v,cell-.012f,rowStep-.012f,color);
-            FaceQuad(s,u+.006f,v-.006f,cell-.024f,.010f,0xc2d4ff28);
-            FaceQuad(s,u+cell-.022f,v-.017f,.010f,rowStep-.032f,0x080d1a40);
+            FaceBlock(s,u,v,cell-layout.Gap,rowStep-layout.Gap,color);
+            FaceQuad(s,u+.006f*factor,v-.006f*factor,cell-.024f*factor,.010f*factor,0xc2d4ff28);
+            FaceQuad(s,u+cell-.022f*factor,v-.017f*factor,.010f*factor,rowStep-.032f*factor,0x080d1a40);
         }
     }
     private void FaceBlock(IplShell s,float u,float v,float width,float height,uint color)
     {
-        const float radius=.012f;
+        float radius=width*(.012f/.110f);
         var center=IconPoint(s,u+width/2,v-height/2);IplPoint first=default,previous=default;
         for(int corner=0;corner<4;corner++)for(int j=0;j<=3;j++)
         {

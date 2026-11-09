@@ -91,3 +91,16 @@ An actual 17,000,812-byte build compacts to 2,894,876 bytes with identical loade
 bytes, addresses, flags and memory sizes. The receiver limit is unchanged.
 Nineteen bridge tests, including the production C receiver fixture, pass locally.
 This transport-only change does not change the delivered DOL or rendering timings.
+
+## Icon centering follow-up
+
+The six block-built menu icons now use center planes through the 3D origin,
+with centered visible bounds and a 1.10-unit maximum span. All block/highlight
+envelopes retain at least 0.30 units of clearance to the cavity walls in every
+cube pose. The indexed cache and fallback share this mapping. Bounds/clearance
+and orientation tests pass for all six bitmaps, including the asymmetric home
+icon. Native Calendar/Video and navigation/overlay evidence is in
+[centered-icons](VideoMode/Design/centered-icons/README.md).
+The new DOL is `469e8a0124ac709f8e18830d204dfd220e4b8e769e045e0959915cfad4bf45d6`;
+the unchanged VSync-enabled 96-frame review averaged 16.681 ms/frame and
+3.428 ms active work, with zero managed collections.
