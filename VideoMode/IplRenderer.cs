@@ -78,7 +78,7 @@ internal sealed partial class IplRenderer
     private readonly IplPoint[] circleDirections=new IplPoint[33],panelDirections=new IplPoint[4*9];
     // A broad corner arc must remain visible at native resolution. The optical
     // wall uses the same radius family as the underlying rounded solid.
-    private const float Round=.24f,Core=1-Round,WallCorner=.28f;
+    private const float Round=.24f,Core=1-Round;
     private const int WallBandDivisions=16,OuterRimBands=3;
     internal IplRenderer(IIplCanvas canvas)
     {
@@ -331,7 +331,11 @@ internal sealed partial class IplRenderer
         eye=new IplPoint(eye.X/length,eye.Y/length,eye.Z/length);
         float dot=n.X*eye.X+n.Y*eye.Y+n.Z*eye.Z;
         float grazing=Clamp(1-dot,0,1);
-        return new IplPoint(Clamp(.5f+(2*dot*n.X-eye.X)*.5f,.002f,.998f),Clamp(.5f+(2*dot*n.Y-eye.Y)*.5f,.002f,.998f),Clamp(.04f+1.8f*grazing,0,1)*(.12f+.88f*curvature));
+        // Fade polish into the face instead of lighting a second broad band
+        // where the flat face meets its bevel. Keep the silhouette glossy.
+        float edge=Clamp((grazing-.20f)/.65f,0,1);
+        edge=edge*edge*(3-2*edge);
+        return new IplPoint(Clamp(.5f+(2*dot*n.X-eye.X)*.5f,.002f,.998f),Clamp(.5f+(2*dot*n.Y-eye.Y)*.5f,.002f,.998f),edge*(.12f+.88f*curvature));
     }
     private static uint GlassColor(IplPoint p,IplPoint normal)
     {
@@ -367,25 +371,27 @@ internal sealed partial class IplRenderer
             rimVisibility=Clamp((facing-.08f)/.20f,0,1);
             if(rimVisibility<=0)continue;
             rimVisibility=rimVisibility*rimVisibility*(3-2*rimVisibility);
-            // Keep the original outer-bevel width and rounded silhouette.
-            // No bands extend to the former middle or inset inner boundary.
+            // Trace a cross-section of the rounded solid itself. The old
+            // near-unit rectangle floated outside its silhouette, exposing a
+            // broad second border between the polish and the colored face.
             for(int band=0;band<OuterRimBands;band++)
             {
                 float outside=band/(float)WallBandDivisions,inside=(band+1)/(float)WallBandDivisions;
-                GlassWall(face,band,.997f-outside*.147f,.997f-inside*.147f,1-outside*.050f,1-inside*.050f,wallTints[band]);
+                GlassWall(face,band,.925f+outside*.16f,.925f+inside*.16f,wallTints[band]);
             }
         }
     }
     // Translucent ribbons give the optical wall a body between its polished
     // boundaries. All points share the rotating cube projection.
-    private void GlassWall(int face,int band,float outer,float inner,float front,float back,uint color)
+    private void GlassWall(int face,int band,float front,float back,uint color)
     {
+        float frontRadius=WallRadius(front),backRadius=WallRadius(back);
         IplPoint previousOuter=default,previousInner=default,firstOuter=default,firstInner=default;
         for(int corner=0;corner<4;corner++)for(int j=0;j<=12;j++)
         {
             int at=corner*13+j;var direction=wallDirections[at];
-            var o=band==0?Rotate(WallPoint(face,corner,direction,outer,WallCorner+(outer-.997f)/.147f*.015f,front)):wallBoundary[at];
-            var n=Rotate(WallPoint(face,corner,direction,inner,WallCorner+(inner-.997f)/.147f*.015f,back));
+            var o=band==0?Rotate(WallPoint(face,corner,direction,front,frontRadius)):wallBoundary[at];
+            var n=Rotate(WallPoint(face,corner,direction,back,backRadius));
             wallBoundary[at]=n;
             if(corner==0&&j==0){firstOuter=o;firstInner=n;}
             else WallSegment(previousOuter,o,previousInner,n,color);
@@ -393,14 +399,15 @@ internal sealed partial class IplRenderer
         }
         WallSegment(previousOuter,firstOuter,previousInner,firstInner,color);
     }
-    private static IplPoint WallPoint(int face,int corner,IplPoint direction,float extent,float radius,float depth)
+    private static float WallRadius(float depth) => (float)Math.Sqrt(Round*Round-(depth-Core)*(depth-Core))+.003f;
+    private static IplPoint WallPoint(int face,int corner,IplPoint direction,float depth,float radius)
     {
-        float x=corner==0||corner==3?-extent+radius:extent-radius;
-        float y=corner<2?extent-radius:-extent+radius;
-        // Shift samples through the outer bevel to retain its polished depth.
-        float refraction=(1-depth)/.050f*.105f;
-        var p=Surface(face,x+direction.X*radius+refraction,y+direction.Y*radius);
-        return new IplPoint(p.X*depth,p.Y*depth,p.Z*depth);
+        // Exact rounded-box cross-section at this face depth, with just .003
+        // units of clearance. Preserve the broad corner arcs without an inset
+        // contour, lateral refraction shift or detached rectangular surround.
+        float x=corner==0||corner==3?-Core:Core;
+        float y=corner<2?Core:-Core;
+        return Orient(face,new IplPoint(x+direction.X*radius,y+direction.Y*radius,depth));
     }
     private static IplPoint Lerp(IplPoint a,IplPoint b,float t)=>new IplPoint(a.X+(b.X-a.X)*t,a.Y+(b.Y-a.Y)*t,a.Z+(b.Z-a.Z)*t);
     private void WallSegment(IplPoint a,IplPoint b,IplPoint innerA,IplPoint innerB,uint color)

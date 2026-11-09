@@ -1,0 +1,7 @@
+{
+  "stage": "first native iteration, polish too thin; superseded",
+  "dol_sha256": "08835a66ac681f3aa3e2ad869a82f2e9e8e415b477e61a3681c40401fd4ec2ce",
+  "bytes": 2818016,
+  "native": "Dolphin 2503, GameCube DOL, paused at completed native presentation; XFB decoded using BT.601 with no resizing",
+  "hardware_verified": false
+}

@@ -1,0 +1,11 @@
+{
+  "dol_sha256": "46ab6168b7f7c1b93ba8a4d1ba4ca31073e3b8d70a6fac0d016ea78a9f9e9f0f",
+  "dol_bytes": 2818208,
+  "samples_base": "627e3491b00feddd87ab917d04d274d81b37d724",
+  "renderer_sha256": "6531e6aaf066be555ff6d4497b6a4caac95ae8c35f0d6e54ee7a14441e4a4957",
+  "sdk": "4dc80bd10faae69d5b288c7bc227ce6be0e9c750",
+  "engine": "1fa7b6207450ea45732a09d649af8729e7298b5c",
+  "build": "Release, source SDK, normal interactive DOL, all retained submission options, console services and memory cards",
+  "native_capture": "Dolphin 2503; completed XFB; standard BT.601 decode; no resizing/composition",
+  "hardware_verified": false
+}
