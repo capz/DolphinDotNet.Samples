@@ -83,3 +83,11 @@ captures and actual VI scan/dimension readings are in
 [mode evidence](VideoMode/Design/sealed-glass/modes/events.json).
 The 240p capture uses VI double-strike; unsupported 240i remains correctly rejected.
 All saved final material/overlay and mode PNGs were opened and inspected.
+
+The hardware-runner CI also exposed a linked ELF just above the resident
+receiver's 16 MiB upload limit. The runner now transfers a compact ELF containing
+program headers and exact PT_LOAD bytes, retaining the original ELF for symbols.
+An actual 17,000,812-byte build compacts to 2,894,876 bytes with identical loaded
+bytes, addresses, flags and memory sizes. The receiver limit is unchanged.
+Nineteen bridge tests, including the production C receiver fixture, pass locally.
+This transport-only change does not change the delivered DOL or rendering timings.

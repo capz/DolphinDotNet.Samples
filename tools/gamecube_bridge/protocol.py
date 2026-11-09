@@ -29,32 +29,76 @@ def exact(stream, count):
 
 
 def validate_elf(image, token=None):
-    if not 52 <= len(image) <= MAX_IMAGE:
+    return _validate_elf(image, token, MAX_IMAGE)
+
+
+def _validate_elf(image, token, maximum):
+    if not 52 <= len(image) <= maximum:
         raise ValueError('ELF size exceeds the resident receiver limit')
     h = struct.unpack('>16sHHIIIIIHHHHHH', image[:52])
-    if h[0][:7] != b'\x7fELF\x01\x02\x01' or h[1:3] != (2, 20) or h[8] != 52:
+    if h[0][:7] != b'\x7fELF\x01\x02\x01' or h[1:3] != (2, 20) or h[3] != 1 or h[8] != 52:
         raise ValueError('Expected a big-endian fixed-address PowerPC ELF32')
     entry, phoff, phsize, phcount = h[4], h[5], h[9], h[10]
-    if phsize != 32 or not 1 <= phcount <= 16 or phoff + phcount * 32 > len(image):
+    if phsize != 32 or not 1 <= phcount <= 16 or phoff < 52 or phoff + phcount * 32 > len(image):
         raise ValueError('Invalid ELF program headers')
     ranges, executable = [], False
     for i in range(phcount):
         kind, offset, address, physical, files, memory, flags, align = struct.unpack_from('>8I', image, phoff + i * 32)
+        if kind in (2, 3):
+            raise ValueError('Dynamic ELF linking/relocation is unsupported')
         if kind != 1 or not memory:
             continue
-        if files > memory or offset + files > len(image) or physical != address or address & 3:
+        if files > memory or offset + files > len(image) or physical != address or address & 3 or flags & ~7:
             raise ValueError('Invalid ELF load segment')
+        if align > 1 and (align & (align - 1) or address % align != offset % align):
+            raise ValueError('Invalid ELF load alignment')
         if not 0x80003100 <= address < address + memory <= 0x81600000:
             raise ValueError('ELF load range overlaps the resident launcher or leaves cached MEM1')
         if any(address < end and start < address + memory for start, end in ranges):
             raise ValueError('Overlapping ELF load segments')
         ranges.append((address, address + memory))
-        executable |= bool(flags & 1 and address <= entry < address + files)
+        executable |= bool(flags & 1 and address <= entry and entry + 4 <= address + files)
     if not ranges or not executable or entry & 3:
         raise ValueError('ELF entry is not in an executable load segment')
     if token and token.encode('utf-16-be') not in image:
         raise ValueError('ELF does not contain this job token; rebuild with the prepared job configuration')
     return {'sha256': hashlib.sha256(image).hexdigest(), 'bytes': len(image), 'entry': entry, 'segments': len(ranges)}
+
+
+def compact_elf(image, token=None):
+    """Keep exact PT_LOAD payloads/addresses; omit nonresident debug sections.
+
+    The resident loader uses program headers, not section/symbol tables. GCC can
+    emit a >16 MiB debug ELF for an executable whose resident bytes are <3 MiB.
+    Never raise the receiver limit or change any executable/loadable byte.
+    """
+    _validate_elf(image, token, max(MAX_IMAGE, len(image)))
+    header = list(struct.unpack('>16sHHIIIIIHHHHHH', image[:52]))
+    loads = []
+    for i in range(header[10]):
+        segment = list(struct.unpack_from('>8I', image, header[5] + i * 32))
+        if segment[0] == 1 and segment[5]:
+            loads.append(segment)
+    header[5], header[6], header[10] = 52, 0, len(loads)
+    header[11] = header[12] = header[13] = 0
+    packed = bytearray(52 + 32 * len(loads))
+    struct.pack_into('>16sHHIIIIIHHHHHH', packed, 0, *header)
+    for i, segment in enumerate(loads):
+        old_offset, address, files, alignment = segment[1], segment[2], segment[4], segment[7]
+        if alignment & (alignment - 1) or alignment > MAX_IMAGE:
+            raise ValueError('Invalid ELF load alignment')
+        alignment = max(4, alignment)
+        # Preserve ELF p_offset/p_vaddr congruence, including page-aligned loads.
+        offset = len(packed) + (address - len(packed)) % alignment
+        if offset + files > MAX_IMAGE:
+            raise ValueError('ELF loadable image exceeds the resident receiver limit')
+        packed.extend(b'\0' * (offset - len(packed)))
+        packed.extend(image[old_offset:old_offset + files])
+        segment[1] = offset
+        struct.pack_into('>8I', packed, 52 + i * 32, *segment)
+    result = bytes(packed)
+    validate_elf(result, token)
+    return result
 
 
 def frame(stream, command, value=0, detail=0):

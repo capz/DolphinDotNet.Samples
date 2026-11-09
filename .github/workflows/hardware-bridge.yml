@@ -74,7 +74,7 @@ jobs:
         run: |
           set -euo pipefail
           dotnet build VideoMode/VideoMode.csproj -c Release -p:DndBuildNative=true -p:DndBuildBackend=Docker -p:IplHardwareRunner=true -p:DndDebugSymbols=false -p:DndGdbTransport=Off
-          python3 -c 'import sys,pathlib;sys.path.insert(0,"tools/gamecube_bridge");import client,protocol;client.optimized(pathlib.Path("VideoMode/obj/Release/net8.0/native/Makefile"));protocol.validate_elf(pathlib.Path("VideoMode/bin/Release/net8.0/VideoMode.elf").read_bytes(),"0123456789abcdef0123456789abcdef")'
+          python3 -c 'import sys,pathlib;sys.path.insert(0,"tools/gamecube_bridge");import client,protocol;client.optimized(pathlib.Path("VideoMode/obj/Release/net8.0/native/Makefile"));protocol.compact_elf(pathlib.Path("VideoMode/bin/Release/net8.0/VideoMode.elf").read_bytes(),"0123456789abcdef0123456789abcdef")'
           dotnet build VideoMode/VideoMode.csproj -c Release -p:DndBuildNative=true -p:DndBuildBackend=Docker -p:IplHardwareRunner=true -p:IplRunnerScene=Detail -p:IplRunnerVideo=576p -p:DndDebugSymbols=false -p:DndGdbTransport=Off
           python3 ci/verify_aot.py VideoMode --generated-c VideoMode/obj/Release/net8.0/native/source/generated_program.c
       - name: Compile current hardware instrumentation with the historical renderer
