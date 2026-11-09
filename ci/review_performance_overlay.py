@@ -21,6 +21,7 @@ parser=argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--logs',type=Path,required=True)
 parser.add_argument('--dol',type=Path,required=True)
 parser.add_argument('--widescreen',action='store_true',help='Also preview/keep 16:9, hide Z, and return through X safe mode')
+parser.add_argument('--rim-profile',action='store_true',help='After rim captures, log an uninterrupted normal-DOL Y profile')
 parser.add_argument('--rim-review',action='store_true',help='Native Calendar/front, rotating corner and Video/front rim captures')
 parser.add_argument('--calendar',action='store_true',help='Review two-row blur and independent time/date editing instead of the overlay sequence')
 parser.add_argument('--selector-motion',action='store_true',help='Record active hour/minute/month/year motion, A/B and Reduced Motion')
@@ -40,6 +41,7 @@ parser.add_argument('--library',action='store_true',help='Native library layout/
 parser.add_argument('--system-clock',action='store_true',help='Adjust isolated clock, inspect SRAM and Dolphin restart policy, then decrement')
 args=parser.parse_args()
 if sum([args.rim_review,args.calendar,args.widescreen,args.selector_motion,args.selector_scan,args.directional_return,args.system_clock,args.library,args.storage,args.flat_pages,args.dense_storage])>1:parser.error('Choose one review sequence')
+if args.rim_profile and not args.rim_review:parser.error('--rim-profile requires --rim-review')
 if args.rim_review and not args.native_boundaries:parser.error('--rim-review requires --native-boundaries')
 if args.native_boundaries and args.sdk is None:parser.error('--native-boundaries requires --sdk')
 if args.sd_only and (not args.dense_storage or not args.dense_quick or args.memory_only):parser.error('--sd-only requires --dense-storage --dense-quick')
@@ -250,6 +252,13 @@ try:
         assert xt.XTestFakeKeyEvent(d,code,0,0)
         x.XSync(d,0);shot('02-rotating-corner')
         native_frames.advance(60);shot('03-video-front')
+        if args.rim_profile:
+            from profile_interactive_rim import collect
+            code=x.XKeysymToKeycode(d,x.XStringToKeysym(b'Y'))
+            def profile_key(down):
+                assert xt.XTestFakeKeyEvent(d,code,down,0)
+                x.XSync(d,0)
+            collect(native_frames,args.dol.resolve(),root,lambda:profile_key(1),lambda:profile_key(0))
     elif args.calendar:
         key('Down');shot('01-calendar-two-rows')
         key('a');key('a');key('Up');key('Right');key('Up');shot('02-time-parts')
