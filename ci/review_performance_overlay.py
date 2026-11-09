@@ -253,6 +253,8 @@ try:
         x.XSync(d,0);shot('02-rotating-corner')
         native_frames.advance(60);shot('03-video-front')
         if args.rim_profile:
+            key('a');shot('04-video-flat')
+            key('b');shot('05-flat-b-to-cube')
             from profile_interactive_rim import collect
             code=x.XKeysymToKeycode(d,x.XStringToKeysym(b'Y'))
             def profile_key(down):

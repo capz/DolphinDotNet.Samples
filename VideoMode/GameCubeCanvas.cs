@@ -222,7 +222,8 @@ internal sealed partial class GameCubeCanvas : IIplCanvas, IIplBrowserCanvas, ID
         glass[index]=new VertexPositionColorTexture(World(point),Color(color),new Vector2(u,v));
         // Store the complete struct: preview.103.1 mislowers direct float-to-byte
         // array stores to an eight-byte store, corrupting adjacent managed data.
-        byte strength=(byte)Math.Min(255,(color&255)*reflection*1.35f);
+        // Reflection and transmission are independent for clear glass.
+        byte strength=(byte)Math.Min(255,reflection*220f);
         glossColors[index]=new Color32(strength,strength,strength,255);
     }
     public void EndGlassFace()
@@ -253,6 +254,7 @@ internal sealed partial class GameCubeCanvas : IIplCanvas, IIplBrowserCanvas, ID
     }
     public void BeginRims()=>rims.Begin();
     public void RimQuad(IplPoint a,IplPoint b,IplPoint c,IplPoint d,uint color)=>rims.Quad(a,b,c,d,color);
+    public void RimGradientQuad(IplPoint a,IplPoint b,IplPoint c,IplPoint d,uint ca,uint cb,uint cc,uint cd)=>rims.Quad(a,b,c,d,ca,cb,cc,cd);
     public void EndRims()=>rims.End();
     public void DrawRims(){draw.End();rims.Draw(device);draw.Begin();}
     public void BeginPanels(){panelCount=0;}

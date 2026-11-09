@@ -23,7 +23,7 @@ internal sealed class IndexedRims : IDisposable
     internal IndexedRims(int maxQuads=32768)
     {
         this.maxQuads=maxQuads;
-        positionBuffer=NativeBuffer.Allocate(maxQuads*32);colorBuffer=NativeBuffer.Allocate(maxQuads*4);
+        positionBuffer=NativeBuffer.Allocate(maxQuads*32);colorBuffer=NativeBuffer.Allocate(maxQuads*16);
         var data=IplRimCommands.Create();commandBytes=data.Length;
         commands=NativeBuffer.Allocate(data.Length);commands.Write(data);commands.Flush();
     }
@@ -53,14 +53,23 @@ internal sealed class IndexedRims : IDisposable
     }
     internal void Begin(){pending=chunks=0;}
     internal void Quad(IplPoint a,IplPoint b,IplPoint c,IplPoint d,uint color)
+        =>Quad(a,b,c,d,color,color);
+    internal void Quad(IplPoint a,IplPoint b,IplPoint c,IplPoint d,uint from,uint to)
+        =>Quad(a,b,c,d,from,to,from,to);
+    internal void Quad(IplPoint a,IplPoint b,IplPoint c,IplPoint d,uint ca,uint cb,uint cc,uint cd)
     {
-        if((color&255)==0)return;
+        if(((ca|cb|cc|cd)&255)==0)return;
         if(chunks*IplRimCommands.Quads+pending>=maxQuads)throw new InvalidOperationException("Indexed quad capacity exceeded.");
         int at=pending*8;
         positions[at]=a.X;positions[at+1]=a.Y;positions[at+2]=b.X;positions[at+3]=b.Y;
         positions[at+4]=c.X;positions[at+5]=c.Y;positions[at+6]=d.X;positions[at+7]=d.Y;
-        at=pending*4;colors[at]=(byte)(color>>24);colors[at+1]=(byte)(color>>16);
-        colors[at+2]=(byte)(color>>8);colors[at+3]=(byte)color;
+        at=pending*16;
+        for(int vertex=0;vertex<4;vertex++)
+        {
+            uint color=vertex==0?ca:vertex==1?cb:vertex==2?cc:cd;
+            colors[at++]=(byte)(color>>24);colors[at++]=(byte)(color>>16);
+            colors[at++]=(byte)(color>>8);colors[at++]=(byte)color;
+        }
         if(++pending==IplRimCommands.Quads)Upload();
     }
     private void Upload()
@@ -69,7 +78,7 @@ internal sealed class IndexedRims : IDisposable
         if(pending<IplRimCommands.Quads)
         {
             Array.Clear(positions,pending*8,positions.Length-pending*8);
-            Array.Clear(colors,pending*4,colors.Length-pending*4);
+            Array.Clear(colors,pending*16,colors.Length-pending*16);
         }
         positionBuffer.Write(positions,0,chunks*positions.Length*4);
         colorBuffer.Write(colors,0,chunks*colors.Length);

@@ -42,6 +42,7 @@ internal sealed class IplProof : IIplCanvas
     public void BeginRims()=>rims.Clear();
     public void RimQuad(IplPoint a,IplPoint b,IplPoint c,IplPoint d,uint color)
     {AppendTriangle(rims,a.X,a.Y,b.X,b.Y,c.X,c.Y,color);AppendTriangle(rims,b.X,b.Y,d.X,d.Y,c.X,c.Y,color);}
+    public void RimGradientQuad(IplPoint a,IplPoint b,IplPoint c,IplPoint d,uint ca,uint cb,uint cc,uint cd)=>RimQuad(a,b,c,d,Mix(Mix(ca,cb),Mix(cc,cd)));
     public void EndRims() { }
     public void DrawRims()=>shapes.Append(rims);
     public void BeginGlass()=>glass.Clear();

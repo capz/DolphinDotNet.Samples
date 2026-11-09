@@ -16,10 +16,12 @@ def collect(frames, dol, root, press, release):
         parts = line.split()
         if len(parts) == 3:
             name = parts[2].split('.lto_priv.')[0]
+            if name == 'dnd_value_heap':
+                symbols['HeapPointer'] = int(parts[0], 16)
             for field in ('Count', 'Ready', 'Samples'):
                 if name == 'dnd_static_IplFrameProfiler_' + field:
                     symbols[field] = int(parts[0], 16)
-    assert len(symbols) == 3
+    assert {'Count', 'Ready', 'Samples'} <= symbols.keys()
     conn = frames.connection
     press()
     assert frames.request(conn, f'z0,{frames.address:x},4') == 'OK'
@@ -43,7 +45,7 @@ def collect(frames, dol, root, press, release):
     rows = [dict(zip(FIELDS, values[i:i + len(FIELDS)])) for i in range(0, len(values), len(FIELDS))]
     assert all(r['frame_us'] > 0 and r['face'] == 1 and not r['editing'] for r in rows)
     with (root / 'frames.csv').open('w') as out:
-        writer = csv.DictWriter(out, fieldnames=FIELDS)
+        writer = csv.DictWriter(out, fieldnames=FIELDS, lineterminator="\n")
         writer.writeheader()
         writer.writerows(rows)
     result = {'scope': 'Dolphin guest clock; normal interactive Video face, idle motion enabled; not hardware',
@@ -52,5 +54,11 @@ def collect(frames, dol, root, press, release):
               'mean_us': {k: statistics.mean(r[k] for r in rows) for k in FIELDS[:12]},
               'frame_p95_us': sorted(r['frame_us'] for r in rows)[91],
               'active_mean_us': statistics.mean(r['frame_us'] - r['retrace_us'] for r in rows)}
+    if 'HeapPointer' in symbols:
+        heap = integer(symbols['HeapPointer'])
+        start, capacity, used, blocks, free_list, collections = struct.unpack('>6I', frames.read_bytes(heap, 24))
+        assert 0 < used <= capacity <= 262144
+        result['managed_heap'] = {'capacity_bytes': capacity, 'arena_used_bytes': used, 'collections': collections,
+                                  'scope': 'post-window arena; not peak or live bytes'}
     (root / 'profile.json').write_text(json.dumps(result, indent=2) + '\n')
     print(json.dumps(result), flush=True)

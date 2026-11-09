@@ -26,6 +26,7 @@ internal interface IIplCanvas
     void DrawReflections();
     void BeginRims();
     void RimQuad(IplPoint a,IplPoint b,IplPoint c,IplPoint d,uint color);
+    void RimGradientQuad(IplPoint a,IplPoint b,IplPoint c,IplPoint d,uint ca,uint cb,uint cc,uint cd);
     void EndRims();
     void DrawRims();
     bool BeginFooterCache(int style);
@@ -70,10 +71,12 @@ internal sealed partial class IplRenderer
     private readonly float[] curvatures=new float[25*25];
     private readonly int[] faceOrder=new int[6];
     private readonly float[] depth=new float[6];
-    private readonly uint[] wallTints=new uint[OuterRimBands];
+    private readonly uint[] wallTints=new uint[OuterRimBands+1];
     private readonly IplPoint[] wallSections=new IplPoint[OuterRimBands+1];
+    private readonly IplPoint[] wallPolishSections=new IplPoint[4];
+    private bool wallPolish;
     private readonly IplPoint[] wallDirections=new IplPoint[4*13];
-    private readonly IplPoint[] wallLightColors=new IplPoint[4*13],wallLightEnergy=new IplPoint[4*13];
+    private readonly IplPoint[] wallLightColors=new IplPoint[4*14],wallLightEnergy=new IplPoint[4*14];
     // Adjacent bands share a boundary. Retain its rotated endpoints in a small
     // scratch ring rather than rebuilding it and rotating both ends per segment.
     private readonly IplPoint[] wallBoundary=new IplPoint[4*13];
@@ -81,7 +84,7 @@ internal sealed partial class IplRenderer
     // A broad corner arc must remain visible at native resolution. The optical
     // wall uses the same radius family as the underlying rounded solid.
     private const float Round=.32f,Core=1-Round;
-    private const int WallBandDivisions=12,OuterRimBands=12;
+    private const int WallBandDivisions=6,OuterRimBands=6;
     internal IplRenderer(IIplCanvas canvas)
     {
         c=canvas;
@@ -112,13 +115,15 @@ internal sealed partial class IplRenderer
         for(int i=0;i<=OuterRimBands;i++)
         {
             float t=i/(float)OuterRimBands;
-            wallSections[i]=new IplPoint(.94f-.13f*t,.28f-.07f*t,.86f+.15f*(float)Math.Sin(t*3.1415926f));
+            wallSections[i]=WallSection(t);
         }
+        wallPolishSections[0]=WallSection(.215f);wallPolishSections[1]=WallSection(.285f);
+        wallPolishSections[2]=WallSection(.770f);wallPolishSections[3]=WallSection(.830f);
         // One continuous curved glass wall, not nested outline strokes. Two
         // narrow specular lobes reveal its outer roll and inner optical return.
-        for(int band=0;band<OuterRimBands;band++)
+        for(int band=0;band<=OuterRimBands;band++)
         {
-            float t=(band+.5f)/WallBandDivisions;
+            float t=band/(float)WallBandDivisions;
             float polish=(float)Math.Exp(-Math.Pow((t-.25f)/.11f,2));
             float inner=(float)Math.Exp(-Math.Pow((t-.80f)/.08f,2));
             wallTints[band]=Rgba((int)(55+polish*195+inner*110),
@@ -126,7 +131,7 @@ internal sealed partial class IplRenderer
                 (int)(28+polish*180+inner*95));
         }
     }
-    private static float Coordinate(int i) => i<6 ? -1+Round*(1-(float)Math.Cos(i/6f*1.5707963f)) : i>18 ? -Coordinate(24-i) : -Core+(i-6)*2*Core/12;
+    private static float Coordinate(int i) => i<8 ? -1+Round*(1-(float)Math.Cos(i/8f*1.5707963f)) : i>16 ? -Coordinate(24-i) : -Core+(i-8)*2*Core/8;
     private static float Clamp(float a,float lo,float hi)=>Math.Max(lo,Math.Min(hi,a));
     private static IplPoint Surface(int f,float u,float v)
     {
@@ -156,7 +161,12 @@ internal sealed partial class IplRenderer
     private IplPoint Rotate(IplPoint p)
     {
         float x=cosYaw*p.X+sinYaw*p.Z,z=-sinYaw*p.X+cosYaw*p.Z;
-        return new IplPoint(x,cosPitch*p.Y-sinPitch*z,sinPitch*p.Y+cosPitch*z);
+        float y=cosPitch*p.Y-sinPitch*z;z=sinPitch*p.Y+cosPitch*z;
+        // A camera-space tilt reveals thickness on every menu face. Adding
+        // yaw before Calendar's quarter-turn only rolled its text in-plane.
+        float viewX=.9838437f*x-.1790296f*z;
+        z=.1790296f*x+.9838437f*z;
+        return new IplPoint(viewX,.9928086f*y-.1197122f*z,.1197122f*y+.9928086f*z);
     }
     private IplPoint Project(IplPoint p)
     {
@@ -242,7 +252,6 @@ internal sealed partial class IplRenderer
         if(t<1)ease+=(float)Math.Sin(t*3.1415926f)*.045f;
         yaw=PoseYaw(shell.PreviousFace)+(PoseYaw(shell.Face)-PoseYaw(shell.PreviousFace))*ease;
         pitch=PosePitch(shell.PreviousFace)+(PosePitch(shell.Face)-PosePitch(shell.PreviousFace))*ease;
-        yaw+=.10f;pitch+=.025f;
         if(!shell.ReducedMotion){yaw+=(float)Math.Sin(shell.Time/5.3f*6.2831853f)*.075f;pitch+=.035f+(float)Math.Sin(shell.Time/7.1f*6.2831853f)*.055f;}
 #if IPL_VISUAL_REVIEW_ANGLE
         // Reproducible oblique pose exposes walls and face seams for native review.
@@ -327,7 +336,7 @@ internal sealed partial class IplRenderer
                 var uv=ReflectionUv(p,normal,curvatures[i]);
                 uint color=GlassColor(p,normal);
                 color=(color&0xffffff00)|(uint)((color&255)*facing);
-                c.GlassVertex(i,ProjectView(p),color,uv.X,uv.Y,uv.Z);
+                c.GlassVertex(i,ProjectView(p),color,uv.X,uv.Y,uv.Z*facing);
             }
             c.EndGlassFace();
         }
@@ -387,32 +396,60 @@ internal sealed partial class IplRenderer
             var section=wallSections[OuterRimBands/2];
             for(int at=0;at<wallDirections.Length;at++)
                 PrepareWallLight(Rotate(WallPoint(face,at/13,wallDirections[at],section.X,section.Z,section.Y)),at);
+            for(int corner=0;corner<4;corner++)
+            {
+                int at=corner*13,previous=(at+51)%52;
+                var a=WallPoint(face,previous/13,wallDirections[previous],section.X,section.Z,section.Y);
+                var b=WallPoint(face,corner,wallDirections[at],section.X,section.Z,section.Y);
+                PrepareWallLight(Rotate(Lerp(a,b,.5f)),52+corner);
+            }
+            wallPolish=false;
             // Sweep one convex cross-section from the outside through the
             // rounded front of the thick wall and back into the hollow cavity.
             for(int band=0;band<OuterRimBands;band++)
             {
                 GlassWall(face,band,wallTints[band]);
             }
+            wallPolish=true;
+            for(int line=0;line<2;line++)
+                GlassWallSection(face,false,wallPolishSections[line*2],wallPolishSections[line*2+1],0xffffffe8u,0xffffffe8u);
         }
     }
+    private static IplPoint WallSection(float t)=>new IplPoint(.94f-.13f*t,.28f-.07f*t,.94f-.13f*t+.15f*(float)Math.Sin(t*3.1415926f));
     // Translucent ribbons give the optical wall a body between its polished
     // boundaries. All points share the rotating cube projection.
     private void GlassWall(int face,int band,uint color)
     {
-        var a=wallSections[band];var b=wallSections[band+1];
+        GlassWallSection(face,band>0,wallSections[band],wallSections[band+1],color,wallTints[band+1]);
+    }
+    private void GlassWallSection(int face,bool shared,IplPoint a,IplPoint b,uint color,uint innerColor)
+    {
         float front=a.Z,back=b.Z,outer=a.X,inner=b.X,frontRadius=a.Y,backRadius=b.Y;
         IplPoint previousOuter=default,previousInner=default,firstOuter=default,firstInner=default;
         for(int corner=0;corner<4;corner++)for(int j=0;j<=12;j++)
         {
             int at=corner*13+j;var direction=wallDirections[at];
-            var o=band==0?Rotate(WallPoint(face,corner,direction,outer,front,frontRadius)):wallBoundary[at];
-            var n=Rotate(WallPoint(face,corner,direction,inner,back,backRadius));
+            var o=!shared?ProjectView(Rotate(WallPoint(face,corner,direction,outer,front,frontRadius))):wallBoundary[at];
+            var n=ProjectView(Rotate(WallPoint(face,corner,direction,inner,back,backRadius)));
             wallBoundary[at]=n;
             if(corner==0&&j==0){firstOuter=o;firstInner=n;}
-            else WallSegment(previousOuter,o,previousInner,n,color,at-1,at);
+            else if(j==0)
+            {
+                var middle=ProjectedMiddle(previousOuter,o);var middleInner=ProjectedMiddle(previousInner,n);
+                WallSegment(previousOuter,middle,previousInner,middleInner,color,innerColor,at-1,52+corner);
+                WallSegment(middle,o,middleInner,n,color,innerColor,52+corner,at);
+            }
+            else WallSegment(previousOuter,o,previousInner,n,color,innerColor,at-1,at);
             previousOuter=o;previousInner=n;
         }
-        WallSegment(previousOuter,firstOuter,previousInner,firstInner,color,51,0);
+        var lastMiddle=ProjectedMiddle(previousOuter,firstOuter);var lastInner=ProjectedMiddle(previousInner,firstInner);
+        WallSegment(previousOuter,lastMiddle,previousInner,lastInner,color,innerColor,51,52);
+        WallSegment(lastMiddle,firstOuter,lastInner,firstInner,color,innerColor,52,0);
+    }
+    private static IplPoint ProjectedMiddle(IplPoint a,IplPoint b)
+    {
+        float aw=3.8f-a.Z,bw=3.8f-b.Z,sum=aw+bw;
+        return new IplPoint((a.X*aw+b.X*bw)/sum,(a.Y*aw+b.Y*bw)/sum,(a.Z+b.Z)*.5f);
     }
     private static IplPoint WallPoint(int face,int corner,IplPoint direction,float extent,float depth,float radius)
     {
@@ -421,33 +458,15 @@ internal sealed partial class IplRenderer
         return Orient(face,new IplPoint(x+direction.X*radius,y+direction.Y*radius,depth));
     }
     private static IplPoint Lerp(IplPoint a,IplPoint b,float t)=>new IplPoint(a.X+(b.X-a.X)*t,a.Y+(b.Y-a.Y)*t,a.Z+(b.Z-a.Z)*t);
-    private void WallSegment(IplPoint a,IplPoint b,IplPoint innerA,IplPoint innerB,uint color,int lightA,int lightB)
+    private void WallSegment(IplPoint a,IplPoint b,IplPoint innerA,IplPoint innerB,uint color,uint innerColor,int lightA,int lightB)
     {
-        // Endpoints are already in view space, shared by neighboring segments
-        // and bands. Projection and lighting retain the original interpolation.
-        var start=ProjectView(a);var end=ProjectView(b);
-        float dx=end.X-start.X,dy=end.Y-start.Y;
-        int steps=Math.Max(1,(int)Math.Ceiling(Math.Sqrt(dx*dx+dy*dy)/5));
-        uint colorA=RimColor(lightA,color),colorB=RimColor(lightB,color);
-        var previousOuter=start;IplPoint previousInner=default;bool previousVisible=false;
-        for(int i=1;i<=steps;i++)
-        {
-            var p=Lerp(a,b,i/(float)steps);
-            uint shade=MixWallColor(colorA,colorB,i/(float)steps);
-            if((shade&255)==0){previousVisible=false;continue;}
-            // Invisible samples still determine the same lighting and adaptive
-            // tessellation. Project their boundary only when a visible neighbor
-            // actually needs it; preserve cached endpoints across visible runs.
-            if(!previousVisible)
-            {
-                float t=(i-1)/(float)steps;
-                if(i>1)previousOuter=ProjectView(Lerp(a,b,t));
-                previousInner=i==1?ProjectView(innerA):ProjectView(Lerp(innerA,innerB,t));
-            }
-            var outer=ProjectView(p);var inner=ProjectView(Lerp(innerA,innerB,i/(float)steps));
-            c.RimQuad(previousOuter,outer,previousInner,inner,shade);
-            previousOuter=outer;previousInner=inner;previousVisible=true;
-        }
+        // GX interpolates the two endpoint colors. Straight edges need only
+        // their midpoint to retain the long specular highlight; the curved
+        // corners retain all twelve arc samples without CPU subdivision.
+        uint ca=RimColor(lightA,color),cb=RimColor(lightB,color);
+        uint cc=color==innerColor?ca:RimColor(lightA,innerColor),cd=color==innerColor?cb:RimColor(lightB,innerColor);
+        if(((ca|cb|cc|cd)&255)==0)return;
+        c.RimGradientQuad(a,b,innerA,innerB,ca,cb,cc,cd);
     }
     private void PrepareWallLight(IplPoint p,int index)
     {
@@ -457,10 +476,11 @@ internal sealed partial class IplRenderer
         float teal=Light(p.X-.76f,p.Y-.65f,.72f);
         float amber=Light(p.X+.90f,p.Y+.25f,.72f);
         float violet=Light(p.X-.08f,p.Y+.92f,.62f);
-        float top=Light((p.Y-.94f)*1.6f,0,.12f)*(.30f+.70f*Light(p.X-.35f,0,.85f));
+        float top=Light(p.Y-.78f,0,.20f)*(.40f+.60f*Light(p.X-.25f,0,.85f));
         float corner=Light(p.X+.85f,p.Y-.84f,.20f)+Light(p.X-.85f,p.Y-.84f,.20f);
         float lower=Light((p.Y+.93f)*1.8f,0,.11f)*Light(p.X,0,.80f);
-        float glint=top+corner*.7f+lower*.4f;
+        float left=Light(p.X+.88f,0,.065f)*Light(p.Y+.38f,0,.60f);
+        float glint=top+corner*.7f+lower*.4f+left*.65f;
         wallLightColors[index]=new IplPoint(22+amber*205+violet*90+teal*35,
             30+amber*100+violet*35+teal*210,45+amber*25+violet*225+teal*190);
         wallLightEnergy[index]=new IplPoint(glint*450,.72f+glint*2.4f+teal*.5f+amber*.5f+violet*.5f);
@@ -469,16 +489,9 @@ internal sealed partial class IplRenderer
     {
         var rgb=wallLightColors[index];var energy=wallLightEnergy[index];
         int alpha=(int)(Math.Min(255,(color&255)*energy.Y)*rimVisibility);
-        float shine=energy.X*(color&255)/255f;
+        float shine=energy.X*(color&255)/255f*(wallPolish?1:.20f);
         return Rgba((int)(rgb.X+shine),(int)(rgb.Y+shine),(int)(rgb.Z+shine),alpha);
     }
-    private static uint MixWallColor(uint a,uint b,float t)
-    {
-        int ar=(int)(a>>24),ag=(int)((a>>16)&255),ab=(int)((a>>8)&255),aa=(int)(a&255);
-        return Rgba(ar+(int)(((int)(b>>24)-ar)*t),ag+(int)(((int)((b>>16)&255)-ag)*t),
-            ab+(int)(((int)((b>>8)&255)-ab)*t),aa+(int)(((int)(b&255)-aa)*t));
-    }
-
     private static uint Rgba(int r,int g,int b,int a)=>(uint)((Math.Min(255,r)<<24)|(Math.Min(255,g)<<16)|(Math.Min(255,b)<<8)|a);
     private static int SurfaceIndex(ShellFace face)=>face==ShellFace.Calendar?4:face==ShellFace.Options?2:face==ShellFace.Play?3:(int)face;
     private IplPoint FacePoint(IplShell s,float u,float v)=>Project(Surface(SurfaceIndex(s.Face),u,v));
