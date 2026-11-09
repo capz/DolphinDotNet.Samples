@@ -132,6 +132,57 @@ def spec(**changes):
 
 
 class ProtocolTests(unittest.TestCase):
+    def test_compact_elf_drops_oversized_nonloadable_debug_tail(self):
+        original = elf() + b'D' * (protocol.MAX_IMAGE + 1 - len(elf()))
+        with self.assertRaises(ValueError):
+            protocol.validate_elf(original, TOKEN)
+        packed = protocol.compact_elf(original, TOKEN)
+        self.assertLess(len(packed), 2048)
+        header = struct.unpack_from('>16sHHIIIIIHHHHHH', packed)
+        segment = struct.unpack_from('>8I', packed, header[5])
+        self.assertEqual(packed[segment[1]:segment[1] + segment[4]], original[84:1024])
+        self.assertEqual(header[6], 0)
+        self.assertEqual(header[11:], (0, 0, 0))
+
+    def test_compact_elf_preserves_load_bytes_addresses_alignment_and_bss(self):
+        original = bytearray(12352)
+        ident = elf()[:16]
+        struct.pack_into('>16sHHIIIIIHHHHHH', original, 0, ident, 2, 20, 1, 0x80004000, 52, 0, 0, 52, 32, 3, 0, 0, 0)
+        segments = [(1,8192,0x80004000,0x80004000,16,16,5,4096),
+                    (1,12288,0x80006000,0x80006000,64,96,6,4096),
+                    (1,0,0x80007000,0x80007000,0,128,6,32)]
+        original[8192:8208] = b'EXECUTABLE-BYTES'
+        original[12288:12352] = TOKEN.encode('utf-16-be')
+        for i, segment in enumerate(segments):struct.pack_into('>8I', original, 52 + i * 32, *segment)
+        packed = protocol.compact_elf(original, TOKEN)
+        self.assertEqual(protocol.validate_elf(packed, TOKEN)['segments'], 3)
+        for i, before in enumerate(segments):
+            after = struct.unpack_from('>8I', packed, 52 + i * 32)
+            self.assertEqual(after[2:], before[2:])
+            self.assertEqual(after[1] % after[7], after[2] % after[7])
+            self.assertEqual(packed[after[1]:after[1]+after[4]], original[before[1]:before[1]+before[4]])
+
+    def test_compact_elf_requires_callback_token_in_loaded_bytes(self):
+        original = bytearray(elf())
+        original[128:192] = b'\0' * 64
+        original.extend(TOKEN.encode('utf-16-be'))
+        with self.assertRaises(ValueError):protocol.compact_elf(original, TOKEN)
+
+    def test_compact_elf_does_not_hide_dynamic_linker_headers(self):
+        original = bytearray(elf())
+        struct.pack_into('>H', original, 44, 2)
+        struct.pack_into('>8I', original, 84, 2, 0, 0, 0, 0, 0, 0, 0)
+        with self.assertRaises(ValueError):protocol.compact_elf(original, TOKEN)
+
+    def test_compact_elf_rejects_oversized_resident_payload_and_bad_alignment(self):
+        original = bytearray(elf())
+        struct.pack_into('>I', original, 52 + 28, 3)
+        with self.assertRaises(ValueError):protocol.compact_elf(original)
+        original = bytearray(elf()) + bytearray(protocol.MAX_IMAGE + 84 - len(elf()))
+        struct.pack_into('>I', original, 52 + 16, protocol.MAX_IMAGE)
+        struct.pack_into('>I', original, 52 + 20, protocol.MAX_IMAGE)
+        with self.assertRaises(ValueError):protocol.compact_elf(original)
+
     def test_release_elf_and_token_binding(self):
         self.assertEqual(protocol.validate_elf(elf(), TOKEN)['segments'], 1)
         with self.assertRaises(ValueError):
@@ -349,7 +400,7 @@ class NativeReceiverTests(unittest.TestCase):
                     if process.poll() is None:process.kill();process.wait()
         thread=threading.Thread(target=relay,daemon=True);thread.start()
         try:
-            self.assertTrue(protocol.launch('127.0.0.1',listener.getsockname()[1],elf())['committed'])
+            self.assertTrue(protocol.launch('127.0.0.1',listener.getsockname()[1],protocol.compact_elf(elf(),TOKEN))['committed'])
             thread.join(5)
             self.assertFalse(thread.is_alive())
             self.assertEqual(outcome[0][0],0,outcome)

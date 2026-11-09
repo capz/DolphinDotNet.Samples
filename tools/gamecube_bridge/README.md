@@ -134,6 +134,13 @@ execution once. The console renders 30 warmup plus 96 sampled frames, sends a
 then returns to the resident receiver. The host waits for receiver readiness
 before marking the job complete. Status polling touches Windows job state only.
 
+Before upload, the client compacts the linked ELF to program headers and exact
+PT_LOAD bytes. Executable/data bytes, addresses, alignment, BSS sizes and entry
+point are preserved; nonresident debug/symbol sections are omitted. The callback token must
+remain in loaded bytes. The receiver's 16 MiB image limit and MEM1 range checks
+remain enforced. The original linked ELF is retained for symbols/debugging;
+the job hash identifies the compact ELF actually uploaded.
+
 Upload/execute requests are never automatically replayed. A failed/unknown
 handoff requires checking the console. Only one job can own it; unrelated readiness
 probes are rejected while measuring. Process restarts retain logs, mark interrupted

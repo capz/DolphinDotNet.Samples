@@ -72,6 +72,10 @@ internal static class Program
         IplShellTests.Run();
         IplPerformanceStatsTests.Run();
         IplRimCommandsTests.Run();
+        IplProjectedWallTests.Run();
+        IplSealedGlassTests.Run();
+        IplIconLayoutTests.Run();
+        IplGlassOpticsTests.Run();
         IplOverlayLayoutTests.Run();
         float last=1;
         for(int i=0;i<=160000;i++)

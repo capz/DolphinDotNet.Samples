@@ -1,0 +1,14 @@
+{
+  "samples_parent_commit": "6d6af7f25d854ac9fec0559b3187a29a5e0a1781",
+  "sdk_commit": "4dc80bd10faae69d5b288c7bc227ce6be0e9c750",
+  "engine_commit": "1fa7b6207450ea45732a09d649af8729e7298b5c",
+  "dol_sha256": "664ed65716ba407241e51d9090057294d74bca89774700373908437e7bed1588",
+  "build": "ci/build_videomode_source_sdk.py --normal --icons --glass --blur --glyphs --tints --numbers --footer-text --grid --selectors --console-services --memory-cards",
+  "modified_native_source_sha256": {
+    "VideoMode/SealedGlassShell.cs": "459606a473f8c22d03b41d253ee512f4d7186caa4f72a5fc19022a489d5d165f",
+    "VideoMode/IplGlassOptics.cs": "2a09e7ea601c725eadd4a186ec692da6b26cbdc1e8582ac283064d0b4678f50b",
+    "VideoMode/IplRenderer.cs": "ee40aa193b38814716e733724891ceb1ba3c4d676196a01a358063d6b0435088",
+    "VideoMode/GameCubeCanvas.cs": "af3066bd4d2fb543d9290ceb1f8fce05c6708df741740e897d413180c5406ce1",
+    "VideoMode/IplIconLayout.cs": "c2385d9f878b5c25e4b92bbec594dc989b561782d26d146360f4ed5c4bd458ee"
+  }
+}

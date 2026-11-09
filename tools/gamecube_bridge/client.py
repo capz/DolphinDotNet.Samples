@@ -95,7 +95,7 @@ def run(args):
         with (destination / 'build.log').open('w') as log:
             subprocess.run(command, cwd=root, env=environment, stdout=log, stderr=subprocess.STDOUT, check=True)
         optimized(root / 'VideoMode/obj/Release/net8.0/native/Makefile')
-        image = (root / 'VideoMode/bin/Release/net8.0/VideoMode.elf').read_bytes()
+        image = protocol.compact_elf((root / 'VideoMode/bin/Release/net8.0/VideoMode.elf').read_bytes(), prepared['callback_token'])
         info = protocol.validate_elf(image, prepared['callback_token'])
     except Exception:
         try:
