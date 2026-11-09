@@ -104,3 +104,15 @@ icon. Native Calendar/Video and navigation/overlay evidence is in
 The new DOL is `469e8a0124ac709f8e18830d204dfd220e4b8e769e045e0959915cfad4bf45d6`;
 the unchanged VSync-enabled 96-frame review averaged 16.681 ms/frame and
 3.428 ms active work, with zero managed collections.
+
+## Internal refraction follow-up
+
+The centered icon now draws between rear and front interfaces, inside the live
+glass capture. A thickness-scaled Snell lookup and a Fresnel-weighted secondary
+return replace the single fixed scene offset. Geometry remains three indexed
+draws with one glass copy; front TEV grows from three stages to five. Native
+captures, the 96-frame profile and primary-source IPL research are preserved in
+[internal-refraction](VideoMode/Design/internal-refraction/README.md).
+The VSync-enabled Dolphin sample averages 16.681 ms/frame and 3.440 ms active
+work (previously 3.428 ms); this is not hardware cost evidence. The approved
+mockup's richer corner reflections remain an explicit visual gap.

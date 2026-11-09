@@ -20,6 +20,8 @@ internal sealed class SealedGlassShell : IDisposable
     private readonly NativeBuffer fresnel=NativeBuffer.Allocate(128*128*4),fresnelTexture=NativeBuffer.Allocate(32),fresnelMatrix=NativeBuffer.Allocate(48);
     private readonly NativeBuffer rearImage=NativeBuffer.Allocate(640*576*4),rearTexture=NativeBuffer.Allocate(32),screenMatrix=NativeBuffer.Allocate(48),refractionMatrix=NativeBuffer.Allocate(32);
     private readonly float[] fresnelTransform=new float[12],screenTransform=new float[12],refraction=new float[6];
+    private readonly NativeBuffer bendImage=NativeBuffer.Allocate(128*128*4),bendTexture=NativeBuffer.Allocate(32),bendMatrix=NativeBuffer.Allocate(48),echoMatrix=NativeBuffer.Allocate(32);
+    private readonly float[] bendTransform=new float[12],echoTransform=new float[6];
     private int copyWidth,copyHeight;
     private readonly int commandBytes=(3+IplSealedGlassGeometry.Indices*4+31)/32*32;
     internal SealedGlassShell()
@@ -35,7 +37,7 @@ internal sealed class SealedGlassShell : IDisposable
             stage[used++]=n.X;stage[used++]=n.Y;stage[used++]=n.Z;
             if(used==stage.Length||i==IplSealedGlassGeometry.Vertices-1){vertices.Write(stage,0,offset,used);offset+=used*4;used=0;}
         }
-        vertices.Flush();BuildCommands(outer,false);BuildCommands(inner,true);BuildEnvironment();BuildViewOffsets();BuildFresnel();rearImage.Flush();
+        vertices.Flush();BuildCommands(outer,false);BuildCommands(inner,true);BuildEnvironment();BuildViewOffsets();BuildFresnel();BuildRefraction();rearImage.Flush();
     }
     private void BuildCommands(NativeBuffer target,bool cavity)
     {
@@ -100,14 +102,29 @@ internal sealed class SealedGlassShell : IDisposable
             for(int y=0;y<4;y++)for(int x=0;x<4;x++)
             {
                 float cosine=Math.Abs((tx*4+x-63.5f)/63.5f);
-                // Exposure-adjusted Fresnel for a black, low-dynamic-range scene.
-                // Face-on interfaces transmit; curved grazing interfaces reflect.
-                float q=1-cosine;int alpha=(int)(255*(.04f+.96f*q*q*q*q*q));
-                int at=(y*4+x)*2;tile[at]=(byte)alpha;tile[at+1]=255;tile[32+at]=255;tile[33+at]=255;
+                float r=IplGlassOptics.Reflectance(cosine,IplGlassOptics.RefractiveIndex);
+                int alpha=(int)(255*r),weight=(int)(255*r*r);
+                int at=(y*4+x)*2;tile[at]=(byte)alpha;tile[at+1]=(byte)weight;tile[32+at]=(byte)weight;tile[33+at]=(byte)weight;
             }
             fresnel.Write(tile,0,(ty*32+tx)*64);
         }
         fresnel.Flush();
+    }
+    private void BuildRefraction()
+    {
+        var tile=new byte[64];
+        for(int ty=0;ty<32;ty++)for(int tx=0;tx<32;tx++)
+        {
+            for(int y=0;y<4;y++)for(int x=0;x<4;x++)
+            {
+                float nx=(tx*4+x-63.5f)/63.5f,ny=(ty*4+y-63.5f)/63.5f;
+                IplGlassOptics.WallOffset(nx,ny,1,IplGlassOptics.RefractiveIndex,out float dx,out float dy);
+                int sx=128+(int)(127*dx+(dx>=0?.5f:-.5f)),sy=128+(int)(127*dy+(dy>=0?.5f:-.5f));
+                int at=(y*4+x)*2;tile[at]=(byte)sx;tile[at+1]=128;tile[32+at]=128;tile[33+at]=(byte)sy;
+            }
+            bendImage.Write(tile,0,(ty*32+tx)*64);
+        }
+        bendImage.Flush();
     }
     internal void Prepare(IplPoint x,IplPoint y,IplPoint z,float sceneScale,float centerY,float width,float height,float canvasScale,float offset,int physicalWidth,int physicalHeight)
     {
@@ -135,13 +152,19 @@ internal sealed class SealedGlassShell : IDisposable
         screenTransform[0]=(fx*x.X-cx*x.Z)*cropX;screenTransform[1]=(fx*y.X-cx*y.Z)*cropX;screenTransform[2]=(fx*z.X-cx*z.Z)*cropX;screenTransform[3]=3.8f*cx*cropX;
         screenTransform[4]=(-fy*x.Y-cy*x.Z)*cropY;screenTransform[5]=(-fy*y.Y-cy*y.Z)*cropY;screenTransform[6]=(-fy*z.Y-cy*z.Z)*cropY;screenTransform[7]=3.8f*cy*cropY;
         screenTransform[8]=-x.Z;screenTransform[9]=-y.Z;screenTransform[10]=-z.Z;screenTransform[11]=3.8f;
-        refraction[0]=.055f*canvasScale*physicalWidth/width;refraction[4]=.055f*canvasScale*physicalHeight/height;
+        bendTransform[0]=x.X*.5f;bendTransform[1]=y.X*.5f;bendTransform[2]=z.X*.5f;bendTransform[3]=.5f;
+        bendTransform[4]=-x.Y*.5f;bendTransform[5]=-y.Y*.5f;bendTransform[6]=-z.Y*.5f;bendTransform[7]=.5f;
+        float wallPixels=IplSealedGlassGeometry.Thickness*3.8f*scale/(3.8f-(1-IplSealedGlassGeometry.Thickness));
+        refraction[0]=wallPixels*.975f*physicalWidth/width/127;refraction[4]=wallPixels*physicalHeight/height/127;
+        // The secondary transmitted path makes one additional internal round trip.
+        echoTransform[0]=3*refraction[0];echoTransform[4]=3*refraction[4];
+        bendMatrix.Write(bendTransform);echoMatrix.Write(echoTransform);bendMatrix.Flush();echoMatrix.Flush();
         fresnelMatrix.Write(fresnelTransform);screenMatrix.Write(screenTransform);refractionMatrix.Write(refraction);
         fresnelMatrix.Flush();screenMatrix.Flush();refractionMatrix.Flush();
         projectionBuffer.Write(projection);modelBuffer.Write(model);textureMatrix.Write(texMatrix);positionMatrix.Write(positionTransform);
         projectionBuffer.Flush();modelBuffer.Flush();textureMatrix.Flush();positionMatrix.Flush();
     }
-    internal void Draw(GraphicsDevice device)
+    private void BeginInterfacePass(GraphicsDevice device)
     {
         device.BeginRaw();
         GX.GX_SetViewport(0,0,device.Width,device.Height,0,1);GX.GX_SetScissor(0,0,(uint)device.Width,(uint)device.Height);
@@ -160,7 +183,10 @@ internal sealed class SealedGlassShell : IDisposable
         GX.GX_InitTexObjFilterMode(offsetTexture.Address,GX_LINEAR,GX_LINEAR);GX.GX_LoadTexObj(offsetTexture.Address,GX_TEXMAP1);
         GX.GX_LoadTexMtxImm(fresnelMatrix.Address,GX_TEXMTX2,GX_MTX2x4);
         GX.GX_SetTexCoordGen(GX_TEXCOORD2,GX_TG_MTX2x4,GX_TG_NRM,GX_TEXMTX2);
-        GX.GX_SetTexCoordGen(GX_TEXCOORD4,GX_TG_MTX2x4,GX_TG_NRM,GX_TEXMTX0);
+        GX.GX_LoadTexMtxImm(bendMatrix.Address,GX_TEXMTX4,GX_MTX2x4);
+        GX.GX_SetTexCoordGen(GX_TEXCOORD4,GX_TG_MTX2x4,GX_TG_NRM,GX_TEXMTX4);
+        GX.GX_InitTexObj(bendTexture.Address,bendImage.Address,128,128,GX_TF_RGBA8,GX_CLAMP,GX_CLAMP,0);
+        GX.GX_InitTexObjFilterMode(bendTexture.Address,GX_LINEAR,GX_LINEAR);GX.GX_LoadTexObj(bendTexture.Address,GX_TEXMAP4);
         GX.GX_SetTexCoordScaleManually(0,1,128,128);GX.GX_SetTexCoordScaleManually(1,1,128,128);
         GX.GX_SetTexCoordScaleManually(2,1,128,128);GX.GX_SetTexCoordScaleManually(4,1,128,128);
         GX.GX_LoadTexMtxImm(screenMatrix.Address,GX_TEXMTX3,GX_MTX3x4);
@@ -187,8 +213,17 @@ internal sealed class SealedGlassShell : IDisposable
         GX.GX_SetZMode(0,GX_ALWAYS,0);GX.GX_SetZCompLoc(0);GX.GX_SetAlphaCompare(GX_ALWAYS,0,GX_AOP_AND,GX_ALWAYS,0);
         GX.GX_SetBlendMode(GX_BM_BLEND,GX_BL_SRCALPHA,GX_BL_INVSRCALPHA,GX_LO_CLEAR);GX.GX_SetDstAlpha(0,0);GX.GX_SetColorUpdate(1);GX.GX_SetAlphaUpdate(1);
         GX.GX_InvVtxCache();GX.GX_InvalidateTexAll();
+    }
+    internal void DrawRear(GraphicsDevice device)
+    {
+        BeginInterfacePass(device);
         GX.GX_SetCullMode(GX_CULL_FRONT);GX.GX_SetTevKColor(0,new GXColor(195,210,225,165));GX.GX_CallDispList(outer.Address,(uint)commandBytes);
         GX.GX_SetCullMode(GX_CULL_NONE);GX.GX_SetTevKColor(0,new GXColor(225,235,250,170));GX.GX_CallDispList(inner.Address,(uint)commandBytes);
+        EndInterfacePass(device);IplFrameProfiler.ExtraDraws+=2;IplFrameProfiler.ExtraTriangles+=IplSealedGlassGeometry.Indices/3*2;
+    }
+    internal void DrawFront(GraphicsDevice device)
+    {
+        BeginInterfacePass(device);
         long copyStart=IplFrameProfiler.Active?Clock.Timestamp:0;
         GX.GX_SetTexCopySrc(0,0,(ushort)copyWidth,(ushort)copyHeight);GX.GX_SetTexCopyDst((ushort)copyWidth,(ushort)copyHeight,GX_TF_RGBA8,0);
         GX.GX_CopyTex(rearImage.Address,0);GX.GX_PixModeSync();GX.GX_InvalidateTexAll();
@@ -196,18 +231,35 @@ internal sealed class SealedGlassShell : IDisposable
         GX.GX_InitTexObj(rearTexture.Address,rearImage.Address,(ushort)copyWidth,(ushort)copyHeight,GX_TF_RGBA8,GX_CLAMP,GX_CLAMP,0);
         GX.GX_InitTexObjFilterMode(rearTexture.Address,GX_LINEAR,GX_LINEAR);GX.GX_LoadTexObj(rearTexture.Address,GX_TEXMAP3);
         GX.GX_SetTexCoordScaleManually(3,1,(ushort)copyWidth,(ushort)copyHeight);
-        GX.GX_SetNumIndStages(2);GX.GX_SetIndTexOrder(1,GX_TEXCOORD4,GX_TEXMAP1);GX.GX_SetIndTexCoordScale(1,GX_ITS_1,GX_ITS_1);
+        GX.GX_SetNumIndStages(2);GX.GX_SetIndTexOrder(1,GX_TEXCOORD4,GX_TEXMAP4);GX.GX_SetIndTexCoordScale(1,GX_ITS_1,GX_ITS_1);
         GX.GX_SetIndTexMatrix(GX_ITM_1,refractionMatrix.Address,0);
+        GX.GX_SetIndTexMatrix(GX_ITM_2,echoMatrix.Address,0);
+        // RGB carries physical R^2 into REG2; PREV retains reflected RGB and
+        // the exposed Fresnel alpha. No extra Fresnel texture fetch is needed.
+        GX.GX_SetTevColorIn(1,GX_CC_ZERO,GX_CC_ZERO,GX_CC_ZERO,GX_CC_TEXC);
+        GX.GX_SetTevColorOp(1,GX_TEV_ADD,GX_TB_ZERO,GX_CS_SCALE_1,1,GX_TEVREG2);
         GX.GX_SetTevOrder(2,GX_TEXCOORD3,GX_TEXMAP3,GX_COLORNULL);
         GX.GX_SetTevIndirect(2,1,GX_ITF_8,GX_ITB_ST,GX_ITM_1,GX_ITW_OFF,GX_ITW_OFF,0,0,GX_ITBA_OFF);
-        GX.GX_SetTevColorIn(2,GX_CC_TEXC,GX_CC_CPREV,GX_CC_APREV,GX_CC_ZERO);
-        GX.GX_SetTevKAlphaSel(2,GX_TEV_KASEL_1);GX.GX_SetTevAlphaIn(2,GX_CA_ZERO,GX_CA_ZERO,GX_CA_ZERO,GX_CA_KONST);
-        GX.GX_SetTevColorOp(2,GX_TEV_ADD,GX_TB_ZERO,GX_CS_SCALE_1,1,GX_TEVPREV);GX.GX_SetTevAlphaOp(2,GX_TEV_ADD,GX_TB_ZERO,GX_CS_SCALE_1,1,GX_TEVPREV);
-        GX.GX_SetNumTevStages(3);GX.GX_SetCullMode(GX_CULL_BACK);GX.GX_SetTevKColor(0,new GXColor(255,255,255,245));GX.GX_CallDispList(outer.Address,(uint)commandBytes);
+        GX.GX_SetTevColorIn(2,GX_CC_ZERO,GX_CC_ZERO,GX_CC_ZERO,GX_CC_TEXC);GX.GX_SetTevAlphaIn(2,GX_CA_ZERO,GX_CA_ZERO,GX_CA_ZERO,GX_CA_ZERO);
+        GX.GX_SetTevColorOp(2,GX_TEV_ADD,GX_TB_ZERO,GX_CS_SCALE_1,1,GX_TEVREG0);GX.GX_SetTevAlphaOp(2,GX_TEV_ADD,GX_TB_ZERO,GX_CS_SCALE_1,1,GX_TEVREG0);
+        GX.GX_SetTevSwapMode(3,GX_TEV_SWAP0,GX_TEV_SWAP0);GX.GX_SetTevOrder(3,GX_TEXCOORD3,GX_TEXMAP3,GX_COLORNULL);
+        GX.GX_SetTevIndirect(3,1,GX_ITF_8,GX_ITB_ST,GX_ITM_2,GX_ITW_OFF,GX_ITW_OFF,0,0,GX_ITBA_OFF);
+        GX.GX_SetTevColorIn(3,GX_CC_C0,GX_CC_TEXC,GX_CC_C2,GX_CC_ZERO);GX.GX_SetTevAlphaIn(3,GX_CA_ZERO,GX_CA_ZERO,GX_CA_ZERO,GX_CA_ZERO);
+        GX.GX_SetTevColorOp(3,GX_TEV_ADD,GX_TB_ZERO,GX_CS_SCALE_1,1,GX_TEVREG0);GX.GX_SetTevAlphaOp(3,GX_TEV_ADD,GX_TB_ZERO,GX_CS_SCALE_1,1,GX_TEVREG0);
+        GX.GX_SetTevDirect(4);GX.GX_SetTevOrder(4,GX_TEXCOORDNULL,GX_TEXMAP_NULL,GX_COLORNULL);
+        GX.GX_SetTevColorIn(4,GX_CC_C0,GX_CC_CPREV,GX_CC_APREV,GX_CC_ZERO);
+        GX.GX_SetTevKAlphaSel(4,GX_TEV_KASEL_1);GX.GX_SetTevAlphaIn(4,GX_CA_ZERO,GX_CA_ZERO,GX_CA_ZERO,GX_CA_KONST);
+        GX.GX_SetTevColorOp(4,GX_TEV_ADD,GX_TB_ZERO,GX_CS_SCALE_1,1,GX_TEVPREV);GX.GX_SetTevAlphaOp(4,GX_TEV_ADD,GX_TB_ZERO,GX_CS_SCALE_1,1,GX_TEVPREV);
+        GX.GX_SetNumTevStages(5);GX.GX_SetCullMode(GX_CULL_BACK);GX.GX_SetTevKColor(0,new GXColor(255,255,255,245));GX.GX_CallDispList(outer.Address,(uint)commandBytes);
+        EndInterfacePass(device);IplFrameProfiler.ExtraDraws++;IplFrameProfiler.ExtraTriangles+=IplSealedGlassGeometry.Indices/3;
+    }
+    private void EndInterfacePass(GraphicsDevice device)
+    {
         GX.GX_SetNumIndStages(0);GX.GX_SetTevDirect(0);GX.GX_SetTevDirect(1);GX.GX_SetTevDirect(2);
+        GX.GX_SetTevDirect(3);GX.GX_SetTevDirect(4);
         GX.GX_SetTexCoordScaleManually(0,0,1,1);GX.GX_SetTexCoordScaleManually(1,0,1,1);GX.GX_SetTexCoordScaleManually(2,0,1,1);
         GX.GX_SetTexCoordScaleManually(3,0,1,1);GX.GX_SetTexCoordScaleManually(4,0,1,1);
-        device.EndRaw();IplFrameProfiler.ExtraDraws+=3;IplFrameProfiler.ExtraTriangles+=IplSealedGlassGeometry.Indices;
+        device.EndRaw();
     }
-    public void Dispose(){vertices.Dispose();outer.Dispose();inner.Dispose();environment.Dispose();texture.Dispose();projectionBuffer.Dispose();modelBuffer.Dispose();textureMatrix.Dispose();normalMatrix.Dispose();viewOffsets.Dispose();offsetTexture.Dispose();positionMatrix.Dispose();indirectMatrix.Dispose();fresnel.Dispose();fresnelTexture.Dispose();fresnelMatrix.Dispose();rearImage.Dispose();rearTexture.Dispose();screenMatrix.Dispose();refractionMatrix.Dispose();}
+    public void Dispose(){vertices.Dispose();outer.Dispose();inner.Dispose();environment.Dispose();texture.Dispose();projectionBuffer.Dispose();modelBuffer.Dispose();textureMatrix.Dispose();normalMatrix.Dispose();viewOffsets.Dispose();offsetTexture.Dispose();positionMatrix.Dispose();indirectMatrix.Dispose();fresnel.Dispose();fresnelTexture.Dispose();fresnelMatrix.Dispose();rearImage.Dispose();rearTexture.Dispose();screenMatrix.Dispose();refractionMatrix.Dispose();bendImage.Dispose();bendTexture.Dispose();bendMatrix.Dispose();echoMatrix.Dispose();}
 }

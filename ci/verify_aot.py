@@ -12,8 +12,15 @@ def check(name: str, configuration: str, generated_c: Path) -> None:
     if "dnd_aot_entry" not in c:
         raise RuntimeError(f"{name}: AOT C is missing the managed entry point")
     if name == "VideoMode":
+        def glass_body(method):
+            match=re.search(r"intptr_t dnd_value_VideoMode_SealedGlassShell_"+method+r"_[^(]+\([^;]+?\) \{(.*?)\n\}",c,re.S)
+            return match.group(1) if match else None
+        rear,front,setup=glass_body("DrawRear"),glass_body("DrawFront"),glass_body("BeginInterfacePass")
         sealed = re.search(r"intptr_t dnd_value_VideoMode_SealedGlassShell_Draw_[^(]+\([^;]+?\) \{(.*?)\n\}", c, re.S)
-        if sealed is not None:
+        if rear is not None or front is not None:
+            if rear is None or front is None or setup is None or rear.count("GX_CallDispList")!=2 or front.count("GX_CallDispList")!=1 or "GX_CopyTex" not in front or "GX_SetTevIndirect" not in front or "GX_SetTexCoordGen" not in setup or "BufferWrite" in rear+front+setup:
+                raise RuntimeError("VideoMode: refraction requires retained rear/front interfaces, live capture and normal-driven TEV without vertex uploads")
+        elif sealed is not None:
             body=sealed.group(1)
             if body.count("GX_CallDispList")!=3 or "GX_SetTexCoordGen" not in body or "GX_SetTevAlphaIn" not in body or "BufferWrite" in body:
                 raise RuntimeError("VideoMode: sealed glass requires static indexed interfaces and normal-driven TEV without in-pass uploads")

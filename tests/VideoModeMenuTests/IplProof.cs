@@ -17,7 +17,8 @@ internal sealed class IplProof : IIplCanvas
     public bool BeginFooterTextCache()=>false;
     public void EndFooterTextCache(){}
     public bool DrawFooterTextCache()=>false;
-    public void Section(IplRenderPhase phase) { }
+    internal readonly StringBuilder OpticalLayers=new StringBuilder();
+    public void Section(IplRenderPhase phase) { if(phase==IplRenderPhase.Icons)OpticalLayers.Append("icon>"); }
     public bool BeginIconCache(int style)=>false;
     public void EndIconCache() { }
     public void PrepareIcon(IplPoint origin,IplPoint x,IplPoint y,float scale,float centerY) { }
@@ -64,7 +65,8 @@ internal sealed class IplProof : IIplCanvas
         GlassPiece(a,ca,ab,cab,da,cda);GlassPiece(ab,cab,b,cb,bd,cbd);GlassPiece(da,cda,bd,cbd,d,cd);GlassPiece(ab,cab,bd,cbd,da,cda);
     }
     public void EndGlass() { }
-    public void DrawGlass()=>shapes.Append(glass);
+    public void DrawGlassRear(){OpticalLayers.Clear();OpticalLayers.Append("rear>");shapes.Append(glass);}
+    public void DrawGlassFront(){OpticalLayers.Append("front");} // Geometry-only proof has no native optical compositing.
     public void BeginPanels()=>panels.Clear();
     public void PanelTriangle(IplPoint a,IplPoint b,IplPoint d)
     {panels.Append("M"+N(a.X)+" "+N(a.Y)+"L"+N(b.X)+" "+N(b.Y)+"L"+N(d.X)+" "+N(d.Y)+"Z");}

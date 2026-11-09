@@ -23,7 +23,8 @@ internal interface IIplCanvas
     void GlassVertex(int index,IplPoint point,uint color,float u,float v,float reflection);
     void EndGlassFace();
     void EndGlass();
-    void DrawGlass();
+    void DrawGlassRear();
+    void DrawGlassFront();
     bool BeginFooterCache(int style);
     void EndFooterCache();
     bool DrawFooterCache(int style);
@@ -225,11 +226,11 @@ internal sealed partial class IplRenderer
             return;
         }
         c.Section(IplRenderPhase.Transmission);
-        c.DrawGlass();
-
+        c.DrawGlassRear();
+        if(shell.Turn>.85f){c.Section(IplRenderPhase.Icons);FaceIcon(shell);}
+        c.Section(IplRenderPhase.Transmission);c.DrawGlassFront();
         if(shell.Turn>.85f)
         {
-            c.Section(IplRenderPhase.Icons);FaceIcon(shell);
             if(shell.Page==ShellPage.Face)
             {
                 c.Section(IplRenderPhase.Capture);c.CaptureBackdrop();
