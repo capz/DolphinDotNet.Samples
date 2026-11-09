@@ -28,7 +28,7 @@ internal sealed class IplProof : IIplCanvas
     public void Rectangle(float x,float y,float width,float height,uint color)
     {Triangle(x,y,x+width,y,x,y+height,color);Triangle(x+width,y,x+width,y+height,x,y+height,color);}
     private readonly StringBuilder shapes=new StringBuilder();
-    private readonly StringBuilder glass=new StringBuilder(),panels=new StringBuilder(),rims=new StringBuilder();
+    private readonly StringBuilder glass=new StringBuilder(),panels=new StringBuilder();
     private string backdrop="";
     private readonly IplPoint[] facePoints=new IplPoint[625];
     private readonly uint[] faceColors=new uint[625];
@@ -39,12 +39,7 @@ internal sealed class IplProof : IIplCanvas
     {AppendTriangle(shapes,ax,ay,bx,by,cx,cy,color);}
     private static void AppendTriangle(StringBuilder target,float ax,float ay,float bx,float by,float cx,float cy,uint color)
     {target.Append("<path d='M"+N(ax)+" "+N(ay)+"L"+N(bx)+" "+N(by)+"L"+N(cx)+" "+N(cy)+"Z' fill='"+Color(color)+"' fill-opacity='"+N((color&255)/255f)+"'/>");}
-    public void BeginRims()=>rims.Clear();
-    public void RimQuad(IplPoint a,IplPoint b,IplPoint c,IplPoint d,uint color)
-    {AppendTriangle(rims,a.X,a.Y,b.X,b.Y,c.X,c.Y,color);AppendTriangle(rims,b.X,b.Y,d.X,d.Y,c.X,c.Y,color);}
-    public void RimGradientQuad(IplPoint a,IplPoint b,IplPoint c,IplPoint d,uint ca,uint cb,uint cc,uint cd)=>RimQuad(a,b,c,d,Mix(Mix(ca,cb),Mix(cc,cd)));
-    public void EndRims() { }
-    public void DrawRims()=>shapes.Append(rims);
+    public bool PrepareSealedGlass(IplPoint x,IplPoint y,IplPoint z,float scale,float centerY)=>false;
     public void BeginGlass()=>glass.Clear();
     private static IplPoint Mid(IplPoint a,IplPoint b)=>new IplPoint((a.X+b.X)/2,(a.Y+b.Y)/2);
     private static uint Mix(uint a,uint b)=>(((a>>24)+(b>>24))/2<<24)|((((a>>16)&255)+((b>>16)&255))/2<<16)|((((a>>8)&255)+((b>>8)&255))/2<<8)|(((a&255)+(b&255))/2);
@@ -70,7 +65,6 @@ internal sealed class IplProof : IIplCanvas
     }
     public void EndGlass() { }
     public void DrawGlass()=>shapes.Append(glass);
-    public void DrawReflections() { }
     public void BeginPanels()=>panels.Clear();
     public void PanelTriangle(IplPoint a,IplPoint b,IplPoint d)
     {panels.Append("M"+N(a.X)+" "+N(a.Y)+"L"+N(b.X)+" "+N(b.Y)+"L"+N(d.X)+" "+N(d.Y)+"Z");}

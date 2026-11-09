@@ -12,8 +12,8 @@ internal static class IplRimCommandsTests
         for(int quad=0;quad<IplRimCommands.Quads;quad++)for(int vertex=0;vertex<6;vertex++)
         {
             int position=data[at]*256+data[at+1],color=data[at+2]*256+data[at+3];at+=4;
-            if(position!=quad*4+winding[vertex]||color!=position||color>=IplRimCommands.ColorBytes/4||position>=IplRimCommands.PositionFloats/2)
-                throw new Exception("GX index stream must preserve quad winding, interpolated vertex colors and array bounds");
+            if(position!=quad*4+winding[vertex]||color!=quad||position>=IplRimCommands.PositionFloats/2)
+                throw new Exception("GX index stream must preserve quad winding, flat color and array bounds");
         }
         for(;at<data.Length;at++)if(data[at]!=0)throw new Exception("GX list padding must contain NOPs");
         Console.WriteLine("Indexed rim command list: header, alignment, bounds, winding, independent colors and NOP padding passed.");

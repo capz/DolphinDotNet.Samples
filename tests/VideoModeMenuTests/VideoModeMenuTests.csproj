@@ -24,6 +24,7 @@
     <Compile Include="../../VideoMode/IplStorageLayout.cs" Link="IplStorageLayout.cs" />
     <Compile Include="../../VideoMode/IplStorageIcons.cs" Link="IplStorageIcons.cs" />
 
+    <Compile Include="../../VideoMode/IplSealedGlassGeometry.cs" Link="IplSealedGlassGeometry.cs" />
     <Compile Include="../../VideoMode/IplRenderer.cs" Link="IplRenderer.cs" />
     <Compile Include="../../VideoMode/IplNumberCacheState.cs" Link="IplNumberCacheState.cs" />
     <Compile Include="../../VideoMode/IplPerformanceStats.cs" Link="IplPerformanceStats.cs" />

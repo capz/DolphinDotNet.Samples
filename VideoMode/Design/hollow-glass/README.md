@@ -1,5 +1,8 @@
 # Hollow optical glass
 
+**Superseded:** this per-face frame design was rejected. The approved continuous
+sealed-shell target and new native evidence are in [sealed-glass](../sealed-glass/README.md).
+
 [Approved target](approved-target.png): the user's selected Calendar mockup.
 The scene remains procedural and rotates between six independent menu sides;
 the approved image is reference material, never a runtime backdrop.

@@ -1,0 +1,30 @@
+{
+  "scope": "Dolphin guest clock; normal interactive Video face, idle motion enabled; not hardware",
+  "samples": 96,
+  "warmup": 30,
+  "vsync": true,
+  "interrupted_during_sampling": false,
+  "dol_sha256": "6c6d0c1c4a60d54e8b572914bb0ff1b53f67ef80a80f05524ebaeb84d7eaa21f",
+  "mean_us": {
+    "frame_us": 16680.875,
+    "prepare_us": 752.6875,
+    "submit_us": 2625.15625,
+    "end_us": 13272.458333333334,
+    "gpu_wait_us": 7.9375,
+    "retrace_us": 13251.71875,
+    "capture_us": 1568.8125,
+    "blur_us": 87.32291666666667,
+    "draws": 99,
+    "triangles": 31408,
+    "begin_copy_us": 3,
+    "gate_us": 0
+  },
+  "frame_p95_us": 16681,
+  "active_mean_us": 3429.15625,
+  "managed_heap": {
+    "capacity_bytes": 262144,
+    "arena_used_bytes": 130120,
+    "collections": 0,
+    "scope": "post-window arena; not peak or live bytes"
+  }
+}

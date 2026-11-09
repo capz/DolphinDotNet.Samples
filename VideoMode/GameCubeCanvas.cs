@@ -7,7 +7,7 @@ internal sealed partial class GameCubeCanvas : IIplCanvas, IIplBrowserCanvas, ID
     private const int GlassVertices=25*25, PanelRowVertices=36*3,PanelVertices=3*PanelRowVertices,BlurAxis=9,BlurTaps=BlurAxis*BlurAxis;
     private readonly GraphicsDevice device;
     private readonly Draw2D draw;
-    private readonly IndexedRims rims=new IndexedRims();
+    private readonly SealedGlassShell sealedGlass=new SealedGlassShell();
 #if IPL_CACHED_SELECTORS
     private readonly IndexedRims[] selectors=new IndexedRims[3];
     private readonly string[] selectorValues=new string[3];
@@ -45,9 +45,6 @@ internal sealed partial class GameCubeCanvas : IIplCanvas, IIplBrowserCanvas, ID
     private readonly Texture2D[] glyphTextures=new Texture2D[GlyphCapacity];
     private readonly float[] glyphVertices=new float[GlyphCapacity*24];
 #endif
-    private readonly Texture2D glossMap=Texture2D.FromPng(IplGlossData.Png,true);
-    private readonly GxEffect glossEffect=GxEffect.FromPackage(IplGlossEffect.Package);
-    private readonly Material glossMaterial=new Material {Blend=BlendMode.Additive,Cull=CullMode.None,DepthTest=false,DepthWrite=false};
     private readonly Camera camera=new Camera(60,4f/3,.1f,10);
     private readonly Transform identity=new Transform();
 #if !IPL_HARDWARE_RUNNER
@@ -64,16 +61,9 @@ internal sealed partial class GameCubeCanvas : IIplCanvas, IIplBrowserCanvas, ID
     private uint numberColor;
 #endif
 #endif
-    private readonly Material glassMaterial=new Material {Blend=BlendMode.Alpha,Cull=CullMode.None,DepthTest=false,DepthWrite=false};
     private readonly Material frostMaterial=new Material {Blend=BlendMode.Alpha,Cull=CullMode.None,DepthTest=false,DepthWrite=false};
     private readonly VertexPositionColorTexture[] glass=new VertexPositionColorTexture[GlassVertices];
-    private readonly DynamicMesh[] glassMeshes=new DynamicMesh[6];
-#if IPL_SHARED_GLASS
-    private readonly MeshColorView[] glossMeshes=new MeshColorView[6];
-#else
-    private readonly DynamicMesh[] glossMeshes=new DynamicMesh[6];
-#endif
-    private readonly Color32[] glossColors=new Color32[GlassVertices];
+
     private readonly IplPoint[] panelPoints=new IplPoint[PanelVertices];
     private readonly VertexPositionColorTexture[] panelVertices=new VertexPositionColorTexture[PanelVertices];
     private readonly DynamicMesh panelMesh;
@@ -93,7 +83,7 @@ internal sealed partial class GameCubeCanvas : IIplCanvas, IIplBrowserCanvas, ID
     private readonly UvTransform[] blurOffsets=new UvTransform[BlurTaps];
     private readonly Color32[] blurColors=new Color32[BlurTaps];
     private SceneCapture? capture;
-    private int glassCount,panelCount,captureWidth,captureHeight,copyWidth,copyHeight;
+    private int panelCount,captureWidth,captureHeight,copyWidth,copyHeight;
     private float scale=1,offset,logicalWidth=640,logicalHeight=480;
     private float blurScaleX,blurScaleY;
     internal GameCubeCanvas(GraphicsDevice device)
@@ -108,29 +98,12 @@ internal sealed partial class GameCubeCanvas : IIplCanvas, IIplBrowserCanvas, ID
 #if IPL_CACHED_FOOTER_TEXT
         footerText=new CachedFooterText(glass,atlas);
 #endif
-        glossMaterial.Texture=glossMap;glossMaterial.Effect=glossEffect;
         #if IPL_BATCHED_TEXT
         draw=new Draw2D(device,new Draw2DOptions {VertexCapacity=32760,SpriteCapacity=GlyphCapacity});
         for(int i=0;i<GlyphCapacity;i++)glyphTextures[i]=atlas;
 #else
         draw=new Draw2D(device,new Draw2DOptions {VertexCapacity=32760});
 #endif
-        // One shared 15 KiB textured grid for both transmission and reflection:
-        // the published SDK reserves only 256 KiB for the entire managed heap.
-        var indices=new ushort[24*24*6];int at=0;
-        for(int y=0;y<24;y++)for(int x=0;x<24;x++)
-        {
-            int a=y*25+x;indices[at++]=(ushort)a;indices[at++]=(ushort)(a+1);indices[at++]=(ushort)(a+25);
-            indices[at++]=(ushort)(a+1);indices[at++]=(ushort)(a+26);indices[at++]=(ushort)(a+25);
-        }
-        for(int i=0;i<6;i++){
-            glassMeshes[i]=DynamicMesh.Create(glass,indices);
-#if IPL_SHARED_GLASS
-            glossMeshes[i]=new MeshColorView(glassMeshes[i],glossColors);
-#else
-            glossMeshes[i]=DynamicMesh.Create(glass,indices);
-#endif
-        }
         panelMesh=DynamicMesh.Create(panelVertices);
         var browserIndices=new ushort[576];for(int i=0;i<browserIndices.Length;i++)browserIndices[i]=(ushort)i;
         browserMask=DynamicMesh.Create(glass,browserIndices);
@@ -183,7 +156,6 @@ internal sealed partial class GameCubeCanvas : IIplCanvas, IIplBrowserCanvas, ID
         IplFrameProfiler.ExtraDraws=IplFrameProfiler.ExtraTriangles=0;
         var size=draw.LogicalSize;logicalWidth=size.X;logicalHeight=size.Y;
         scale=size.Y/480f;offset=(size.X-640*scale)/2;
-        rims.Prepare(size.X,size.Y,scale,offset);
         camera.SetOrthographic(size.X,size.Y,.1f,10);
         if(captureWidth!=device.Width||captureHeight!=device.Height)
         {
@@ -216,47 +188,13 @@ internal sealed partial class GameCubeCanvas : IIplCanvas, IIplBrowserCanvas, ID
     public void Section(IplRenderPhase phase)=>IplPerformanceOverlay.Section(phase);
     private static Color32 Color(uint c)=>new Color32((byte)(c>>24),(byte)(c>>16),(byte)(c>>8),(byte)c);
     private Vector3 World(IplPoint p)=>new Vector3((p.X-320)*scale,(240-p.Y)*scale,0);
-    public void BeginGlass(){glassCount=0;}
-    public void GlassVertex(int index,IplPoint point,uint color,float u,float v,float reflection)
-    {
-        glass[index]=new VertexPositionColorTexture(World(point),Color(color),new Vector2(u,v));
-        // Store the complete struct: preview.103.1 mislowers direct float-to-byte
-        // array stores to an eight-byte store, corrupting adjacent managed data.
-        // Reflection and transmission are independent for clear glass.
-        byte strength=(byte)Math.Min(255,reflection*220f);
-        glossColors[index]=new Color32(strength,strength,strength,255);
-    }
-    public void EndGlassFace()
-    {
-        glassMeshes[glassCount].SetVertices(glass);
-#if IPL_SHARED_GLASS
-        glossMeshes[glassCount++].SetColors(glossColors);
-#else
-        for(int i=0;i<GlassVertices;i++)glass[i].Color=glossColors[i];
-        glossMeshes[glassCount++].SetVertices(glass);
-#endif
-    }
-    public void EndGlass()
-    {
-        if(glassCount<1||glassCount>3)throw new InvalidOperationException("Incomplete glass geometry.");
-    }
-    public void DrawGlass()
-    {
-        draw.End();renderer.Begin3D(camera);
-        for(int i=0;i<glassCount;i++)renderer.DrawMesh(glassMeshes[i],glassMaterial,identity);
-        renderer.End3D();draw.Begin();
-    }
-    public void DrawReflections()
-    {
-        draw.End();renderer.Begin3D(camera);
-        for(int i=0;i<glassCount;i++)renderer.DrawMesh(glossMeshes[i],glossMaterial,identity);
-        renderer.End3D();draw.Begin();
-    }
-    public void BeginRims()=>rims.Begin();
-    public void RimQuad(IplPoint a,IplPoint b,IplPoint c,IplPoint d,uint color)=>rims.Quad(a,b,c,d,color);
-    public void RimGradientQuad(IplPoint a,IplPoint b,IplPoint c,IplPoint d,uint ca,uint cb,uint cc,uint cd)=>rims.Quad(a,b,c,d,ca,cb,cc,cd);
-    public void EndRims()=>rims.End();
-    public void DrawRims(){draw.End();rims.Draw(device);draw.Begin();}
+    public bool PrepareSealedGlass(IplPoint x,IplPoint y,IplPoint z,float sceneScale,float centerY)
+    {sealedGlass.Prepare(x,y,z,sceneScale,centerY,logicalWidth,logicalHeight,scale,offset,device.Width,device.Height);return true;}
+    public void BeginGlass() { }
+    public void GlassVertex(int index,IplPoint point,uint color,float u,float v,float reflection) { }
+    public void EndGlassFace() { }
+    public void EndGlass() { }
+    public void DrawGlass(){draw.End();sealedGlass.Draw(device);draw.Begin();}
     public void BeginPanels(){panelCount=0;}
     public void PanelTriangle(IplPoint a,IplPoint b,IplPoint d)
     {panelPoints[panelCount++]=a;panelPoints[panelCount++]=b;panelPoints[panelCount++]=d;}
@@ -300,7 +238,7 @@ internal sealed partial class GameCubeCanvas : IIplCanvas, IIplBrowserCanvas, ID
     {
         long start=IplFrameProfiler.Active?Clock.Timestamp:0;
         draw.End();capture!.Capture(new Viewport(0,0,copyWidth,copyHeight));draw.Begin();
-        if(IplFrameProfiler.Active)IplFrameProfiler.CaptureUs=IplFrameProfiler.Since(start);
+        if(IplFrameProfiler.Active)IplFrameProfiler.CaptureUs+=IplFrameProfiler.Since(start);
     }
     public void DrawFrostedPanels()
     {
@@ -665,7 +603,6 @@ internal sealed partial class GameCubeCanvas : IIplCanvas, IIplBrowserCanvas, ID
 #endif
     public void Dispose()
     {
-        rims.Dispose();
 #if IPL_CACHED_SELECTORS
         for(int i=0;i<selectors.Length;i++)selectors[i]?.Dispose();
 #endif
@@ -688,6 +625,6 @@ internal sealed partial class GameCubeCanvas : IIplCanvas, IIplBrowserCanvas, ID
         panelTintMesh.Dispose();
 #endif
         panelMesh.Dispose();
-        for(int i=0;i<glassMeshes.Length;i++){glassMeshes[i].Dispose();glossMeshes[i].Dispose();}draw.Dispose();atlas.Dispose();glossMap.Dispose();glossEffect.Dispose();
+        sealedGlass.Dispose();draw.Dispose();atlas.Dispose();
     }
 }

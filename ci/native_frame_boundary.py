@@ -102,4 +102,7 @@ class NativeFrames:
         # The SDK stores XFB pointers in the uncached MEM1 mirror.
         address=(address&0x3fffffff)|0x80000000
         path.write_bytes(self.read_bytes(address,width*height*2))
-        return dict(width=width,height=height,format='YUYV422',source='Native GX_CopyDisp output, read after GX_DrawDone before VIDEO_WaitVSync')
+        tv_mode=int.from_bytes(dimensions[:4],'big')
+        return dict(width=width,height=height,efb_height=int.from_bytes(dimensions[6:8],'big'),
+                    vi_tv_mode=tv_mode,vi_scan_bits=tv_mode&3,format='YUYV422',
+                    source='Native GX_CopyDisp output, read after GX_DrawDone before VIDEO_WaitVSync')

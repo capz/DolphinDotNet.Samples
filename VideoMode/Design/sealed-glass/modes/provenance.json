@@ -1,0 +1,5 @@
+{
+  "dol_sha256": "2d91b79bd837dc524c722168b86b8ccc960a4eb0c60587dcdc0069f57d8659a2",
+  "assertions": "Each shot asserts native VI width, XFB height and scan bits. 240p uses VI non-interlace/double-strike, distinct from 480p progressive.",
+  "capture_script_sha256": "914fd6b4a0d0c5943282e7a814c6cc6bb4c88ff21440f9d7a113157b13fa7335"
+}
