@@ -1,0 +1,22 @@
+[
+  {
+    "capture": "06-sealed-glass-overlay",
+    "completed_frames": 0,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "capture_source": "Complete X11 client, guest paused at VIDEO_WaitVSync after GX_CopyDisp/GX_DrawDone",
+    "native_boundaries": 317,
+    "xfb": {
+      "width": 640,
+      "height": 480,
+      "efb_height": 480,
+      "vi_tv_mode": 0,
+      "vi_scan_bits": 0,
+      "format": "YUYV422",
+      "source": "Native GX_CopyDisp output, read after GX_DrawDone before VIDEO_WaitVSync"
+    },
+    "xfb_source": "/workspace/artifacts/wall-volume-profile/06-sealed-glass-overlay-xfb.yuv",
+    "xfb_sha256": "8103d3c8df6bb54c27e0b3456b8956c7bb6511b2d78b428bde7f0c9d2ffac321",
+    "png_sha256": "609d53831f947a01c79f9432227e13f094c98e76da53ad369535f3f0c530ffc9",
+    "conversion": "BT.601 limited-range YUYV422 to RGB8; no crop/resize/composition"
+  }
+]

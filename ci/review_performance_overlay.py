@@ -24,6 +24,7 @@ parser.add_argument('--widescreen',action='store_true',help='Also preview/keep 1
 parser.add_argument('--glass-profile-only',action='store_true',help='Normal-DOL Video profile with only the final native overlay capture')
 parser.add_argument('--glass-profile','--rim-profile',dest='rim_profile',action='store_true',help='After glass captures, log an uninterrupted normal-DOL Y profile')
 parser.add_argument('--glass-review','--rim-review',dest='rim_review',action='store_true',help='Native Calendar/front, rotating corner and Video/front glass captures')
+parser.add_argument('--optics-diagnostic',action='store_true',help='Capture native Fresnel/environment/field diagnostic outputs')
 parser.add_argument('--mockup-single',action='store_true',help='Capture only the initial native mockup pose')
 parser.add_argument('--mockup-review',action='store_true',help='Deterministic native Options/flat/return/turn views')
 parser.add_argument('--glass-modes',action='store_true',help='Closed-shell rendering after 480p, widescreen, 576i, 240-line, rollback and safe-mode switches')
@@ -44,6 +45,7 @@ parser.add_argument('--card-user',type=Path)
 parser.add_argument('--library',action='store_true',help='Native library layout/navigation using explicitly labeled synthetic UI data')
 parser.add_argument('--system-clock',action='store_true',help='Adjust isolated clock, inspect SRAM and Dolphin restart policy, then decrement')
 args=parser.parse_args()
+if args.optics_diagnostic and not args.mockup_review:parser.error('--optics-diagnostic requires --mockup-review')
 if args.mockup_single and not args.mockup_review:parser.error('--mockup-single requires --mockup-review')
 if args.mockup_review and not args.native_boundaries:parser.error('--mockup-review requires --native-boundaries')
 if sum([args.mockup_review,args.rim_review,args.glass_modes,args.calendar,args.widescreen,args.selector_motion,args.selector_scan,args.directional_return,args.system_clock,args.library,args.storage,args.flat_pages,args.dense_storage])>1:parser.error('Choose one review sequence')
@@ -140,8 +142,10 @@ try:
     else:wait_frames(frame_count(),60)
     capture(root/'unused.ppm',True);time.sleep(.3)
     if args.mockup_review:
-        shot('01-options-target')
-        if not args.mockup_single:
+        if args.optics_diagnostic:
+            shot('01-fresnel');key('z');shot('02-environment-uv');key('z');shot('03-field-uv')
+        else:shot('01-options-target')
+        if not args.mockup_single and not args.optics_diagnostic:
             key('a');shot('02-options-flat')
             key('b');shot('03-options-return')
             key('b')

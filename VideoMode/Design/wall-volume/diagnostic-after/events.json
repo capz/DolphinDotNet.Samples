@@ -1,0 +1,62 @@
+[
+  {
+    "capture": "01-fresnel",
+    "completed_frames": 0,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "capture_source": "Complete X11 client, guest paused at VIDEO_WaitVSync after GX_CopyDisp/GX_DrawDone",
+    "native_boundaries": 60,
+    "xfb": {
+      "width": 640,
+      "height": 480,
+      "efb_height": 480,
+      "vi_tv_mode": 0,
+      "vi_scan_bits": 0,
+      "format": "YUYV422",
+      "source": "Native GX_CopyDisp output, read after GX_DrawDone before VIDEO_WaitVSync"
+    },
+    "xfb_source": "/workspace/artifacts/wall-optics-winding-diagnostic/01-fresnel-xfb.yuv",
+    "xfb_sha256": "b89d47274d6a330980443bb7490a6b44578cd69fb17ee0af4eb8e45f0e9495c5",
+    "png_sha256": "9866654f501c79fcf6c0f873d9a8a877913015a1b1359533f6ea9fb5f175baf1",
+    "conversion": "BT.601 limited-range YUYV422 to RGB8; no crop/resize/composition"
+  },
+  {
+    "capture": "02-environment-uv",
+    "completed_frames": 0,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "capture_source": "Complete X11 client, guest paused at VIDEO_WaitVSync after GX_CopyDisp/GX_DrawDone",
+    "native_boundaries": 112,
+    "xfb": {
+      "width": 640,
+      "height": 480,
+      "efb_height": 480,
+      "vi_tv_mode": 0,
+      "vi_scan_bits": 0,
+      "format": "YUYV422",
+      "source": "Native GX_CopyDisp output, read after GX_DrawDone before VIDEO_WaitVSync"
+    },
+    "xfb_source": "/workspace/artifacts/wall-optics-winding-diagnostic/02-environment-uv-xfb.yuv",
+    "xfb_sha256": "d9ce1a4fc78b8f8ffc882cb8e2325ce43e2cfc573a780ef66949eaabf7c99594",
+    "png_sha256": "8455d7252c63ec8efa327a2c281c0ff5c0da002f59c8cf940cd268a341098019",
+    "conversion": "BT.601 limited-range YUYV422 to RGB8; no crop/resize/composition"
+  },
+  {
+    "capture": "03-field-uv",
+    "completed_frames": 0,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "capture_source": "Complete X11 client, guest paused at VIDEO_WaitVSync after GX_CopyDisp/GX_DrawDone",
+    "native_boundaries": 164,
+    "xfb": {
+      "width": 640,
+      "height": 480,
+      "efb_height": 480,
+      "vi_tv_mode": 0,
+      "vi_scan_bits": 0,
+      "format": "YUYV422",
+      "source": "Native GX_CopyDisp output, read after GX_DrawDone before VIDEO_WaitVSync"
+    },
+    "xfb_source": "/workspace/artifacts/wall-optics-winding-diagnostic/03-field-uv-xfb.yuv",
+    "xfb_sha256": "3d7586ea1a66d12302f6c2ddf6d3da8e919e9cbd3070121f64d327e7df31724a",
+    "png_sha256": "e437c18e5badd6dee63cf6dbe49cb9465c3175682fb113e61bbd4c6ec1a6bfab",
+    "conversion": "BT.601 limited-range YUYV422 to RGB8; no crop/resize/composition"
+  }
+]

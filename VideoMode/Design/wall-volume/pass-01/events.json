@@ -1,0 +1,22 @@
+[
+  {
+    "capture": "01-options-target",
+    "completed_frames": 0,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "capture_source": "Complete X11 client, guest paused at VIDEO_WaitVSync after GX_CopyDisp/GX_DrawDone",
+    "native_boundaries": 61,
+    "xfb": {
+      "width": 640,
+      "height": 480,
+      "efb_height": 480,
+      "vi_tv_mode": 0,
+      "vi_scan_bits": 0,
+      "format": "YUYV422",
+      "source": "Native GX_CopyDisp output, read after GX_DrawDone before VIDEO_WaitVSync"
+    },
+    "xfb_source": "/workspace/artifacts/wall-volume-pass01/01-options-target-xfb.yuv",
+    "xfb_sha256": "a50a40f52c5cc71b6c2dbe3da69dbe03d20b808b05b94d83ba5f79a12ffe7424",
+    "png_sha256": "0f60082b6ff4f9805b86c9878f3472833cc8cc7136b921291bdaa9223197d72f",
+    "conversion": "BT.601 limited-range YUYV422 to RGB8; no crop/resize/composition"
+  }
+]

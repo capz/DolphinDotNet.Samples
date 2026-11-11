@@ -5,7 +5,7 @@ using System;
 internal static class IplSealedGlassGeometry
 {
     internal const int Divisions=24,Side=25,SurfaceVertices=3458,Vertices=SurfaceVertices*2,Indices=6*24*24*6;
-    internal const float Radius=.16f,Thickness=.07f,Core=1-Radius;
+    internal const float Radius=.16f,Thickness=.080f,Core=1-Radius;
     internal static int Index(int x,int y,int z)
     {
         if(z==24)return x+25*y;
@@ -47,5 +47,13 @@ internal static class IplSealedGlassGeometry
     {
         int corner=vertex==0?0:vertex==1?(inner?2:1):vertex==2?(inner?1:2):vertex==3?1:vertex==4?(inner?2:3):(inner?3:2);
         return FaceIndex(face,x+(corner&1),y+(corner>>1))+(inner?SurfaceVertices:0);
+    }
+    // GX's front-face convention with our right-handed projection is opposite
+    // the mathematical outward winding. Keep the manifold definition intact
+    // and adapt only the retained native command stream.
+    internal static int NativeTriangleIndex(int face,int x,int y,int vertex,bool inner)
+    {
+        int slot=vertex==1?2:vertex==2?1:vertex==4?5:vertex==5?4:vertex;
+        return TriangleIndex(face,x,y,slot,inner);
     }
 }

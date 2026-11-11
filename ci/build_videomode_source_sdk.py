@@ -19,6 +19,7 @@ def main():
     parser.add_argument('--managed-only',action='store_true',help='Generate/build the source integration project without invoking the native toolchain')
     parser.add_argument('--normal', action='store_true')
     parser.add_argument('--mockup-review',action='store_true',help='Fixed Options scene without profiler/overlay or frame freeze')
+    parser.add_argument('--optics-diagnostic',action='store_true',help='Mockup-review-only native Fresnel/environment/field coordinate probes')
     parser.add_argument('--icons', action='store_true')
     parser.add_argument('--glass', action='store_true')
     parser.add_argument('--blur', action='store_true')
@@ -35,6 +36,8 @@ def main():
     parser.add_argument('--hypercube', type=Path,
                         help='Link OrderedMeshPasses from this engine checkout with its native backend')
     args = parser.parse_args()
+    if args.optics_diagnostic and not args.mockup_review:
+        parser.error('--optics-diagnostic requires the independent --mockup-review build.')
     if args.normal and args.mockup_review:
         parser.error('Choose the normal interactive build or the fixed mockup review.')
     if args.mockup_review and (args.storage_review or args.browser_review or args.scene != 'Options'):
@@ -56,6 +59,7 @@ def main():
         'TargetFramework': 'net8.0', 'AssemblyName': 'VideoMode',
         'IplPerformanceReview': str(not args.normal and not args.mockup_review).lower(),
         'IplMockupReview':str(args.mockup_review).lower(),
+        'IplOpticsDiagnostic':str(args.optics_diagnostic).lower(),
         'IplPerformanceReviewScene': args.scene,
         'IplPerformanceReviewOverlay': 'Off' if args.normal or args.mockup_review else 'Full',
         'IplCachedIcons': str(args.icons).lower(),
