@@ -116,3 +116,13 @@ captures, the 96-frame profile and primary-source IPL research are preserved in
 The VSync-enabled Dolphin sample averages 16.681 ms/frame and 3.440 ms active
 work (previously 3.428 ms); this is not hardware cost evidence. The approved
 mockup's richer corner reflections remain an explicit visual gap.
+
+## Options target matching follow-up
+
+The user explicitly returned to the original frontal Options reference.
+[Measured audit and native iterations](VideoMode/Design/options-match/README.md)
+record the camera, corner profile, wall-depth mapping and colored-light changes.
+The oblique Calendar target is no longer the framing reference for this work.
+Passes 1–3 are retained, including failed broad white slabs, reversed field
+orientation and dark contour findings. Framing tests use actual projected
+vertices across all six faces; they do not assert material fidelity.

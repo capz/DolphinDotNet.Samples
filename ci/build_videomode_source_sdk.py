@@ -18,6 +18,7 @@ def main():
     parser.add_argument('--scene', choices=['Options', 'Oblique', 'Detail', 'Cube'], default='Options')
     parser.add_argument('--managed-only',action='store_true',help='Generate/build the source integration project without invoking the native toolchain')
     parser.add_argument('--normal', action='store_true')
+    parser.add_argument('--mockup-review',action='store_true',help='Fixed Options scene without profiler/overlay or frame freeze')
     parser.add_argument('--icons', action='store_true')
     parser.add_argument('--glass', action='store_true')
     parser.add_argument('--blur', action='store_true')
@@ -34,6 +35,10 @@ def main():
     parser.add_argument('--hypercube', type=Path,
                         help='Link OrderedMeshPasses from this engine checkout with its native backend')
     args = parser.parse_args()
+    if args.normal and args.mockup_review:
+        parser.error('Choose the normal interactive build or the fixed mockup review.')
+    if args.mockup_review and (args.storage_review or args.browser_review or args.scene != 'Options'):
+        parser.error('The mockup review requires the independent Options scene, without storage/browser fixtures.')
     sdk, samples, out = args.sdk.resolve(), args.samples.resolve(), args.output.resolve()
     out.mkdir(parents=True, exist_ok=True)
     if out == samples / 'VideoMode':
@@ -49,9 +54,10 @@ def main():
     settings = {
         'DndBuildNative': str(not args.managed_only).lower(),
         'TargetFramework': 'net8.0', 'AssemblyName': 'VideoMode',
-        'IplPerformanceReview': str(not args.normal).lower(),
+        'IplPerformanceReview': str(not args.normal and not args.mockup_review).lower(),
+        'IplMockupReview':str(args.mockup_review).lower(),
         'IplPerformanceReviewScene': args.scene,
-        'IplPerformanceReviewOverlay': 'Off' if args.normal else 'Full',
+        'IplPerformanceReviewOverlay': 'Off' if args.normal or args.mockup_review else 'Full',
         'IplCachedIcons': str(args.icons).lower(),
         'IplSharedGlass': str(args.glass).lower(),
         'IplBatchedBlur': str(args.blur).lower(),

@@ -1,0 +1,102 @@
+[
+  {
+    "capture": "01-options-target",
+    "completed_frames": 0,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "capture_source": "Complete X11 client, guest paused at VIDEO_WaitVSync after GX_CopyDisp/GX_DrawDone",
+    "native_boundaries": 60,
+    "xfb": {
+      "width": 640,
+      "height": 480,
+      "efb_height": 480,
+      "vi_tv_mode": 0,
+      "vi_scan_bits": 0,
+      "format": "YUYV422",
+      "source": "Native GX_CopyDisp output, read after GX_DrawDone before VIDEO_WaitVSync"
+    },
+    "xfb_source": "/workspace/artifacts/options-match-pass04/01-options-target-xfb.yuv",
+    "xfb_sha256": "dee6cf9d1829ab45ef10a370c2173d05d8f92ae5e923b7372677ed1fc2806242",
+    "png_sha256": "852e75943172aee67052e37556d6770e27648b1d4e8dcb1a80b11d004db03d67",
+    "conversion": "BT.601 limited-range YUYV422 to RGB8; no crop/resize/composition"
+  },
+  {
+    "capture": "02-options-flat",
+    "completed_frames": 0,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "capture_source": "Complete X11 client, guest paused at VIDEO_WaitVSync after GX_CopyDisp/GX_DrawDone",
+    "native_boundaries": 111,
+    "xfb": {
+      "width": 640,
+      "height": 480,
+      "efb_height": 480,
+      "vi_tv_mode": 0,
+      "vi_scan_bits": 0,
+      "format": "YUYV422",
+      "source": "Native GX_CopyDisp output, read after GX_DrawDone before VIDEO_WaitVSync"
+    },
+    "xfb_source": "/workspace/artifacts/options-match-pass04/02-options-flat-xfb.yuv",
+    "xfb_sha256": "db3d4411430b5415f4600281e824853a9bc479b73b311c8e8f2c00be0c4c2a3c",
+    "png_sha256": "ffffc6247e8ac9b794adff0351cc2ad8dae43447be5a11c7a55ad3ce9dd00d3e",
+    "conversion": "BT.601 limited-range YUYV422 to RGB8; no crop/resize/composition"
+  },
+  {
+    "capture": "03-options-return",
+    "completed_frames": 0,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "capture_source": "Complete X11 client, guest paused at VIDEO_WaitVSync after GX_CopyDisp/GX_DrawDone",
+    "native_boundaries": 162,
+    "xfb": {
+      "width": 640,
+      "height": 480,
+      "efb_height": 480,
+      "vi_tv_mode": 0,
+      "vi_scan_bits": 0,
+      "format": "YUYV422",
+      "source": "Native GX_CopyDisp output, read after GX_DrawDone before VIDEO_WaitVSync"
+    },
+    "xfb_source": "/workspace/artifacts/options-match-pass04/03-options-return-xfb.yuv",
+    "xfb_sha256": "dee6cf9d1829ab45ef10a370c2173d05d8f92ae5e923b7372677ed1fc2806242",
+    "png_sha256": "852e75943172aee67052e37556d6770e27648b1d4e8dcb1a80b11d004db03d67",
+    "conversion": "BT.601 limited-range YUYV422 to RGB8; no crop/resize/composition"
+  },
+  {
+    "capture": "04-rotating-corner",
+    "completed_frames": 0,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "capture_source": "Complete X11 client, guest paused at VIDEO_WaitVSync after GX_CopyDisp/GX_DrawDone",
+    "native_boundaries": 218,
+    "xfb": {
+      "width": 640,
+      "height": 480,
+      "efb_height": 480,
+      "vi_tv_mode": 0,
+      "vi_scan_bits": 0,
+      "format": "YUYV422",
+      "source": "Native GX_CopyDisp output, read after GX_DrawDone before VIDEO_WaitVSync"
+    },
+    "xfb_source": "/workspace/artifacts/options-match-pass04/04-rotating-corner-xfb.yuv",
+    "xfb_sha256": "33b9ab313ed2feab8371dc3a9d10c8485d805a65fae6d7c2d9e65b0325687f5b",
+    "png_sha256": "c77bd6b1decd6cb43f83f531c5cf9b48d7807d8dccf948e96a0b29cb35fdbecd",
+    "conversion": "BT.601 limited-range YUYV422 to RGB8; no crop/resize/composition"
+  },
+  {
+    "capture": "05-video-target",
+    "completed_frames": 0,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "capture_source": "Complete X11 client, guest paused at VIDEO_WaitVSync after GX_CopyDisp/GX_DrawDone",
+    "native_boundaries": 278,
+    "xfb": {
+      "width": 640,
+      "height": 480,
+      "efb_height": 480,
+      "vi_tv_mode": 0,
+      "vi_scan_bits": 0,
+      "format": "YUYV422",
+      "source": "Native GX_CopyDisp output, read after GX_DrawDone before VIDEO_WaitVSync"
+    },
+    "xfb_source": "/workspace/artifacts/options-match-pass04/05-video-target-xfb.yuv",
+    "xfb_sha256": "f3c4cc6be5b9354fd7e76a6e828c3a9fe5caf98103c01559b5dda1431694e212",
+    "png_sha256": "4bd45e98b0c67924491d861b4dc87e48bc5207f8e17085659a0c8330ebc75dd4",
+    "conversion": "BT.601 limited-range YUYV422 to RGB8; no crop/resize/composition"
+  }
+]
