@@ -80,7 +80,12 @@ The pass-05 normal interactive DOL's uninterrupted 96-frame Video sample
 with 99 draws / 31,408 triangles and zero managed collections. See
 `performance/pass-05.json` and its original samples/overlay. These are Dolphin
 guest-clock timings, not real hardware results. Pass 06 only changes lookup
-generation constants; its final DOL is profiled separately.
+generation constants. Its final interactive DOL was also profiled: 16.681 ms
+per frame, 0.749 ms preparation, 2.639 ms submission and 3.440 ms active work,
+again 99 draws / 31,408 triangles and zero managed collections. See
+`performance/pass-06.json`, its 96 original samples and native Z overlay.
+This shorter profile-only navigation visits fewer screens before measuring;
+its smaller post-window arena is not a measured reduction in peak/live memory.
 
 The app retains the functional label **Storage**, where the older image says
 **Memory Card**: that row opens both memory-card and SD management. It is not
