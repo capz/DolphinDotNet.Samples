@@ -148,12 +148,16 @@ internal static class Program
                 // The SDK also toggles its generic panel in Controller.Update.
                 // Suppress it when Z switches storage views or uses our detailed panel.
                 DebugOverlay.PerformanceVisible=false;
+#if IPL_OPTICS_DIAGNOSTIC
+                SealedGlassShell.DiagnosticMode=(SealedGlassShell.DiagnosticMode+1)%3;
+#else
                 if(shell.Page==ShellPage.Browser&&browser.Compact)browser.ToggleView();
                 else
                 {
                     IplPerformanceOverlay.DrawEnabled=true;
                     IplPerformanceOverlay.Stats.Toggle();
                 }
+#endif
             }
             else if(pad.Y.WasPressed){if(shell.Page==ShellPage.Browser){if(browser.Compact)browser.ToggleView();else browser.Refresh();}else if(!IplFrameProfiler.Active)IplFrameProfiler.Start();}
             bool refreshHeld=pad.CStick.Y>.55f;

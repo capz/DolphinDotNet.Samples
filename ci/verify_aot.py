@@ -18,8 +18,13 @@ def check(name: str, configuration: str, generated_c: Path) -> None:
         rear,front,setup=glass_body("DrawRear"),glass_body("DrawFront"),glass_body("BeginInterfacePass")
         sealed = re.search(r"intptr_t dnd_value_VideoMode_SealedGlassShell_Draw_[^(]+\([^;]+?\) \{(.*?)\n\}", c, re.S)
         if rear is not None or front is not None:
-            if rear is None or front is None or setup is None or rear.count("GX_CallDispList")!=2 or front.count("GX_CallDispList")!=1 or "GX_CopyTex" not in front or "GX_SetTevIndirect" not in front or "GX_SetTexCoordGen" not in setup or "BufferWrite" in rear+front+setup:
-                raise RuntimeError("VideoMode: refraction requires retained rear/front interfaces, live capture and normal-driven TEV without vertex uploads")
+            if rear is None or front is None or setup is None or rear.count("GX_CallDispList")!=2 or front.count("GX_CallDispList")!=2 or "GX_CopyTex" not in front or "GX_SetTevIndirect" not in front or "GX_SetTexCoordGen" not in setup or "BufferWrite" in rear+front+setup:
+                raise RuntimeError("VideoMode: refraction requires four retained optical interfaces, live capture and normal-driven TEV without vertex uploads")
+            if not front.index("GX_CallDispList")<front.index("GX_CopyTex")<front.rindex("GX_CallDispList"):
+                raise RuntimeError("VideoMode: inner-front reflection must cover the centered icon before the live front-wall capture")
+            commands=glass_body("BuildCommands")
+            if commands is None or "IplSealedGlassGeometry_NativeTriangleIndex" not in commands:
+                raise RuntimeError("VideoMode: native display lists must adapt mathematical winding to GX facing")
         elif sealed is not None:
             body=sealed.group(1)
             if body.count("GX_CallDispList")!=3 or "GX_SetTexCoordGen" not in body or "GX_SetTevAlphaIn" not in body or "BufferWrite" in body:

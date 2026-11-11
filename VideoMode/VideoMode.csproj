@@ -50,6 +50,8 @@
     <DefineConstants Condition="'$(IplVideoModeReview)' == 'true' and '$(IplVideoModeReviewResolution)' == '576'">$(DefineConstants);IPL_VIDEO_MODE_REVIEW_PAL</DefineConstants>
     <DefineConstants Condition="'$(IplVideoModeReview)' == 'true'">$(DefineConstants);IPL_VIDEO_MODE_REVIEW</DefineConstants>
     <DefineConstants Condition="'$(IplMockupReview)' == 'true'">$(DefineConstants);IPL_MOCKUP_REVIEW</DefineConstants>
+    <IplOpticsDiagnostic Condition="'$(IplOpticsDiagnostic)' == ''">false</IplOpticsDiagnostic>
+    <DefineConstants Condition="'$(IplOpticsDiagnostic)' == 'true'">$(DefineConstants);IPL_OPTICS_DIAGNOSTIC</DefineConstants>
     <DefineConstants Condition="'$(IplVisualReview)' == 'true'">$(DefineConstants);IPL_VISUAL_REVIEW</DefineConstants>
     <DefineConstants Condition="('$(IplVisualReview)' == 'true' or '$(IplPerformanceReview)' == 'true') and '$(IplVisualReviewAngle)' == 'true'">$(DefineConstants);IPL_VISUAL_REVIEW_ANGLE</DefineConstants>
   </PropertyGroup>
@@ -62,6 +64,8 @@
     <PackageReference Include="DolphinDotNet.GameCube" Version="$(DndPackageVersion)" />
   </ItemGroup>
   <Target Name="ValidateIplReviewModes" BeforeTargets="CoreCompile">
+    <Error Condition="'$(IplOpticsDiagnostic)' == 'true' and '$(IplMockupReview)' != 'true'"
+           Text="IplOpticsDiagnostic requires the independent IplMockupReview build; normal and other review builds must disable it." />
     <Error Condition="'$(IplMockupReview)' == 'true' and ('$(IplVisualReview)' == 'true' or '$(IplPerformanceReview)' == 'true' or '$(IplVideoModeReview)' == 'true' or '$(IplHardwareRunner)' == 'true' or '$(IplStorageReview)' == 'true' or '$(IplBrowserReview)' == 'true')"
            Text="IplMockupReview requires an independent Options review build; disable the other review modes." />
     <Error Condition="'$(IplHistoricalRenderer)' == 'true' and '$(IplHardwareRunner)' != 'true'" Text="Historical renderer compatibility is only supported for hardware instrumentation builds." />
