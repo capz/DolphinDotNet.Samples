@@ -4,7 +4,7 @@ using System;
 // A centered 1.10-wide/tall icon stays at least .31 from the .86 cavity walls.
 internal readonly struct IplIconLayout
 {
-    internal const float MaximumSpan=1.10f;
+    internal const float MaximumSpan=1.20f;
     internal readonly float Cell,RowStep,Gap,Left,Top;
     private IplIconLayout(float cell,float rowStep,float gap,float left,float top)
     {Cell=cell;RowStep=rowStep;Gap=gap;Left=left;Top=top;}

@@ -47,10 +47,10 @@ internal sealed class IndexedIcons : IDisposable
     {
         model[0]=x.X-o.X;model[1]=y.X-o.X;model[3]=o.X;
         model[4]=x.Y-o.Y;model[5]=y.Y-o.Y;model[7]=o.Y;
-        model[8]=x.Z-o.Z;model[9]=y.Z-o.Z;model[11]=o.Z-3.8f;
-        projection[0]=2*cubeScale*.975f*3.8f*scale/width;
-        projection[2]=1-2*(offset+322*scale)/width;
-        projection[5]=2*cubeScale*3.8f*scale/height;
+        model[8]=x.Z-o.Z;model[9]=y.Z-o.Z;model[11]=o.Z-IplCamera.Distance;
+        projection[0]=2*cubeScale*IplCamera.HorizontalScale*IplCamera.Distance*scale/width;
+        projection[2]=1-2*(offset+IplCamera.CenterX*scale)/width;
+        projection[5]=2*cubeScale*IplCamera.Distance*scale/height;
         projection[6]=2*centerY*scale/height-1;
         projection[11]=-1;projection[14]=-1;
         modelBuffer.Write(model);projectionBuffer.Write(projection);modelBuffer.Flush();projectionBuffer.Flush();

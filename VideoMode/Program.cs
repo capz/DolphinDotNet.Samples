@@ -62,7 +62,7 @@ internal static class Program
 #endif
         device.ConfigureDisplay(new DisplayOptions {Resolution=reviewDisplay,Scan=ScanMode.Interlaced,Widescreen=false});
 #endif
-#if IPL_VISUAL_REVIEW || IPL_PERFORMANCE_REVIEW || IPL_BROWSER_REVIEW || IPL_STORAGE_REVIEW
+#if IPL_MOCKUP_REVIEW || IPL_VISUAL_REVIEW || IPL_PERFORMANCE_REVIEW || IPL_BROWSER_REVIEW || IPL_STORAGE_REVIEW
         device.ConfigureDisplay(new DisplayOptions {Resolution=GraphicsResolution.R640x480,Scan=ScanMode.Interlaced,Widescreen=false});
 #endif
 #if IPL_HARDWARE_RUNNER
@@ -91,7 +91,7 @@ internal static class Program
         using var browser=new IplBrowser(new IplStorageBrowser());
 #endif
         var output=new VideoModeOutput(device,hardwareAntialiasing);
-#if IPL_VISUAL_REVIEW || IPL_PERFORMANCE_REVIEW || IPL_VIDEO_MODE_REVIEW || IPL_HARDWARE_RUNNER
+#if IPL_MOCKUP_REVIEW || IPL_VISUAL_REVIEW || IPL_PERFORMANCE_REVIEW || IPL_VIDEO_MODE_REVIEW || IPL_HARDWARE_RUNNER
         var shell=new IplShell(output);
 #elif IPL_STORAGE_REVIEW
         var shell=new IplShell(output,browser:browser);
@@ -102,7 +102,7 @@ internal static class Program
 #if IPL_VIDEO_MODE_REVIEW
         var scanReview=new VideoModeScanReview(shell,output,reviewResolution);
 #endif
-#if IPL_VISUAL_REVIEW || IPL_PERFORMANCE_REVIEW || IPL_HARDWARE_RUNNER
+#if IPL_MOCKUP_REVIEW || IPL_VISUAL_REVIEW || IPL_PERFORMANCE_REVIEW || IPL_HARDWARE_RUNNER
         // Repeatable native review pose; normal builds retain the interactive IPL.
 #if !IPL_RUNNER_CUBE && !IPL_REVIEW_CUBE
         shell.TurnTo(ShellFace.Options);shell.Row=1;shell.Tick(1);shell.Time=0;
@@ -136,7 +136,7 @@ internal static class Program
             Controller.Update();var pad=Controller.GetState(0);float dt=clock.Tick();
             shell.Tick(dt);
             if(browser.LaunchRequested)return 0;
-#if IPL_VISUAL_REVIEW || IPL_PERFORMANCE_REVIEW || IPL_HARDWARE_RUNNER
+#if IPL_MOCKUP_REVIEW || IPL_VISUAL_REVIEW || IPL_PERFORMANCE_REVIEW || IPL_HARDWARE_RUNNER
             shell.Time=0;
 #endif
 #if IPL_VIDEO_MODE_REVIEW

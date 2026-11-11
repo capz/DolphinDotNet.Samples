@@ -49,6 +49,7 @@
     <DefineConstants Condition="'$(IplAntialiasingBenchmark)' == 'true'">$(DefineConstants);IPL_AA_BENCHMARK</DefineConstants>
     <DefineConstants Condition="'$(IplVideoModeReview)' == 'true' and '$(IplVideoModeReviewResolution)' == '576'">$(DefineConstants);IPL_VIDEO_MODE_REVIEW_PAL</DefineConstants>
     <DefineConstants Condition="'$(IplVideoModeReview)' == 'true'">$(DefineConstants);IPL_VIDEO_MODE_REVIEW</DefineConstants>
+    <DefineConstants Condition="'$(IplMockupReview)' == 'true'">$(DefineConstants);IPL_MOCKUP_REVIEW</DefineConstants>
     <DefineConstants Condition="'$(IplVisualReview)' == 'true'">$(DefineConstants);IPL_VISUAL_REVIEW</DefineConstants>
     <DefineConstants Condition="('$(IplVisualReview)' == 'true' or '$(IplPerformanceReview)' == 'true') and '$(IplVisualReviewAngle)' == 'true'">$(DefineConstants);IPL_VISUAL_REVIEW_ANGLE</DefineConstants>
   </PropertyGroup>

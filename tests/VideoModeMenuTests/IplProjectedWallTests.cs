@@ -5,8 +5,8 @@ internal static class IplProjectedWallTests
 {
     private static IplPoint Project(IplPoint p)
     {
-        float f=3.8f/(3.8f-p.Z);
-        return new IplPoint(322+p.X*118*.975f*f,202-p.Y*118*f,p.Z);
+        float f=IplCamera.Distance/(IplCamera.Distance-p.Z);
+        return new IplPoint(322+p.X*118*IplCamera.HorizontalScale*f,202-p.Y*118*f,p.Z);
     }
     internal static void Run()
     {

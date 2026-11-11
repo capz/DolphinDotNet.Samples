@@ -9,9 +9,11 @@ internal static class IplSealedGlassTests
         IplSealedGlassGeometry.Vertex(IplSealedGlassGeometry.Index(24,12,12),out var flat,out _);
         IplSealedGlassGeometry.Vertex(IplSealedGlassGeometry.Index(24,24,24),out var corner,out _);
         IplSealedGlassGeometry.Vertex(IplSealedGlassGeometry.Index(24,24,24)+count,out var insideCorner,out _);
+        float expected=IplSealedGlassGeometry.Core+IplSealedGlassGeometry.Radius/(float)Math.Sqrt(3);
+        float innerExpected=IplSealedGlassGeometry.Core+(IplSealedGlassGeometry.Radius-IplSealedGlassGeometry.Thickness)/(float)Math.Sqrt(3);
         if(Math.Abs(flat.X-1)+Math.Abs(flat.Y)+Math.Abs(flat.Z)>.00001f||
-           Math.Abs(corner.X-.8732051f)+Math.Abs(corner.Y-.8732051f)+Math.Abs(corner.Z-.8732051f)>.00001f||
-           Math.Abs(insideCorner.X-.7923761f)+Math.Abs(insideCorner.Y-.7923761f)+Math.Abs(insideCorner.Z-.7923761f)>.00001f)
+           Math.Abs(corner.X-expected)+Math.Abs(corner.Y-expected)+Math.Abs(corner.Z-expected)>.00001f||
+           Math.Abs(insideCorner.X-innerExpected)+Math.Abs(insideCorner.Y-innerExpected)+Math.Abs(insideCorner.Z-innerExpected)>.00001f)
             throw new Exception("Glass must retain flat wall centers and pronounced spherical outer/inner corner roundovers.");
         for(int i=0;i<count;i++)
         {
@@ -19,7 +21,7 @@ internal static class IplSealedGlassTests
             IplSealedGlassGeometry.Vertex(i+count,out var b,out var m);
             float length=n.X*n.X+n.Y*n.Y+n.Z*n.Z;
             float thickness=(a.X-b.X)*n.X+(a.Y-b.Y)*n.Y+(a.Z-b.Z)*n.Z;
-            if(!float.IsFinite(length)||Math.Abs(length-1)>.00001f||Math.Abs(thickness-.14f)>.00001f||
+            if(!float.IsFinite(length)||Math.Abs(length-1)>.00001f||Math.Abs(thickness-IplSealedGlassGeometry.Thickness)>.00001f||
                Math.Abs(n.X+m.X)+Math.Abs(n.Y+m.Y)+Math.Abs(n.Z+m.Z)>.00001f)
                 throw new Exception("Sealed glass requires finite unit normals, an inward cavity and constant normal wall thickness.");
         }
@@ -50,6 +52,6 @@ internal static class IplSealedGlassTests
                 edges[key]=(old.count+1,old.balance+(a<b?1:-1));
             }
         }
-        Console.WriteLine("Sealed glass: welded outer/cavity manifolds, zero boundary seams, winding and 0.14 wall thickness passed.");
+        Console.WriteLine("Sealed glass: welded outer/cavity manifolds, zero boundary seams, winding and constant normal wall thickness passed.");
     }
 }

@@ -5,7 +5,7 @@ using System;
 internal static class IplSealedGlassGeometry
 {
     internal const int Divisions=24,Side=25,SurfaceVertices=3458,Vertices=SurfaceVertices*2,Indices=6*24*24*6;
-    internal const float Radius=.30f,Thickness=.14f,Core=1-Radius;
+    internal const float Radius=.16f,Thickness=.07f,Core=1-Radius;
     internal static int Index(int x,int y,int z)
     {
         if(z==24)return x+25*y;
@@ -24,7 +24,7 @@ internal static class IplSealedGlassGeometry
         if(face==4)return Index(u,24,24-v);
         return Index(u,0,v);
     }
-    private static float Coordinate(int i)=>i<8?-1+Radius*(1-(float)Math.Cos(i/8f*1.5707963f)):i>16?-Coordinate(24-i):-Core+(i-8)*2*Core/8;
+    private static float Coordinate(int i)=>i<10?-1+Radius*(1-(float)Math.Cos(i/10f*1.5707963f)):i>14?-Coordinate(24-i):-Core+(i-10)*2*Core/4;
     internal static void Vertex(int index,out IplPoint position,out IplPoint normal)
     {
         bool inner=index>=SurfaceVertices;if(inner)index-=SurfaceVertices;

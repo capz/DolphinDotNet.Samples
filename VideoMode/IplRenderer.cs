@@ -96,11 +96,7 @@ internal sealed partial class IplRenderer
     {
         float x=cosYaw*p.X+sinYaw*p.Z,z=-sinYaw*p.X+cosYaw*p.Z;
         float y=cosPitch*p.Y-sinPitch*z;z=sinPitch*p.Y+cosPitch*z;
-        // A camera-space tilt reveals thickness on every menu face. Adding
-        // yaw before Calendar's quarter-turn only rolled its text in-plane.
-        float viewX=.9063078f*x-.4226183f*z;
-        z=.4226183f*x+.9063078f*z;
-        return new IplPoint(viewX,.9781476f*y+.2079117f*z,-.2079117f*y+.9781476f*z);
+        return new IplPoint(x,y,z);
     }
     private IplPoint Project(IplPoint p)
     {
@@ -108,8 +104,8 @@ internal sealed partial class IplRenderer
     }
     private IplPoint ProjectView(IplPoint p)
     {
-        float f=3.8f/(3.8f-p.Z);
-        return new IplPoint(322+p.X*scale*.975f*f,cy-p.Y*scale*f,p.Z);
+        float f=IplCamera.Distance/(IplCamera.Distance-p.Z);
+        return new IplPoint(IplCamera.CenterX+p.X*scale*IplCamera.HorizontalScale*f,cy-p.Y*scale*f,p.Z);
     }
     private void Tri(IplPoint a,IplPoint b,IplPoint d,uint color)
     {
@@ -186,13 +182,13 @@ internal sealed partial class IplRenderer
         if(t<1)ease+=(float)Math.Sin(t*3.1415926f)*.045f;
         yaw=PoseYaw(shell.PreviousFace)+(PoseYaw(shell.Face)-PoseYaw(shell.PreviousFace))*ease;
         pitch=PosePitch(shell.PreviousFace)+(PosePitch(shell.Face)-PosePitch(shell.PreviousFace))*ease;
-        if(!shell.ReducedMotion){yaw+=(float)Math.Sin(shell.Time/5.3f*6.2831853f)*.075f;pitch+=.035f+(float)Math.Sin(shell.Time/7.1f*6.2831853f)*.055f;}
+        if(!shell.ReducedMotion){yaw+=(float)Math.Sin(shell.Time/5.3f*6.2831853f)*.025f;pitch+=(float)Math.Sin(shell.Time/7.1f*6.2831853f)*.020f;}
 #if IPL_VISUAL_REVIEW_ANGLE
         // Reproducible oblique pose exposes walls and face seams for native review.
         yaw+=.30f;pitch-=.16f;
 #endif
         cosYaw=(float)Math.Cos(yaw);sinYaw=(float)Math.Sin(yaw);cosPitch=(float)Math.Cos(pitch);sinPitch=(float)Math.Sin(pitch);
-        cy=202+(shell.ReducedMotion?0:(float)Math.Sin(shell.Time*.7f)*3);scale=130;
+        cy=IplCamera.CenterY+(shell.ReducedMotion?0:(float)Math.Sin(shell.Time*.7f));scale=IplCamera.Scale;
         Cube();
         c.Section(IplRenderPhase.FrostGeometry);
         c.BeginPanels();
@@ -270,7 +266,7 @@ internal sealed partial class IplRenderer
     }
     private static IplPoint ReflectionUv(IplPoint p,IplPoint n,float curvature)
     {
-        var eye=new IplPoint(-p.X,-p.Y,3.8f-p.Z);
+        var eye=new IplPoint(-p.X,-p.Y,IplCamera.Distance-p.Z);
         float length=(float)Math.Sqrt(eye.X*eye.X+eye.Y*eye.Y+eye.Z*eye.Z);
         eye=new IplPoint(eye.X/length,eye.Y/length,eye.Z/length);
         float dot=n.X*eye.X+n.Y*eye.Y+n.Z*eye.Z;
@@ -309,7 +305,7 @@ internal sealed partial class IplRenderer
 
     private static IplPoint ProjectedMiddle(IplPoint a,IplPoint b)
     {
-        float aw=3.8f-a.Z,bw=3.8f-b.Z,sum=aw+bw;
+        float aw=IplCamera.Distance-a.Z,bw=IplCamera.Distance-b.Z,sum=aw+bw;
         return new IplPoint((a.X*aw+b.X*bw)/sum,(a.Y*aw+b.Y*bw)/sum,(a.Z+b.Z)*.5f);
     }
     private static uint Rgba(int r,int g,int b,int a)=>(uint)((Math.Min(255,r)<<24)|(Math.Min(255,g)<<16)|(Math.Min(255,b)<<8)|a);
@@ -319,7 +315,7 @@ internal sealed partial class IplRenderer
     {
         var p=FacePoint(s,u,v);var right=FacePoint(s,u+.1f,v);
         float angle=(float)Math.Atan2(right.Y-p.Y,right.X-p.X)*57.29578f+extraAngle;
-        float f=3.8f/(3.8f-p.Z);size*=f/1.357f;
+        float f=IplCamera.Distance/(IplCamera.Distance-p.Z);size*=f/IplCamera.FrontMagnification;
         float width=TextWidth(text,size)*stretch,rad=angle*.017453293f;
         c.Text(text,p.X-width*.5f*(float)Math.Cos(rad),p.Y-width*.5f*(float)Math.Sin(rad),size,color,angle,stretch);
     }
@@ -334,7 +330,7 @@ internal sealed partial class IplRenderer
     {
         var p=FacePoint(s,u,v);var next=FacePoint(s,u+.1f,v);
         float angle=(float)Math.Atan2(next.Y-p.Y,next.X-p.X)*57.29578f;
-        size*=3.8f/(3.8f-p.Z)/1.357f;
+        size*=IplCamera.Distance/(IplCamera.Distance-p.Z)/IplCamera.FrontMagnification;
         float width=rightAligned?TextWidth(text,size):0,rad=angle*.017453293f;
         float x=p.X-width*(float)Math.Cos(rad),y=p.Y-width*(float)Math.Sin(rad);
         c.Text(text,x+.5f,y+1.6f,size,0x00000078,angle);
@@ -344,8 +340,8 @@ internal sealed partial class IplRenderer
     private void PanelTint(IplShell s,int row)=>PanelShape(s,row,row==s.Row?SelectedPanelTint:IdlePanelTint);
     private void PanelShape(IplShell s,int row,uint tint)
     {
-        const float left=-.78f,right=.78f,height=.33f,radius=.075f;
-        float top=.46f-row*.43f,bottom=top-height;
+        const float left=-.777f,right=.795f,height=.33f,radius=.087f;
+        float top=.43f-row*.428f,bottom=top-height;
         var center=FacePoint(s,0,top-height/2);IplPoint first=default,previous=default;
         for(int corner=0;corner<4;corner++)for(int j=0;j<=8;j++)
         {
@@ -406,12 +402,12 @@ internal sealed partial class IplRenderer
     }
     private void FaceMenu(IplShell s)
     {
-        FaceText(s,s.Title,.045f,.79f,26,White,0,.95f);
+        FaceText(s,s.Title,.045f,.765f,26,White,0,.95f);
         for(int i=0;i<s.Rows;i++)
         {
-            float y=.35f-i*.43f;
+            float y=.35f-i*.428f;
             uint color=i==s.Row?White:0xd5d6dcff;
-            float focus=s.Focus(i);focus=focus*focus*(3-2*focus);
+            float focus=s.Page==ShellPage.Face?(i==s.Row?1:0):s.Focus(i);focus=focus*focus*(3-2*focus);
             float size=16.5f*(1+.30f*focus);
             string value=s.Value(i);
             // Keep both edge anchors fixed as the type grows/shrinks.

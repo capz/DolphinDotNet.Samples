@@ -24,7 +24,7 @@ internal static class IplIconLayoutTests
                     if(distance>-.30f)throw new Exception("Icon block or highlight envelope approaches a cavity wall: "+face);
                 }
             }
-            if(Math.Abs(minU+maxU)>0.00001f||Math.Abs(minV+maxV)>0.00001f||Math.Max(maxU-minU,maxV-minV)>1.10001f)
+            if(Math.Abs(minU+maxU)>0.00001f||Math.Abs(minV+maxV)>0.00001f||Math.Max(maxU-minU,maxV-minV)>IplIconLayout.MaximumSpan+.00001f)
                 throw new Exception("Visible icon bounds must be centered and leave generous margins: "+face);
             var origin=IplIconLayout.Point(face,0,0);
             if(origin.X!=0||origin.Y!=0||origin.Z!=0)throw new Exception("Every icon must be at the volume's 3D center.");
