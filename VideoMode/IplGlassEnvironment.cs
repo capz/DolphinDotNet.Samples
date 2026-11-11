@@ -4,7 +4,7 @@ using System;
 // Packed colors are RRGGBBAA. No arrays, allocations or per-frame evaluation.
 internal static class IplGlassEnvironment
 {
-    internal static uint Reflection(float u,float v)
+    internal static uint Reflection(float u,float v,bool studio,bool inner)
     {
         // Narrow light sources and their dimmer secondary returns. These are
         // normal-space studio reflections, not lines painted onto cube edges.
@@ -63,7 +63,8 @@ internal static class IplGlassEnvironment
         CornerReturn(u,v,.255f,.745f,.48844f,.90161f,.28110f,.28110f,.070f,.075f,180,false,false,ref r,ref g,ref b);
         CornerReturn(u,v,.620f,.025f,.60307f,-.08521f,.11151f,.11151f,.065f,.040f,175,false,false,ref r,ref g,ref b);
         CornerReturn(u,v,.255f,.025f,.27193f,-.08521f,.11151f,.11151f,.065f,.040f,175,true,false,ref r,ref g,ref b);
-        return Color(r,g,b);
+        float fieldVisibility=studio?StudioReflection(u,v,inner,ref r,ref g,ref b):1;
+        return (Color(r,g,b)&0xffffff00u)|(uint)(255*fieldVisibility+.5f);
     }
 
     // The separate position lookup is composed independently of Fresnel. It
@@ -103,6 +104,43 @@ internal static class IplGlassEnvironment
         g=Math.Max(g,core+secondary*sg+haze*.95f+outer);
         b=Math.Max(b,core*1.01f+secondary*sb+haze*1.05f+outer);
 
+    }
+
+    private static float StudioReflection(float u,float v,bool inner,ref float r,ref float g,ref float b)
+    {
+        // A finite white softbox, its dark divider and an occluding ceiling
+        // return. Existing normal/depth texgen bends this environment feature
+        // around the upper-right roundover as the whole object turns.
+        float sx=(u-.807f)/.043f,sy=(v-.447f)/.028f;
+        float x=sx+.22f*sy,y=sy-.12f*sx;
+        float dx=Math.Max(0,Math.Abs(x)-.78f),dy=Math.Max(0,Math.Abs(y)-.78f);
+        float pane=(1-Smooth((dx*dx+dy*dy-.0484f)/.020f))*Window(v,.405f,.482f,.005f);
+        float divider=Band(x,.13f,.045f,.035f);
+        float ceiling=Smooth((x+y-.50f)/.12f)*.90f;
+        float dark=pane*Math.Max(divider,ceiling),light=pane*(1-Math.Max(divider,ceiling));
+        r=Math.Max(r,light*121);g=Math.Max(g,light*125);b=Math.Max(b,light*128);
+        r=r*(1-.92f*dark)+3*dark;g=g*(1-.92f*dark)+5*dark;b=b*(1-.92f*dark)+8*dark;
+        // The broad white ceiling reflection farther along the same crown.
+        // Its finite footprint avoids turning the whole top edge into a line.
+        float cx=(u-.599f)/.020f+.10f*(v-.360f)/.050f,cy=(v-.360f)/.050f;
+        dx=Math.Max(0,Math.Abs(cx)-.78f);dy=Math.Max(0,Math.Abs(cy)-.78f);
+        float ceilingSource=1-Smooth((dx*dx+dy*dy-.0484f)/.020f);
+        r=Math.Max(r,ceilingSource*246);g=Math.Max(g,ceilingSource*250);b=Math.Max(b,ceilingSource*255);
+        float bentCeiling=Blob(u,v,.663f,.409f,.035f,.023f);
+        r=Math.Max(r,bentCeiling*246);g=Math.Max(g,bentCeiling*250);b=Math.Max(b,bentCeiling*255);
+        // Soft side lights catch the near cavity fillets; finite falloff along
+        // V makes them local reflections rather than a uniform inset contour.
+        float rightLip=inner?Blob(u,v,.906f,.622f,.023f,.110f):0;
+        float leftLip=inner?Blob(u,v,.218f,.622f,.023f,.110f):0;
+        r=Math.Max(r,Math.Max(rightLip*90,leftLip*45));
+        g=Math.Max(g,Math.Max(rightLip*100,leftLip*55));
+        b=Math.Max(b,Math.Max(rightLip*135,leftLip*85));
+        // A darker environment return under the white crown must also shade
+        // collected colored light. Alpha carries that visibility separately
+        // from the material's unchanged Fresnel opacity.
+        float fold=Blob(u,v,.790f,.548f,.038f,.065f);
+        r=r*(1-.95f*fold)+3*fold;g=g*(1-.95f*fold)+5*fold;b=b*(1-.95f*fold)+8*fold;
+        return 1-.97f*Math.Max(dark,fold);
     }
 
     private static float Blob(float x,float y,float cx,float cy,float rx,float ry)

@@ -1,0 +1,10 @@
+{
+  "type": "native diagnostic; one PPC call replaced with NOP, original review DOL preserved",
+  "skipped": "skip-outer",
+  "address": "0x800e6704",
+  "file_offset": 931588,
+  "original_instruction": "0x48088499",
+  "patch_instruction": "0x60000000",
+  "source_sha256": "7af98d332be178d07e72a11acd3a9d2826cbe9bea504e6702e6de74425ca7b26",
+  "diagnostic_sha256": "cf4517f183eec11fb4c8435f5564652f9d19b77b3fdb29c62558a1e966ea08c7"
+}
