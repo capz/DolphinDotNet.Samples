@@ -1,0 +1,18 @@
+{
+  "sdk_commit": "4dc80bd10faae69d5b288c7bc227ce6be0e9c750",
+  "engine_commit": "1fa7b6207450ea45732a09d649af8729e7298b5c",
+  "target_sha256": "9877cdc4bbb9e0641fb74513f81c8848d048e98d00166ecbced66cc50c84c66a",
+  "build": "ci/build_videomode_source_sdk.py --mockup-review --icons --glass --blur --glyphs --tints --numbers --footer-text --grid --selectors --console-services --memory-cards",
+  "native_source_sha256": {
+    "VideoMode/IplCamera.cs": "c9b75d1cc6e9d2cc82e817152b6bdc0041589d8fa747763ff69487bc98c3e265",
+    "VideoMode/IplGlassEnvironment.cs": "9a89c307767110da70f70f0242265d61cf256aa19f9be92f9c3df1642b04b9f9",
+    "VideoMode/IplSealedGlassGeometry.cs": "abbfc13d27c71c0a9827e2eb262c8600d74df425d54a228f0408e33dff781d6d",
+    "VideoMode/SealedGlassShell.cs": "990e8db110804b56fe397ecded974d90863cc255ebe92b4dc13df3bad890c322",
+    "VideoMode/IplRenderer.cs": "64e597b3ff15b7736490aacfc14b1fe8a2a14704abb60ce6d6d92c53bee11bd6",
+    "VideoMode/IndexedIcons.cs": "13c08cfdea3f9ba2d1037a67747ee32ecc16181fdebdc119e6c3dfc96c507aa1",
+    "VideoMode/IplIconLayout.cs": "f82f9f55b9a3f93cc04fd92c3b7d738709f4d2579cc39708cf19be12970e9453",
+    "VideoMode/Program.cs": "76a1fe7996d225aabcea0dfbbde343718170d598ccb484a4c325b8bc5a7f86a8"
+  },
+  "render_code_commit": "fd066ca03a3b20407c0d3811c237fa3b91133da6",
+  "review_pass06_dol_sha256": "7958f9ee52c7cebff0e4099f9bc6b3ea5481639b8f1679e7cb5d55afbba3cdf6"
+}
