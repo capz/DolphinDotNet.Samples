@@ -19,12 +19,16 @@ internal sealed class SealedGlassShell : IDisposable
     private readonly NativeBuffer indirectMatrix=NativeBuffer.Allocate(32);
     private const int ReflectionSize=256;
     private readonly NativeBuffer environment=NativeBuffer.Allocate(ReflectionSize*ReflectionSize*4),texture=NativeBuffer.Allocate(32);
+    private readonly NativeBuffer rearEnvironment=NativeBuffer.Allocate(ReflectionSize*ReflectionSize*4);
+    private readonly NativeBuffer innerEnvironment=NativeBuffer.Allocate(ReflectionSize*ReflectionSize*4);
     private readonly NativeBuffer normalMatrix=NativeBuffer.Allocate(48);
     private readonly NativeBuffer projectionBuffer=NativeBuffer.Allocate(64),modelBuffer=NativeBuffer.Allocate(48),textureMatrix=NativeBuffer.Allocate(48);
     private readonly float[] projection=new float[16],model=new float[12],texMatrix=new float[12];
     private readonly NativeBuffer reversedTextureMatrix=NativeBuffer.Allocate(48);
     private readonly float[] reversedTexMatrix=new float[12];
     private readonly NativeBuffer fresnel=NativeBuffer.Allocate(128*128*4),fresnelTexture=NativeBuffer.Allocate(32),fresnelMatrix=NativeBuffer.Allocate(48);
+    private readonly NativeBuffer innerFresnelMatrix=NativeBuffer.Allocate(48);
+    private readonly float[] innerFresnelTransform=new float[12];
     private readonly NativeBuffer rearImage=NativeBuffer.Allocate(640*576*4),rearTexture=NativeBuffer.Allocate(32),screenMatrix=NativeBuffer.Allocate(48),refractionMatrix=NativeBuffer.Allocate(32);
     private readonly float[] fresnelTransform=new float[12],screenTransform=new float[12],refraction=new float[6];
     private readonly NativeBuffer bendImage=NativeBuffer.Allocate(128*128*4),bendTexture=NativeBuffer.Allocate(32),bendMatrix=NativeBuffer.Allocate(48),echoMatrix=NativeBuffer.Allocate(32);
@@ -69,7 +73,7 @@ internal sealed class SealedGlassShell : IDisposable
     {
         // Tiled GX RGBA8; profiled studio returns, not detached glowing edge strips.
         var tile=new byte[64];
-        for(int ty=0;ty<ReflectionSize/4;ty++)for(int tx=0;tx<ReflectionSize/4;tx++)
+        for(int bank=0;bank<3;bank++)for(int ty=0;ty<ReflectionSize/4;ty++)for(int tx=0;tx<ReflectionSize/4;tx++)
         {
             for(int y=0;y<4;y++)for(int x=0;x<4;x++)
             {
@@ -78,13 +82,13 @@ internal sealed class SealedGlassShell : IDisposable
                 int red=px*255/(ReflectionSize-1),green=py*255/(ReflectionSize-1);
                 uint color=((uint)red<<24)|((uint)green<<16)|(128u<<8)|255u;
 #else
-                uint color=IplGlassEnvironment.Reflection(px/(float)(ReflectionSize-1),py/(float)(ReflectionSize-1));
+                uint color=IplGlassEnvironment.Reflection(px/(float)(ReflectionSize-1),py/(float)(ReflectionSize-1),bank!=0,bank==2);
 #endif
-                tile[at]=255;tile[at+1]=(byte)(color>>24);tile[32+at]=(byte)(color>>16);tile[33+at]=(byte)(color>>8);
+                tile[at]=(byte)color;tile[at+1]=(byte)(color>>24);tile[32+at]=(byte)(color>>16);tile[33+at]=(byte)(color>>8);
             }
-            environment.Write(tile,0,(ty*(ReflectionSize/4)+tx)*64);
+            (bank==0?rearEnvironment:bank==1?environment:innerEnvironment).Write(tile,0,(ty*(ReflectionSize/4)+tx)*64);
         }
-        environment.Flush();
+        environment.Flush();rearEnvironment.Flush();innerEnvironment.Flush();
     }
     private void BuildField()
     {
@@ -130,7 +134,13 @@ internal sealed class SealedGlassShell : IDisposable
             {
                 float cosine=Math.Abs((tx*4+x-63.5f)/63.5f);
                 float r=IplGlassOptics.Reflectance(cosine,IplGlassOptics.RefractiveIndex);
-                int alpha=(int)(255*r),weight=(int)(255*r*r);
+                int py=ty*4+y;
+                // The upper bank retains physical R^2 and the outer opacity.
+                // The lower bank stores bounded internal-return radiance in
+                // RGB, while alpha keeps that same outer opacity response.
+                float insideCosine=((py+.5f)/128-.755f)/.235f;
+                float radiance=py<64?r*r:IplGlassOptics.BoundedInternalReturn(cosine,insideCosine,IplGlassOptics.RefractiveIndex);
+                int alpha=(int)(255*r),weight=(int)(255*radiance);
                 int at=(y*4+x)*2;tile[at]=(byte)alpha;tile[at+1]=(byte)weight;tile[32+at]=(byte)weight;tile[33+at]=(byte)weight;
             }
             fresnel.Write(tile,0,(ty*32+tx)*64);
@@ -184,7 +194,18 @@ internal sealed class SealedGlassShell : IDisposable
         reflectionPositionMatrix.Write(reflectionPosition);reflectionPositionMatrix.Flush();
         // Direct view-normal Z avoids reconstructing it from a sampled unit disk.
         fresnelTransform[0]=x.Z*.5f;fresnelTransform[1]=y.Z*.5f;fresnelTransform[2]=z.Z*.5f;fresnelTransform[3]=.5f;
-        fresnelTransform[7]=.5f;
+        fresnelTransform[7]=.25f;
+        // Approximate the incident path through the view-center entry point.
+        // Separate view/internal cosines preserve opacity while curved cavity
+        // normals can collect a stronger internal reflected light return.
+        IplPoint localEntry=IplGlassOptics.EntryNormal(new IplPoint(x.Z,y.Z,z.Z),IplSealedGlassGeometry.Core,IplSealedGlassGeometry.Radius);
+        IplPoint entry=new IplPoint(x.X*localEntry.X+y.X*localEntry.Y+z.X*localEntry.Z,x.Y*localEntry.X+y.Y*localEntry.Y+z.Y*localEntry.Z,x.Z*localEntry.X+y.Z*localEntry.Y+z.Z*localEntry.Z);
+        IplPoint transmitted=IplGlassOptics.TransmittedViewRay(entry,IplGlassOptics.RefractiveIndex);
+        innerFresnelTransform[0]=fresnelTransform[0];innerFresnelTransform[1]=fresnelTransform[1];innerFresnelTransform[2]=fresnelTransform[2];innerFresnelTransform[3]=.5f;
+        innerFresnelTransform[4]=.235f*(transmitted.X*x.X+transmitted.Y*x.Y+transmitted.Z*x.Z);
+        innerFresnelTransform[5]=.235f*(transmitted.X*y.X+transmitted.Y*y.Y+transmitted.Z*y.Z);
+        innerFresnelTransform[6]=.235f*(transmitted.X*z.X+transmitted.Y*z.Y+transmitted.Z*z.Z);innerFresnelTransform[7]=.755f;
+        innerFresnelMatrix.Write(innerFresnelTransform);innerFresnelMatrix.Flush();
         float cx=sx/width,cy=sy/height,fx=IplCamera.Distance*scale*IplCamera.HorizontalScale/width,fy=IplCamera.Distance*scale/height;
         float cropX=physicalWidth/(float)copyWidth,cropY=physicalHeight/(float)copyHeight;
         screenTransform[0]=(fx*x.X-cx*x.Z)*cropX;screenTransform[1]=(fx*y.X-cx*y.Z)*cropX;screenTransform[2]=(fx*z.X-cx*z.Z)*cropX;screenTransform[3]=IplCamera.Distance*cx*cropX;
@@ -202,7 +223,7 @@ internal sealed class SealedGlassShell : IDisposable
         projectionBuffer.Write(projection);modelBuffer.Write(model);textureMatrix.Write(texMatrix);positionMatrix.Write(positionTransform);
         projectionBuffer.Flush();modelBuffer.Flush();textureMatrix.Flush();positionMatrix.Flush();
     }
-    private void BeginInterfacePass(GraphicsDevice device)
+    private void BeginInterfacePass(GraphicsDevice device,bool front)
     {
         device.BeginRaw();
         GX.GX_SetViewport(0,0,device.Width,device.Height,0,1);GX.GX_SetScissor(0,0,(uint)device.Width,(uint)device.Height);
@@ -213,7 +234,7 @@ internal sealed class SealedGlassShell : IDisposable
         GX.GX_SetArray(GX_VA_POS,vertices.Address,24);GX.GX_SetArray(GX_VA_NRM,vertices.Address.Add(12),24);
         GX.GX_LoadTexMtxImm(textureMatrix.Address,GX_TEXMTX0,GX_MTX2x4);
         GX.GX_SetNumChans(0);GX.GX_SetNumTexGens(6);GX.GX_SetTexCoordGen(GX_TEXCOORD0,GX_TG_MTX2x4,GX_TG_NRM,GX_TEXMTX0);
-        GX.GX_InitTexObj(texture.Address,environment.Address,ReflectionSize,ReflectionSize,GX_TF_RGBA8,GX_CLAMP,GX_CLAMP,0);
+        GX.GX_InitTexObj(texture.Address,(front?innerEnvironment:rearEnvironment).Address,ReflectionSize,ReflectionSize,GX_TF_RGBA8,GX_CLAMP,GX_CLAMP,0);
         GX.GX_InitTexObjFilterMode(texture.Address,GX_LINEAR,GX_LINEAR);GX.GX_LoadTexObj(texture.Address,GX_TEXMAP0);
         GX.GX_LoadTexMtxImm(positionMatrix.Address,GX_TEXMTX1,GX_MTX2x4);
         GX.GX_SetTexCoordGen(GX_TEXCOORD1,GX_TG_MTX2x4,GX_TG_POS,GX_TEXMTX1);
@@ -245,7 +266,7 @@ internal sealed class SealedGlassShell : IDisposable
         GX.GX_SetTevOrder(0,GX_TEXCOORD0,GX_TEXMAP0,GX_COLORNULL);
         GX.GX_SetTevKColorSel(0,GX_TEV_KCSEL_K0);GX.GX_SetTevKAlphaSel(0,GX_TEV_KASEL_K0_A);
         GX.GX_SetTevColorIn(0,GX_CC_ZERO,GX_CC_TEXC,GX_CC_KONST,GX_CC_ZERO);
-        GX.GX_SetTevAlphaIn(0,GX_CA_ZERO,GX_CA_TEXA,GX_CA_KONST,GX_CA_ZERO);
+        GX.GX_SetTevAlphaIn(0,GX_CA_ZERO,GX_CA_ZERO,GX_CA_ZERO,GX_CA_KONST);
         GX.GX_SetTevColorOp(0,GX_TEV_ADD,GX_TB_ZERO,GX_CS_SCALE_1,1,GX_TEVPREV);GX.GX_SetTevAlphaOp(0,GX_TEV_ADD,GX_TB_ZERO,GX_CS_SCALE_1,1,GX_TEVPREV);
         GX.GX_SetTevDirect(1);GX.GX_SetTevOrder(1,GX_TEXCOORD2,GX_TEXMAP2,GX_COLORNULL);
         GX.GX_SetTevColorIn(1,GX_CC_ZERO,GX_CC_CPREV,GX_CC_TEXA,GX_CC_ZERO);
@@ -261,7 +282,7 @@ internal sealed class SealedGlassShell : IDisposable
     }
     internal void DrawRear(GraphicsDevice device)
     {
-        BeginInterfacePass(device);
+        BeginInterfacePass(device,false);
         GX.GX_LoadTexMtxImm(reversedTextureMatrix.Address,GX_TEXMTX0,GX_MTX2x4);
         GX.GX_SetCullMode(GX_CULL_FRONT);GX.GX_SetTevKColor(0,new GXColor(82,88,95,165));GX.GX_CallDispList(outer.Address,(uint)commandBytes);
         GX.GX_LoadTexMtxImm(textureMatrix.Address,GX_TEXMTX0,GX_MTX2x4);
@@ -270,14 +291,19 @@ internal sealed class SealedGlassShell : IDisposable
     }
     internal void DrawFront(GraphicsDevice device)
     {
-        BeginInterfacePass(device);
+        BeginInterfacePass(device,true);
         // The cavity's front interface must cover the centered icon before
         // the transmitted scene is captured through the outer front wall.
         GX.GX_LoadTexMtxImm(reversedTextureMatrix.Address,GX_TEXMTX0,GX_MTX2x4);
+        GX.GX_LoadTexMtxImm(innerFresnelMatrix.Address,GX_TEXMTX2,GX_MTX2x4);
+        GX.GX_SetTevColorIn(1,GX_CC_ZERO,GX_CC_CPREV,GX_CC_TEXC,GX_CC_ZERO);
         // Lower artistic exposure keeps this near interface from becoming a
         // second inset frame; the stronger far-cavity return reveals depth.
-        GX.GX_SetCullMode(GX_CULL_FRONT);GX.GX_SetTevKColor(0,new GXColor(55,57,60,95));GX.GX_CallDispList(inner.Address,(uint)commandBytes);
+        GX.GX_SetCullMode(GX_CULL_FRONT);GX.GX_SetTevKColor(0,new GXColor(24,26,30,55));GX.GX_CallDispList(inner.Address,(uint)commandBytes);
         GX.GX_LoadTexMtxImm(textureMatrix.Address,GX_TEXMTX0,GX_MTX2x4);
+        GX.GX_LoadTexMtxImm(fresnelMatrix.Address,GX_TEXMTX2,GX_MTX2x4);
+        GX.GX_InitTexObj(texture.Address,environment.Address,ReflectionSize,ReflectionSize,GX_TF_RGBA8,GX_CLAMP,GX_CLAMP,0);
+        GX.GX_InitTexObjFilterMode(texture.Address,GX_LINEAR,GX_LINEAR);GX.GX_LoadTexObj(texture.Address,GX_TEXMAP0);
         long copyStart=IplFrameProfiler.Active?Clock.Timestamp:0;
         GX.GX_SetTexCopySrc(0,0,(ushort)copyWidth,(ushort)copyHeight);GX.GX_SetTexCopyDst((ushort)copyWidth,(ushort)copyHeight,GX_TF_RGBA8,0);
         GX.GX_CopyTex(rearImage.Address,0);GX.GX_PixModeSync();GX.GX_InvalidateTexAll();
@@ -295,48 +321,58 @@ internal sealed class SealedGlassShell : IDisposable
         // the exposed Fresnel alpha. No extra Fresnel texture fetch is needed.
         GX.GX_SetTevColorIn(1,GX_CC_ZERO,GX_CC_ZERO,GX_CC_ZERO,GX_CC_TEXC);
         GX.GX_SetTevColorOp(1,GX_TEV_ADD,GX_TB_ZERO,GX_CS_SCALE_1,1,GX_TEVREG2);
+        // Environment alpha is a shadow on collected illumination, stored in
+        // A1. Fresnel opacity is independently reconstructed from K0 and the
+        // dielectric lookup, so a dark reflection cannot make glass opaque.
+        GX.GX_SetTevAlphaIn(0,GX_CA_ZERO,GX_CA_ZERO,GX_CA_ZERO,GX_CA_TEXA);
+        GX.GX_SetTevAlphaOp(0,GX_TEV_ADD,GX_TB_ZERO,GX_CS_SCALE_1,1,GX_TEVREG1);
+        GX.GX_SetTevKAlphaSel(1,GX_TEV_KASEL_K0_A);
+        GX.GX_SetTevAlphaIn(1,GX_CA_ZERO,GX_CA_TEXA,GX_CA_KONST,GX_CA_ZERO);
         // Artistic front reflection exposure; physical R^2 in RGB remains
         // unchanged for the secondary transmitted path. Face-on transmission
         // remains about 85%, with stronger curved-wall studio highlights.
         GX.GX_SetTevAlphaOp(1,GX_TEV_ADD,GX_TB_ZERO,GX_CS_SCALE_4,1,GX_TEVPREV);
         GX.GX_SetTevOrder(2,GX_TEXCOORD3,GX_TEXMAP3,GX_COLORNULL);
         GX.GX_SetTevIndirect(2,1,GX_ITF_8,GX_ITB_ST,GX_ITM_1,GX_ITW_OFF,GX_ITW_OFF,0,0,GX_ITBA_OFF);
-        GX.GX_SetTevColorIn(2,GX_CC_ZERO,GX_CC_ZERO,GX_CC_ZERO,GX_CC_TEXC);GX.GX_SetTevAlphaIn(2,GX_CA_ZERO,GX_CA_ZERO,GX_CA_ZERO,GX_CA_ZERO);
-        GX.GX_SetTevColorOp(2,GX_TEV_ADD,GX_TB_ZERO,GX_CS_SCALE_1,1,GX_TEVREG0);GX.GX_SetTevAlphaOp(2,GX_TEV_ADD,GX_TB_ZERO,GX_CS_SCALE_1,1,GX_TEVREG0);
+        GX.GX_SetTevColorIn(2,GX_CC_ZERO,GX_CC_ZERO,GX_CC_ZERO,GX_CC_TEXC);GX.GX_SetTevKAlphaSel(2,GX_TEV_KASEL_K2_A);
+        GX.GX_SetTevAlphaIn(2,GX_CA_ZERO,GX_CA_APREV,GX_CA_KONST,GX_CA_A2);
+        GX.GX_SetTevColorOp(2,GX_TEV_ADD,GX_TB_ZERO,GX_CS_SCALE_1,1,GX_TEVREG0);GX.GX_SetTevAlphaOp(2,GX_TEV_SUB,GX_TB_ZERO,GX_CS_SCALE_1,1,GX_TEVREG0);
         GX.GX_SetTevSwapMode(3,GX_TEV_SWAP0,GX_TEV_SWAP0);GX.GX_SetTevOrder(3,GX_TEXCOORD3,GX_TEXMAP3,GX_COLORNULL);
         GX.GX_SetTevIndirect(3,1,GX_ITF_8,GX_ITB_ST,GX_ITM_2,GX_ITW_OFF,GX_ITW_OFF,0,0,GX_ITBA_OFF);
-        GX.GX_SetTevColorIn(3,GX_CC_C0,GX_CC_TEXC,GX_CC_C2,GX_CC_ZERO);GX.GX_SetTevAlphaIn(3,GX_CA_ZERO,GX_CA_ZERO,GX_CA_ZERO,GX_CA_ZERO);
+        GX.GX_SetTevColorIn(3,GX_CC_C0,GX_CC_TEXC,GX_CC_C2,GX_CC_ZERO);GX.GX_SetTevAlphaIn(3,GX_CA_ZERO,GX_CA_A0,GX_CA_A1,GX_CA_ZERO);
         GX.GX_SetTevColorOp(3,GX_TEV_ADD,GX_TB_ZERO,GX_CS_DIVIDE_2,1,GX_TEVREG0);GX.GX_SetTevAlphaOp(3,GX_TEV_ADD,GX_TB_ZERO,GX_CS_SCALE_1,1,GX_TEVREG0);
-        // Transmission is halved in stage 3. Doubling the final mix restores
-        // full scene brightness and exposes corner reflections by two, without
-        // sending out-of-range HDR values through TEV's eight-bit A/B/C inputs.
-        // The optical field is then added at its unchanged display exposure.
+        // Quarter transmission before the final mix, keeping its intermediate
+        // channels within eight bits. Four-times studio exposure can then
+        // produce white glass highlights without raising Fresnel opacity.
         GX.GX_SetTevDirect(4);GX.GX_SetTevOrder(4,GX_TEXCOORDNULL,GX_TEXMAP_NULL,GX_COLORNULL);
-        GX.GX_SetTevColorIn(4,GX_CC_C0,GX_CC_CPREV,GX_CC_APREV,GX_CC_ZERO);
-        GX.GX_SetTevKColor(2,new GXColor(0,0,0,36));GX.GX_SetTevKAlphaSel(4,GX_TEV_KASEL_K2_A);
-        GX.GX_SetTevAlphaIn(4,GX_CA_ZERO,GX_CA_APREV,GX_CA_KONST,GX_CA_A2);
-        GX.GX_SetTevColorOp(4,GX_TEV_ADD,GX_TB_ZERO,GX_CS_SCALE_2,1,GX_TEVREG0);GX.GX_SetTevAlphaOp(4,GX_TEV_SUB,GX_TB_ZERO,GX_CS_SCALE_1,1,GX_TEVREG0);
-        GX.GX_SetTevDirect(5);GX.GX_SetTevSwapMode(5,GX_TEV_SWAP0,GX_TEV_SWAP0);GX.GX_SetTevOrder(5,GX_TEXCOORD1,GX_TEXMAP5,GX_COLORNULL);
-        GX.GX_SetTevColorIn(5,GX_CC_ZERO,GX_CC_TEXC,GX_CC_A0,GX_CC_C0);
+        GX.GX_SetTevColorIn(4,GX_CC_ZERO,GX_CC_ZERO,GX_CC_ZERO,GX_CC_C0);GX.GX_SetTevAlphaIn(4,GX_CA_ZERO,GX_CA_ZERO,GX_CA_ZERO,GX_CA_A0);
+        GX.GX_SetTevColorOp(4,GX_TEV_ADD,GX_TB_ZERO,GX_CS_DIVIDE_2,1,GX_TEVREG0);GX.GX_SetTevAlphaOp(4,GX_TEV_ADD,GX_TB_ZERO,GX_CS_SCALE_1,1,GX_TEVREG0);
+        GX.GX_SetTevDirect(5);GX.GX_SetTevOrder(5,GX_TEXCOORDNULL,GX_TEXMAP_NULL,GX_COLORNULL);
+        GX.GX_SetTevColorIn(5,GX_CC_C0,GX_CC_CPREV,GX_CC_APREV,GX_CC_ZERO);
+        GX.GX_SetTevKColor(2,new GXColor(0,0,0,36));
+        GX.GX_SetTevAlphaIn(5,GX_CA_ZERO,GX_CA_ZERO,GX_CA_ZERO,GX_CA_A0);
+        GX.GX_SetTevColorOp(5,GX_TEV_ADD,GX_TB_ZERO,GX_CS_SCALE_4,1,GX_TEVREG0);GX.GX_SetTevAlphaOp(5,GX_TEV_ADD,GX_TB_ZERO,GX_CS_SCALE_1,1,GX_TEVREG0);
+        GX.GX_SetTevDirect(6);GX.GX_SetTevSwapMode(6,GX_TEV_SWAP0,GX_TEV_SWAP0);GX.GX_SetTevOrder(6,GX_TEXCOORD1,GX_TEXMAP5,GX_COLORNULL);
+        GX.GX_SetTevColorIn(6,GX_CC_ZERO,GX_CC_TEXC,GX_CC_A0,GX_CC_C0);
 #if IPL_OPTICS_DIAGNOSTIC
         // Bypass the final composite without changing the earlier texture
         // coordinate, indirect or Fresnel setup. Alpha below remains opaque.
-        if(DiagnosticMode==0)GX.GX_SetTevColorIn(5,GX_CC_ZERO,GX_CC_ZERO,GX_CC_ZERO,GX_CC_APREV);
-        else if(DiagnosticMode==1)GX.GX_SetTevColorIn(5,GX_CC_ZERO,GX_CC_ZERO,GX_CC_ZERO,GX_CC_CPREV);
-        else GX.GX_SetTevColorIn(5,GX_CC_ZERO,GX_CC_ZERO,GX_CC_ZERO,GX_CC_TEXC);
+        if(DiagnosticMode==0)GX.GX_SetTevColorIn(6,GX_CC_ZERO,GX_CC_ZERO,GX_CC_ZERO,GX_CC_APREV);
+        else if(DiagnosticMode==1)GX.GX_SetTevColorIn(6,GX_CC_ZERO,GX_CC_ZERO,GX_CC_ZERO,GX_CC_CPREV);
+        else GX.GX_SetTevColorIn(6,GX_CC_ZERO,GX_CC_ZERO,GX_CC_ZERO,GX_CC_TEXC);
 #endif
-        GX.GX_SetTevKAlphaSel(5,GX_TEV_KASEL_1);GX.GX_SetTevAlphaIn(5,GX_CA_ZERO,GX_CA_ZERO,GX_CA_ZERO,GX_CA_KONST);
-        GX.GX_SetTevColorOp(5,GX_TEV_ADD,GX_TB_ZERO,GX_CS_SCALE_1,1,GX_TEVPREV);GX.GX_SetTevAlphaOp(5,GX_TEV_ADD,GX_TB_ZERO,GX_CS_SCALE_1,1,GX_TEVPREV);
-        GX.GX_SetNumTevStages(6);GX.GX_SetCullMode(GX_CULL_BACK);GX.GX_SetTevKColor(0,new GXColor(255,255,255,245));GX.GX_CallDispList(outer.Address,(uint)commandBytes);
+        GX.GX_SetTevKAlphaSel(6,GX_TEV_KASEL_1);GX.GX_SetTevAlphaIn(6,GX_CA_ZERO,GX_CA_ZERO,GX_CA_ZERO,GX_CA_KONST);
+        GX.GX_SetTevColorOp(6,GX_TEV_ADD,GX_TB_ZERO,GX_CS_SCALE_1,1,GX_TEVPREV);GX.GX_SetTevAlphaOp(6,GX_TEV_ADD,GX_TB_ZERO,GX_CS_SCALE_1,1,GX_TEVPREV);
+        GX.GX_SetNumTevStages(7);GX.GX_SetCullMode(GX_CULL_BACK);GX.GX_SetTevKColor(0,new GXColor(255,255,255,245));GX.GX_CallDispList(outer.Address,(uint)commandBytes);
         EndInterfacePass(device);IplFrameProfiler.ExtraDraws+=2;IplFrameProfiler.ExtraTriangles+=IplSealedGlassGeometry.Indices/3*2;
     }
     private void EndInterfacePass(GraphicsDevice device)
     {
         GX.GX_SetNumIndStages(0);GX.GX_SetTevDirect(0);GX.GX_SetTevDirect(1);GX.GX_SetTevDirect(2);
-        GX.GX_SetTevDirect(3);GX.GX_SetTevDirect(4);GX.GX_SetTevDirect(5);
+        GX.GX_SetTevDirect(3);GX.GX_SetTevDirect(4);GX.GX_SetTevDirect(5);GX.GX_SetTevDirect(6);
         GX.GX_SetTexCoordScaleManually(0,0,1,1);GX.GX_SetTexCoordScaleManually(1,0,1,1);GX.GX_SetTexCoordScaleManually(2,0,1,1);
         GX.GX_SetTexCoordScaleManually(3,0,1,1);GX.GX_SetTexCoordScaleManually(4,0,1,1);GX.GX_SetTexCoordScaleManually(5,0,1,1);
         device.EndRaw();
     }
-    public void Dispose(){vertices.Dispose();outer.Dispose();inner.Dispose();environment.Dispose();texture.Dispose();projectionBuffer.Dispose();modelBuffer.Dispose();textureMatrix.Dispose();reversedTextureMatrix.Dispose();normalMatrix.Dispose();viewOffsets.Dispose();offsetTexture.Dispose();positionMatrix.Dispose();indirectMatrix.Dispose();fresnel.Dispose();fresnelTexture.Dispose();fresnelMatrix.Dispose();rearImage.Dispose();rearTexture.Dispose();screenMatrix.Dispose();refractionMatrix.Dispose();bendImage.Dispose();bendTexture.Dispose();bendMatrix.Dispose();echoMatrix.Dispose();fieldImage.Dispose();fieldTexture.Dispose();reflectionPositionMatrix.Dispose();}
+    public void Dispose(){vertices.Dispose();outer.Dispose();inner.Dispose();environment.Dispose();rearEnvironment.Dispose();innerEnvironment.Dispose();texture.Dispose();projectionBuffer.Dispose();modelBuffer.Dispose();textureMatrix.Dispose();reversedTextureMatrix.Dispose();normalMatrix.Dispose();viewOffsets.Dispose();offsetTexture.Dispose();positionMatrix.Dispose();indirectMatrix.Dispose();fresnel.Dispose();fresnelTexture.Dispose();fresnelMatrix.Dispose();innerFresnelMatrix.Dispose();rearImage.Dispose();rearTexture.Dispose();screenMatrix.Dispose();refractionMatrix.Dispose();bendImage.Dispose();bendTexture.Dispose();bendMatrix.Dispose();echoMatrix.Dispose();fieldImage.Dispose();fieldTexture.Dispose();reflectionPositionMatrix.Dispose();}
 }

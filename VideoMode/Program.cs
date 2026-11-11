@@ -134,6 +134,10 @@ internal static class Program
             IplFrameProfiler.CaptureUs=IplFrameProfiler.BlurUs=0;
             IplFrameProfiler.ExtraDraws=IplFrameProfiler.ExtraTriangles=0;
             Controller.Update();var pad=Controller.GetState(0);float dt=clock.Tick();
+#if IPL_MOCKUP_REVIEW
+            // Scripted angle comparisons must not change with submission cost.
+            dt=1f/60;
+#endif
             shell.Tick(dt);
             if(browser.LaunchRequested)return 0;
 #if IPL_MOCKUP_REVIEW || IPL_VISUAL_REVIEW || IPL_PERFORMANCE_REVIEW || IPL_HARDWARE_RUNNER
