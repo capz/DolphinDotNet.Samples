@@ -35,6 +35,10 @@ def main():
     parser.add_argument('--hypercube', type=Path,
                         help='Link OrderedMeshPasses from this engine checkout with its native backend')
     args = parser.parse_args()
+    if args.normal and args.mockup_review:
+        parser.error('Choose the normal interactive build or the fixed mockup review.')
+    if args.mockup_review and (args.storage_review or args.browser_review or args.scene != 'Options'):
+        parser.error('The mockup review requires the independent Options scene, without storage/browser fixtures.')
     sdk, samples, out = args.sdk.resolve(), args.samples.resolve(), args.output.resolve()
     out.mkdir(parents=True, exist_ok=True)
     if out == samples / 'VideoMode':

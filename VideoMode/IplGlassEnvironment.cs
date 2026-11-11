@@ -53,14 +53,14 @@ internal static class IplGlassEnvironment
     // Position texgen .25*viewPosition+.5 corresponds to view range [-2,+2].
     internal static uint Field(float viewX,float viewY)
     {
-        float teal=Blob(viewX,viewY,.90f,.80f,1.20f,1.05f);
-        float amber=Blob(viewX,viewY,-.90f,-.18f,.88f,1.02f);
+        float teal=Blob(viewX,viewY,.90f,.80f,.65f,1.05f);
+        float amber=Blob(viewX,viewY,-.99f,-.18f,.88f,1.30f);
         float violet=Blob(viewX,viewY,.15f,-.90f,1.06f,.72f);
         float blue=Blob(viewX,viewY,.85f,-.72f,.70f,.53f);
-        float interior=1-.70f*Smooth((Math.Max(Math.Abs(viewX),Math.Abs(viewY))-.84f)/.16f);
-        return Color(interior*(5+teal*77+amber*143+violet*58+blue*4),
-                     interior*(9+teal*190+amber*81+violet*26+blue*24),
-                     interior*(13+teal*172+amber*16+violet*156+blue*58));
+        float interior=1-.70f*Smooth((Math.Max(Math.Abs(viewX),Math.Abs(viewY))-1.12f)/.21f);
+        return Color(interior*(5+teal*77+amber*143+violet*85+blue*4),
+                     interior*(9+teal*190+amber*81+violet*45+blue*24),
+                     interior*(13+teal*172+amber*16+violet*190+blue*58));
     }
 
     private static float Blob(float x,float y,float cx,float cy,float rx,float ry)

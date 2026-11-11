@@ -63,10 +63,24 @@ the centered icon's rear/front layering remain.
    target. The centered icon also appears about 9–10 pixels lower than the
    image; it remains at the 3D origin as explicitly requested, rather than
    being moved upward merely to alter one projection.
+6. **Measured color falloff:** narrow the teal lobe, broaden amber falloff and
+   extend collected light farther through the interior before the contour
+   taper. Strengthen the violet return. At matched 7x7 median sample patches,
+   teal at (390,126) improves to RGB (36,85,82), versus reference (41,85,83);
+   upper-left at (215,126) is (39,30,21), versus (35,30,23). Upper-right and
+   bottom glints remain brighter than the image. These few patch comparisons
+   are diagnostics, not an image-wide fidelity score or exact-match claim.
 
-All five review DOLs compiled natively, with recorded hashes. The pass-04
+All six review DOLs compiled natively, with recorded hashes. The pass-04
 navigation sequence uses the same source as pass 05 except its final optical
 lookup coefficients. The normal interactive build is validated separately.
+
+The pass-05 normal interactive DOL's uninterrupted 96-frame Video sample
+(30 warmup, VSync enabled) averages 16.681 ms/frame and 3.441 ms active work,
+with 99 draws / 31,408 triangles and zero managed collections. See
+`performance/pass-05.json` and its original samples/overlay. These are Dolphin
+guest-clock timings, not real hardware results. Pass 06 only changes lookup
+generation constants; its final DOL is profiled separately.
 
 The app retains the functional label **Storage**, where the older image says
 **Memory Card**: that row opens both memory-card and SD management. It is not
