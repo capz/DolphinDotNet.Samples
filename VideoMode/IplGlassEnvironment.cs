@@ -38,7 +38,7 @@ internal static class IplGlassEnvironment
         float warmCorner=Blob(u,v,.080f,.900f,.050f,.065f);
         float coolCorner=Blob(u,v,.923f,.104f,.037f,.065f);
         float warm=1-u,cool=u;
-        float silver=shoulder*28+crown*220+edge*70+top*215+left*110+right*180+bottom*100+glint*65;
+        float silver=shoulder*28+crown*(95+140*Blob(u,v,.78f,.265f,.28f,.07f))+edge*70+top*215+left*110+right*180+bottom*100+glint*65;
         float r=7+silver+upperRight*170+upperLeft*150+lowerRight*95+lowerLeft*170+crownReturn*75+leftOuter*80+rightOuter*145+rightRear*40+bottomOuter*65+bottomRear*65+topReturn*90+topBlue*23+leftReturn*47+rightReturn*20+
             bottomReturn*(warm*105+cool*30)+bottomBlue*28+warmCorner*115+coolCorner*65;
         float g=10+silver+upperRight*195+upperLeft*140+lowerRight*150+lowerLeft*130+crownReturn*110+leftOuter*140+rightOuter*185+rightRear*55+bottomOuter*95+bottomRear*65+topReturn*100+topBlue*32+leftReturn*32+rightReturn*76+
@@ -57,9 +57,10 @@ internal static class IplGlassEnvironment
         float amber=Blob(viewX,viewY,-.90f,-.18f,.88f,1.02f);
         float violet=Blob(viewX,viewY,.15f,-.90f,1.06f,.72f);
         float blue=Blob(viewX,viewY,.85f,-.72f,.70f,.53f);
-        return Color(5+teal*77+amber*143+violet*58+blue*4,
-                     9+teal*190+amber*81+violet*26+blue*24,
-                     13+teal*172+amber*16+violet*156+blue*58);
+        float interior=1-.70f*Smooth((Math.Max(Math.Abs(viewX),Math.Abs(viewY))-.84f)/.16f);
+        return Color(interior*(5+teal*77+amber*143+violet*58+blue*4),
+                     interior*(9+teal*190+amber*81+violet*26+blue*24),
+                     interior*(13+teal*172+amber*16+violet*156+blue*58));
     }
 
     private static float Blob(float x,float y,float cx,float cy,float rx,float ry)

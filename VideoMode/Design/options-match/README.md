@@ -54,7 +54,19 @@ the centered icon's rear/front layering remain.
    lobes using measured native/reference samples. Add the light field after
    the reflected/transmitted blend so grazing Fresnel cannot erase bottom
    violet light. This remains six TEV stages with the same texture fetch count.
-   Native capture and interactive performance validation are pending.
+   Native capture passed Options/A-open/B-return and the rotating corner view.
+   The capture also exposed excess cyan illumination on the outer right wall.
+5. **Transparent outer contour:** taper collected color toward the silhouette
+   and concentrate the crown highlight toward the upper-right. The native
+   Options output is closer in framing, color and gloss, but not an exact
+   optical match. Fine secondary corner returns remain simpler than the
+   target. The centered icon also appears about 9–10 pixels lower than the
+   image; it remains at the 3D origin as explicitly requested, rather than
+   being moved upward merely to alter one projection.
+
+All five review DOLs compiled natively, with recorded hashes. The pass-04
+navigation sequence uses the same source as pass 05 except its final optical
+lookup coefficients. The normal interactive build is validated separately.
 
 The app retains the functional label **Storage**, where the older image says
 **Memory Card**: that row opens both memory-card and SD management. It is not
