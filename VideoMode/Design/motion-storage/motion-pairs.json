@@ -1,0 +1,35 @@
+[
+  {
+    "motion": "Disabled",
+    "first": "01-disabled-a",
+    "second": "02-disabled-b",
+    "first_native_frame": 427,
+    "second_native_frame": 472,
+    "actual_frame_delta": 45,
+    "changed_rgb_pixels": 0,
+    "total_pixels": 307200,
+    "scope": "Whole decoded frame difference; not a measurement of maximum motion amplitude"
+  },
+  {
+    "motion": "Subtle",
+    "first": "03-subtle-a",
+    "second": "04-subtle-b",
+    "first_native_frame": 568,
+    "second_native_frame": 613,
+    "actual_frame_delta": 45,
+    "changed_rgb_pixels": 66097,
+    "total_pixels": 307200,
+    "scope": "Whole decoded frame difference; not a measurement of maximum motion amplitude"
+  },
+  {
+    "motion": "Pronounced",
+    "first": "06-pronounced-a",
+    "second": "07-pronounced-b",
+    "first_native_frame": 707,
+    "second_native_frame": 752,
+    "actual_frame_delta": 45,
+    "changed_rgb_pixels": 75594,
+    "total_pixels": 307200,
+    "scope": "Whole decoded frame difference; not a measurement of maximum motion amplitude"
+  }
+]

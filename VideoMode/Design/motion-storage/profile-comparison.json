@@ -1,0 +1,14 @@
+{
+  "scope": "Dolphin guest clock; normal interactive Video cube, High blur, VSync; previous Subtle versus current Pronounced motion; not hardware",
+  "baseline_source": "../crisp-icons-detail/profile-high",
+  "baseline_dol_sha256": "2942fffaf07bd70a92a9aa3bc75273150e9ee0c690305f0ba3b6044c2e3bbd51",
+  "dol_sha256": "1ce34b7417f2bd00d9effca4f341597c92d355a1611bf16f383d3277c3538e7e",
+  "samples": 96,
+  "warmup": 30,
+  "baseline_frame_ms": 16.68089583333333,
+  "frame_ms": 16.681,
+  "baseline_active_ms": 4.507760416666667,
+  "active_ms": 4.517927083333333,
+  "active_delta_ms": 0.01016666666666606,
+  "limitation": "Motion level differs; this is a practical workload comparison, not isolation of the dark-border TEV cost"
+}
