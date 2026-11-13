@@ -184,7 +184,7 @@ try:
         key('a');shot('06-progressive-kept-detail')
         key('Down');key('a');key('b');shot('07-rollback-to-progressive-cube')
         key('x');key('a');shot('08-safe-interlaced-detail')
-        key('b');key('b');key('Down');key('a');key('Down');key('a');shot('09-calendar-date-detail')
+        key('b');key('b');key('Down',settle_frames=40);key('a');key('Down');key('a');shot('09-calendar-date-detail')
         key('b');key('b');key('Left');key('a');key('Up');key('a');shot('10-options-blur-value-detail')
         if args.detail_profile:
             # Complete the product captures before Y enables diagnostic text.
@@ -275,14 +275,14 @@ try:
         key('Up');key('a');shot('07-progressive-preview')
         key('b');shot('08-b-reverts-before-cube')
         key('b');key('Right');key('a');key('Right',settle_frames=12);key('Up');key('a');key('a');shot('09-kept-progressive-detail')
-        key('b');key('b');key('Down');key('a');shot('10-calendar-flat-list')
+        key('b');key('b');key('Down',settle_frames=40);key('a');shot('10-calendar-flat-list')
         key('a');key('Up');shot('11-hour-draft')
         key('b');shot('12-editor-b-discards-to-cube')
         key('b');key('w');key('a');shot('13-storage-flat-list')
         key('a');shot('14-native-memory-card-grid')
         key('a');shot('15-native-card-action-dialog')
         key('b');shot('16-dialog-b-closes-to-cube')
-        key('b');key('Up');key('a');shot('17-game-browser')
+        key('b');key('Up',settle_frames=40);key('a');shot('17-game-browser')
         key('b');shot('18-browser-b-to-cube')
         key('x');shot('19-safe-interlaced-preview-side')
     elif args.dense_storage:
