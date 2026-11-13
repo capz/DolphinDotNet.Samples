@@ -95,7 +95,7 @@ jobs:
           case "$SAMPLE_GROUP" in
             basics) samples="HelloGameCube ManagedGameCube ShaderDemo VideoMode Pong GreenMen" ;;
             games) samples="Fox Kart Snake DiscBrowser StorageIntegrity" ;;
-            services) samples="AsyncNetworking AudioDemo GoogleLogoAram HttpTexture HardwareDiagnostics" ;;
+            services) samples="AsyncNetworking AudioDemo IplResources GoogleLogoAram HttpTexture HardwareDiagnostics" ;;
             *) echo "Unexpected sample group $SAMPLE_GROUP" >&2; exit 1 ;;
           esac
           mkdir -p "$RUNNER_TEMP/dnd-aot"

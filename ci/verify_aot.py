@@ -11,6 +11,13 @@ def check(name: str, configuration: str, generated_c: Path) -> None:
     c = generated_c.read_text()
     if "dnd_aot_entry" not in c:
         raise RuntimeError(f"{name}: AOT C is missing the managed entry point")
+    if name == "IplResources":
+        for api in ("SystemFirmware_ReadConsole", "SystemResources_CreateMenuSound",
+                    "SystemResources_CreateStartupSound", "SystemResources_CreateTexture",
+                    "SystemFont_Load", "SystemMenuSoundInfo_get_SourceWaveCount",
+                    "SystemMenuSoundInfo_GetSourceWaveId"):
+            if api not in c:
+                raise RuntimeError(f"IplResources: published firmware API is not reachable: {api}")
     if name == "VideoMode":
         def glass_body(method):
             match=re.search(r"intptr_t dnd_value_VideoMode_SealedGlassShell_"+method+r"_[^(]+\([^;]+?\) \{(.*?)\n\}",c,re.S)
