@@ -1,0 +1,222 @@
+[
+  {
+    "capture": "01-options-high-blur",
+    "completed_frames": 0,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "capture_source": "Complete X11 client, guest paused at VIDEO_WaitVSync after GX_CopyDisp/GX_DrawDone",
+    "native_boundaries": 339,
+    "xfb": {
+      "width": 640,
+      "height": 480,
+      "efb_height": 480,
+      "vi_tv_mode": 0,
+      "vi_scan_bits": 0,
+      "format": "YUYV422",
+      "source": "Native GX_CopyDisp output, read after GX_DrawDone before VIDEO_WaitVSync"
+    },
+    "xfb_source": "/workspace/artifacts/crisp-detail/review-01/01-options-high-blur-xfb.yuv",
+    "xfb_sha256": "f549ee095af77c895e52ad81c2a10c99fa4c3c7236e6270d4df6b049f812c244",
+    "png_sha256": "4d135d270df1fe487d4429e1d564dfbcf166661c137e57415b4455da4ca99d10",
+    "conversion": "BT.601 limited-range YUYV422 to RGB8; no crop/resize/composition"
+  },
+  {
+    "capture": "02-crisp-centered-icon",
+    "completed_frames": 0,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "capture_source": "Complete X11 client, guest paused at VIDEO_WaitVSync after GX_CopyDisp/GX_DrawDone",
+    "native_boundaries": 387,
+    "xfb": {
+      "width": 640,
+      "height": 480,
+      "efb_height": 480,
+      "vi_tv_mode": 0,
+      "vi_scan_bits": 0,
+      "format": "YUYV422",
+      "source": "Native GX_CopyDisp output, read after GX_DrawDone before VIDEO_WaitVSync"
+    },
+    "xfb_source": "/workspace/artifacts/crisp-detail/review-01/02-crisp-centered-icon-xfb.yuv",
+    "xfb_sha256": "a738000e29d9474ea3768cf62813402037d37a3659626d213febf94e38daa3f5",
+    "png_sha256": "e2b4c3643ae9e2b1508f27f5d887034ac4e16ee7dd78799438236d3f96d368ab",
+    "conversion": "BT.601 limited-range YUYV422 to RGB8; no crop/resize/composition"
+  },
+  {
+    "capture": "02b-blur-boundary-corner",
+    "completed_frames": 0,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "capture_source": "Complete X11 client, guest paused at VIDEO_WaitVSync after GX_CopyDisp/GX_DrawDone",
+    "native_boundaries": 391,
+    "xfb": {
+      "width": 640,
+      "height": 480,
+      "efb_height": 480,
+      "vi_tv_mode": 0,
+      "vi_scan_bits": 0,
+      "format": "YUYV422",
+      "source": "Native GX_CopyDisp output, read after GX_DrawDone before VIDEO_WaitVSync"
+    },
+    "xfb_source": "/workspace/artifacts/crisp-detail/review-01/02b-blur-boundary-corner-xfb.yuv",
+    "xfb_sha256": "9ae688e3917f6dc23a710bcf92aee21f7040d7bc45c392a961d8de1eb4e1e481",
+    "png_sha256": "aebb992762c8fae3347537e7b3045f03f67218f92e5d8976cb195be132091d21",
+    "conversion": "BT.601 limited-range YUYV422 to RGB8; no crop/resize/composition"
+  },
+  {
+    "capture": "03-video-cube",
+    "completed_frames": 0,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "capture_source": "Complete X11 client, guest paused at VIDEO_WaitVSync after GX_CopyDisp/GX_DrawDone",
+    "native_boundaries": 436,
+    "xfb": {
+      "width": 640,
+      "height": 480,
+      "efb_height": 480,
+      "vi_tv_mode": 0,
+      "vi_scan_bits": 0,
+      "format": "YUYV422",
+      "source": "Native GX_CopyDisp output, read after GX_DrawDone before VIDEO_WaitVSync"
+    },
+    "xfb_source": "/workspace/artifacts/crisp-detail/review-01/03-video-cube-xfb.yuv",
+    "xfb_sha256": "0a69421d9d55ffd7964ee670eae5ea3a62feff3f24558ad1498ff39c01021e2d",
+    "png_sha256": "93137b762733a3d5d86b18f8d31372e12ea1c718272d8d4ef933bf0fce686a7d",
+    "conversion": "BT.601 limited-range YUYV422 to RGB8; no crop/resize/composition"
+  },
+  {
+    "capture": "04-video-grouped-detail",
+    "completed_frames": 0,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "capture_source": "Complete X11 client, guest paused at VIDEO_WaitVSync after GX_CopyDisp/GX_DrawDone",
+    "native_boundaries": 456,
+    "xfb": {
+      "width": 640,
+      "height": 480,
+      "efb_height": 480,
+      "vi_tv_mode": 0,
+      "vi_scan_bits": 0,
+      "format": "YUYV422",
+      "source": "Native GX_CopyDisp output, read after GX_DrawDone before VIDEO_WaitVSync"
+    },
+    "xfb_source": "/workspace/artifacts/crisp-detail/review-01/04-video-grouped-detail-xfb.yuv",
+    "xfb_sha256": "6558b9de1ae09018ff243f707e372acbf46bc21f596e5579e3107b3ba6a97bfa",
+    "png_sha256": "73de69e5c07806092478cf6a77f1566995ca4ecfaff1f6cf23bec2a84e8cec10",
+    "conversion": "BT.601 limited-range YUYV422 to RGB8; no crop/resize/composition"
+  },
+  {
+    "capture": "05-progressive-preview",
+    "completed_frames": 0,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "capture_source": "Complete X11 client, guest paused at VIDEO_WaitVSync after GX_CopyDisp/GX_DrawDone",
+    "native_boundaries": 512,
+    "xfb": {
+      "width": 640,
+      "height": 480,
+      "efb_height": 480,
+      "vi_tv_mode": 2,
+      "vi_scan_bits": 2,
+      "format": "YUYV422",
+      "source": "Native GX_CopyDisp output, read after GX_DrawDone before VIDEO_WaitVSync"
+    },
+    "xfb_source": "/workspace/artifacts/crisp-detail/review-01/05-progressive-preview-xfb.yuv",
+    "xfb_sha256": "b84772b5da6abef7e6ae040071d68b907e4084c82271a34972c3e4556697e14f",
+    "png_sha256": "34241cfa1f62faa56af6d9a9698e5e3fb6cdb02005fa7bab936a176863dec518",
+    "conversion": "BT.601 limited-range YUYV422 to RGB8; no crop/resize/composition"
+  },
+  {
+    "capture": "06-progressive-kept-detail",
+    "completed_frames": 0,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "capture_source": "Complete X11 client, guest paused at VIDEO_WaitVSync after GX_CopyDisp/GX_DrawDone",
+    "native_boundaries": 530,
+    "xfb": {
+      "width": 640,
+      "height": 480,
+      "efb_height": 480,
+      "vi_tv_mode": 2,
+      "vi_scan_bits": 2,
+      "format": "YUYV422",
+      "source": "Native GX_CopyDisp output, read after GX_DrawDone before VIDEO_WaitVSync"
+    },
+    "xfb_source": "/workspace/artifacts/crisp-detail/review-01/06-progressive-kept-detail-xfb.yuv",
+    "xfb_sha256": "d17d7ce59bef17613699900cb09730887bcd1b7ff33ce1c7d0d73f2488c3dccd",
+    "png_sha256": "49e77273c879f899bc3428e3bbaee098a5b77d7085d8009eb59128ddd0306da2",
+    "conversion": "BT.601 limited-range YUYV422 to RGB8; no crop/resize/composition"
+  },
+  {
+    "capture": "07-rollback-to-progressive-cube",
+    "completed_frames": 0,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "capture_source": "Complete X11 client, guest paused at VIDEO_WaitVSync after GX_CopyDisp/GX_DrawDone",
+    "native_boundaries": 614,
+    "xfb": {
+      "width": 640,
+      "height": 480,
+      "efb_height": 480,
+      "vi_tv_mode": 2,
+      "vi_scan_bits": 2,
+      "format": "YUYV422",
+      "source": "Native GX_CopyDisp output, read after GX_DrawDone before VIDEO_WaitVSync"
+    },
+    "xfb_source": "/workspace/artifacts/crisp-detail/review-01/07-rollback-to-progressive-cube-xfb.yuv",
+    "xfb_sha256": "753d839f67e647f1e99805e96a18f841f3269ff1d08bce752dbddb37e7ddc79c",
+    "png_sha256": "a51f40eb4d4bc777bd893df032b5ef96ad707c3663a77da04747c9dd1f0cb0bb",
+    "conversion": "BT.601 limited-range YUYV422 to RGB8; no crop/resize/composition"
+  },
+  {
+    "capture": "08-safe-interlaced-detail",
+    "completed_frames": 0,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "capture_source": "Complete X11 client, guest paused at VIDEO_WaitVSync after GX_CopyDisp/GX_DrawDone",
+    "native_boundaries": 680,
+    "xfb": {
+      "width": 640,
+      "height": 480,
+      "efb_height": 480,
+      "vi_tv_mode": 0,
+      "vi_scan_bits": 0,
+      "format": "YUYV422",
+      "source": "Native GX_CopyDisp output, read after GX_DrawDone before VIDEO_WaitVSync"
+    },
+    "xfb_source": "/workspace/artifacts/crisp-detail/review-01/08-safe-interlaced-detail-xfb.yuv",
+    "xfb_sha256": "cd07ed95cc1f248b34c2a21621c78ead7b74969424802e00a6302a6a9fa6d2c9",
+    "png_sha256": "5af5cc47d8bcacd7ca9eca11dbb10390e311d8a4204d8f98d3bc80857e4319cc",
+    "conversion": "BT.601 limited-range YUYV422 to RGB8; no crop/resize/composition"
+  },
+  {
+    "capture": "09-calendar-date-detail",
+    "completed_frames": 0,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "capture_source": "Complete X11 client, guest paused at VIDEO_WaitVSync after GX_CopyDisp/GX_DrawDone",
+    "native_boundaries": 875,
+    "xfb": {
+      "width": 640,
+      "height": 480,
+      "efb_height": 480,
+      "vi_tv_mode": 0,
+      "vi_scan_bits": 0,
+      "format": "YUYV422",
+      "source": "Native GX_CopyDisp output, read after GX_DrawDone before VIDEO_WaitVSync"
+    },
+    "xfb_source": "/workspace/artifacts/crisp-detail/review-01/09-calendar-date-detail-xfb.yuv",
+    "xfb_sha256": "f5fab9620e65dcb10eddefeb8902a7619256a5058cfa24a105449a2fec272a9f",
+    "png_sha256": "91fba78a4f571ca4496af1e20dfdf63e9025f8fb81e49fcb9b0ab590f5f834d6",
+    "conversion": "BT.601 limited-range YUYV422 to RGB8; no crop/resize/composition"
+  },
+  {
+    "capture": "10-options-blur-value-detail",
+    "completed_frames": 0,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "capture_source": "Complete X11 client, guest paused at VIDEO_WaitVSync after GX_CopyDisp/GX_DrawDone",
+    "native_boundaries": 1072,
+    "xfb": {
+      "width": 640,
+      "height": 480,
+      "efb_height": 480,
+      "vi_tv_mode": 0,
+      "vi_scan_bits": 0,
+      "format": "YUYV422",
+      "source": "Native GX_CopyDisp output, read after GX_DrawDone before VIDEO_WaitVSync"
+    },
+    "xfb_source": "/workspace/artifacts/crisp-detail/review-01/10-options-blur-value-detail-xfb.yuv",
+    "xfb_sha256": "7e5736ba5903e807d99b36969c17c4eab6d73f48271f3e1f66e5f1850e7b6d2b",
+    "png_sha256": "93d079fc19901ec3bf45560dce0f23f0051d0e0e17cbad5af1f1d5899020ae12",
+    "conversion": "BT.601 limited-range YUYV422 to RGB8; no crop/resize/composition"
+  }
+]

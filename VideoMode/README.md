@@ -8,9 +8,9 @@ screens use green block-built values and a fading grid.
 
 The active value rocks, tilts and floats while its editor is open. Left/right
 moves that motion between independent Video or time/date parts; inactive parts
-and labels stay still. Motion eases in over 180 ms, pauses during a video preview,
-and stops when leaving the value editor,
-and respects Options → Motion → Reduced. Wide values use less roll to keep clear
+and labels stay still. Motion eases in over 180 ms and pauses during a video
+preview. It stops when leaving the value editor and respects Options → Motion →
+Reduced. Wide values use less roll to keep clear
 of the arrows. [Native selector-motion review](Design/selector-motion/README.md).
 
 The rounded cube is projected 3D geometry, not a screenshot or rotating image.
@@ -52,8 +52,7 @@ on first use and retained until shutdown (about 361 KiB native memory).
 
 - At the cube: right opens Video, left Options, up Game Play, down Calendar.
 - On a face: pushing the stick opposite the direction used to enter returns to
-  the cube. Recenter before entering another face. The D-pad keeps both directions
-  available for row selection, including Calendar's Time and Date rows.
+  the cube. Recenter before entering another face.
 - On a face: A opens its flat configuration screen. Video opens three block-style
   fields together; Options and Calendar open a list with up/down row selection.
 - In a value editor: up/down changes the draft value; A confirms or previews;
