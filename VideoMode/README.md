@@ -7,8 +7,9 @@ layered optical walls, face menus and a bottom controller legend. Flat configura
 screens use green block-built values and a fading grid.
 
 The active value rocks, tilts and floats while its editor is open. Left/right
-moves that motion between independent time/date parts; inactive parts and labels
-stay still. Motion eases in over 180 ms, stops when confirming or backing out,
+moves that motion between independent Video or time/date parts; inactive parts
+and labels stay still. Motion eases in over 180 ms, pauses during a video preview,
+and stops when leaving the value editor,
 and respects Options → Motion → Reduced. Wide values use less roll to keep clear
 of the arrows. [Native selector-motion review](Design/selector-motion/README.md).
 
@@ -33,8 +34,11 @@ Physical hardware performance has not been measured in this cloud session.
 Options > Glass Blur controls the cube's inner glass: Off (default), Low,
 Medium or High. Open Options with A, select Glass Blur, then use Up/Down and
 A to confirm; B discards the draft and returns to the cube. The effect filters
-the scene through the user-facing inner boundary before the glass reflections
-and UI are composited, so the exterior highlights and labels stay sharp.
+the scene through the user-facing inner boundary before the centered 3D icon,
+glass reflections and UI are composited. Icons keep their original projected
+3D position and stay crisp between the frosted UI rows. Exterior highlights and
+labels stay sharp. A narrow environment-lit highlight follows the existing
+rounded cavity at the blur boundary; it adds no separate rim geometry.
 It uses a separable nine-tap Gaussian kernel fused into five bilinear samples
 in each axis, a retained
 half-resolution intermediate and the existing indexed cavity mesh. Off skips
@@ -50,10 +54,11 @@ on first use and retained until shutdown (about 361 KiB native memory).
 - On a face: pushing the stick opposite the direction used to enter returns to
   the cube. Recenter before entering another face. The D-pad keeps both directions
   available for row selection, including Calendar's Time and Date rows.
-- On a face: up/down selects a row; A opens its flat configuration screen.
-- In a configuration screen: up/down changes the draft value; A confirms;
+- On a face: A opens its flat configuration screen. Video opens three block-style
+  fields together; Options and Calendar open a list with up/down row selection.
+- In a value editor: up/down changes the draft value; A confirms or previews;
   B discards and returns directly to the same cube side.
-- In Time/Date: left/right selects an independent segment; up/down changes
+- In Video or Time/Date: left/right selects an independent segment; up/down changes
   only that segment. Day counts follow the selected month and leap year.
 - B from a cube side returns to the front cube menu.
 - Both the analog stick and D-pad work, with delayed directional repeat.
@@ -72,10 +77,13 @@ active. Rollback allocation failures remain pending and retry once per second.
 Widescreen-only changes preserve timing and buffers. The UI uses display-correct
 logical coordinates and centers its 4:3 composition inside a widescreen canvas.
 
-To switch **480i / 480p** or **576i / 576p**, open Video with right, choose the
-desired **Output** resolution, then select **Scan**, press A,
-and use up/down to choose **Interlaced** or **Progressive**. A starts the preview;
-A again keeps it, or B reverts. Progressive requires a compatible cable/display.
+To switch **480i / 480p** or **576i / 576p**, turn right to Video and press A.
+Left/right selects **Output**, **Scan** or **Aspect**; up/down changes only that
+field. Scan shows **I**, **P** or **AUTO**, with its full name below. A previews
+all drafted fields together; A again keeps them and returns to the same editor,
+or B reverts and returns to the cube. Video, Calendar and Options value editors
+share the same green block values, arrows, labels and fading grid.
+Progressive requires a compatible cable/display.
 In Dolphin, enable its progressive/component-cable setting (`SYSCONF.IPL.PGS=True`);
 without that capability the native API rejects progressive and preserves the
 current mode. X always requests 480i, 4:3.

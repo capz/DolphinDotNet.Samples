@@ -178,7 +178,12 @@ try:
         key('Left');key('a');key('Up');key('a');key('Down');key('a');key('b')
         shot('01-options-high-blur')
         key('b');shot('02-crisp-centered-icon')
-        key('Right');shot('03-video-cube')
+        # Inspect the physical frost boundary during a real cube turn. Existing
+        # transition rules hide the icon here; this is a material/corner probe.
+        code=x.XKeysymToKeycode(d,x.XStringToKeysym(b'Right'))
+        assert xt.XTestFakeKeyEvent(d,code,1,0);x.XSync(d,0);native_frames.advance(4)
+        assert xt.XTestFakeKeyEvent(d,code,0,0);x.XSync(d,0)
+        shot('02b-blur-boundary-corner');native_frames.advance(45);shot('03-video-cube')
         key('a');shot('04-video-grouped-detail')
         key('Right',settle_frames=12);key('Up');key('a');shot('05-progressive-preview')
         key('a');shot('06-progressive-kept-detail')
