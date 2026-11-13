@@ -1,6 +1,6 @@
 # DolphinDotNet Samples
 
-Run commands from the repository root. These are independent NuGet consumers of [`DolphinDotNet.Sdk`](https://www.nuget.org/packages/DolphinDotNet.Sdk/) and [`DolphinDotNet.GameCube`](https://www.nuget.org/packages/DolphinDotNet.GameCube/). Both are pinned to preview `0.1.0-preview.15.1` in `global.json` and `Directory.Build.props`; the `DolphinDotNet.Core` dependency is resolved transitively. No checkout of the compiler/runtime repository is required. All examples target .NET 8 for compilation;
+Run commands from the repository root. These are independent NuGet consumers of [`DolphinDotNet.Sdk`](https://www.nuget.org/packages/DolphinDotNet.Sdk/) and [`DolphinDotNet.GameCube`](https://www.nuget.org/packages/DolphinDotNet.GameCube/). Both are pinned to preview `0.1.0-preview.333.1` in `global.json` and `Directory.Build.props`; the `DolphinDotNet.Core` dependency is resolved transitively. No checkout of the compiler/runtime repository is required. All examples target .NET 8 for compilation;
 the GameCube runs generated native code, using only the supported AOT API subset.
 
 | Sample | Demonstrates | Setup / result |
@@ -19,6 +19,7 @@ the GameCube runs generated native code, using only the supported AOT API subset
 | [Snake](Snake/README.md) | Classic Snake with Continue/New Game title menu, checked native memory-card saves and two-minute autosave | GameCube memory card A or B recommended; works without card but cannot persist |
 | [Pong](Pong/README.md) | Complete two-player Pong: controller input, delta-time physics, 2D rectangles, generated PCM8 sounds | Self-contained GameCube DOL; two controllers, no storage/asset files |
 | [AudioDemo](AudioDemo/Program.cs) | AESND WAV effects and looping PCM music with async loading | Mount an SD device containing `audio/laser.wav` and `audio/theme.wav` (PCM WAV) |
+| [IplResources](IplResources/README.md) | Original IPL font/textures, startup audio and ten prepared menu effects | Configured console IPL; Up/down selects, A plays, B stops, X changes texture, Start exits |
 | [GoogleLogoAram](GoogleLogoAram/README.md) | Streamed HTTP to `AramStream` with standard `Stream.CopyToAsync`; partial-read-safe PNG signature verification | Run the PC relay and configure its LAN address; returns 0 on success, otherwise 1 |
 
 ## Shared controls
@@ -126,7 +127,7 @@ physical console acceptance remain separate checks.
 
 ## Required native AOT builds
 
-The [CI workflow](.github/workflows/samples.yml) validates all **16 sample projects** in independent NuGet-only builds. The native matrix additionally:
+The [CI workflow](.github/workflows/samples.yml) validates all **17 sample projects** in independent NuGet-only builds. The native matrix additionally:
 
 1. Builds the managed .NET assembly and invokes the **published SDK's own `tools/compiler/DolphinDotNet.Compiler.dll --aot`** to emit and check native C.
 2. Uses the NuGet SDK's native build target (`DndBuildNative=true`, `DndBuildBackend=Docker`) to produce a linked GameCube `.dol` and PowerPC `.elf`.
@@ -213,7 +214,7 @@ native-input and UDP fixtures must be run through the DolphinDotNet toolchain's
 emulator/host harness, since the published GameCube package rejects native
 intrinsics when executed under the desktop CLR.
 
-CI runs these tests separately from the sixteen managed sample builds.
+CI runs these tests separately from the seventeen managed sample builds.
 Compiler runtime, native GX, PowerPC, and emulator integration tests remain
 in the [DolphinDotNet runtime repository](https://github.com/capz/DolphinDotNet),
 where their internal native sources and fixtures are maintained.
