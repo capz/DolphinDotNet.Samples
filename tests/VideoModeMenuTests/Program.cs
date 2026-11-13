@@ -29,6 +29,8 @@ internal static class Program
         IplNumberCacheStateTests.Run();
         IplSelectorPoseTests.Run();
         IplPreferencesTests.Run();
+        IplMenuLayoutTests.Run();
+        IplDetailLayoutTests.Run();
         IplLibraryTests.Run();
         IplBrowserTests.Run();
         IplStorageTests.Run();
@@ -74,9 +76,11 @@ internal static class Program
         IplRimCommandsTests.Run();
         IplProjectedWallTests.Run();
         IplCameraTests.Run();
+        IplCubeMotionTests.Run();
         IplSealedGlassTests.Run();
         IplIconLayoutTests.Run();
         IplGlassOpticsTests.Run();
+        IplGlassBlurTests.Run();
         IplOverlayLayoutTests.Run();
         float last=1;
         for(int i=0;i<=160000;i++)

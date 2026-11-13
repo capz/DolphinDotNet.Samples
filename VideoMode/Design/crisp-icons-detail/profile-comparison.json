@@ -1,0 +1,12 @@
+{
+  "scope": "Dolphin guest clock; normal interactive Video cube, High blur, idle motion and VSync; not hardware",
+  "baseline_dol_sha256": "466d9483f2b462ad42e92951067e0f7ad2d30ddb8896d1837cce24f4e956829f",
+  "dol_sha256": "2942fffaf07bd70a92a9aa3bc75273150e9ee0c690305f0ba3b6044c2e3bbd51",
+  "baseline_active_ms": 4.503666666666667,
+  "active_ms": 4.507760416666667,
+  "active_delta_ms": 0.00409375,
+  "frame_ms": 16.68089583333333,
+  "baseline_frame_ms": 16.680927083333334,
+  "samples": 96,
+  "warmup": 30
+}

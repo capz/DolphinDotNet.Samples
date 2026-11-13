@@ -1,0 +1,11 @@
+{
+  "commit": "c9db7245a544de7ddeb36f80dfab4597b1cbbcf3",
+  "files_sha256": {
+    "ci/review_performance_overlay.py": "95d2a80b2d34110d8acaddf45713a0cc3a12d9406264511924afd93e4e585310",
+    "ci/native_frame_boundary.py": "036dc217532253b1dd499cbd66f57526983ef5319f7245e4f4a266b0c6778bac",
+    "ci/profile_interactive_rim.py": "df38f308857b5b85185dacb744a6d43a2fa6ffe51a94f45d25075a052e21bdc6",
+    "ci/decode_native_xfb.py": "1a560cbb4ba252a8ca05d335b619161eb54e54058cc3a9d4755b55260aa6358a",
+    "ci/capture_x11.py": "4a41c7bef8a22d64ac0fffc648ed046121c89f5ce8c71eeb67f1c0b6ebdf18e3"
+  },
+  "runtime_patches": "None; normal interactive DOL, controller input only; no application-state or framebuffer writes"
+}

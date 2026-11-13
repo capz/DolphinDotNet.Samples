@@ -6,6 +6,11 @@ using System.Text;
 // Geometry inspection aid, not a Dolphin screenshot. Native reflection textures are not exported.
 internal sealed class IplProof : IIplCanvas
 {
+    internal Action<IplPoint,IplPoint,IplPoint>? PanelSink;
+    internal Action<float,float,float,float,float,float,uint>? TriangleSink;
+    internal Action<string,float,float,float>? TextSink;
+    internal Action<IplRenderPhase>? SectionSink;
+    internal bool OmitGlassGeometry;
     public bool BeginSelectorCache(int part,string value,float cell,uint color)=>false;
     public void EndSelectorCache(){}
     public void PrepareSelector(int part,IplSelectorPose pose,float centerX,float centerY){}
@@ -18,7 +23,7 @@ internal sealed class IplProof : IIplCanvas
     public void EndFooterTextCache(){}
     public bool DrawFooterTextCache()=>false;
     internal readonly StringBuilder OpticalLayers=new StringBuilder();
-    public void Section(IplRenderPhase phase) { if(phase==IplRenderPhase.Icons)OpticalLayers.Append("icon>"); }
+    public void Section(IplRenderPhase phase) { SectionSink?.Invoke(phase);if(phase==IplRenderPhase.Icons)OpticalLayers.Append("icon>"); }
     public bool BeginIconCache(int style)=>false;
     public void EndIconCache() { }
     public void PrepareIcon(IplPoint origin,IplPoint x,IplPoint y,float scale,float centerY) { }
@@ -37,10 +42,10 @@ internal sealed class IplProof : IIplCanvas
     private static string N(float f)=>f.ToString("0.###",CultureInfo.InvariantCulture);
     private static string Color(uint c)=>"#"+(c>>8).ToString("x6");
     public void Triangle(float ax,float ay,float bx,float by,float cx,float cy,uint color)
-    {AppendTriangle(shapes,ax,ay,bx,by,cx,cy,color);}
+    {TriangleSink?.Invoke(ax,ay,bx,by,cx,cy,color);AppendTriangle(shapes,ax,ay,bx,by,cx,cy,color);}
     private static void AppendTriangle(StringBuilder target,float ax,float ay,float bx,float by,float cx,float cy,uint color)
     {target.Append("<path d='M"+N(ax)+" "+N(ay)+"L"+N(bx)+" "+N(by)+"L"+N(cx)+" "+N(cy)+"Z' fill='"+Color(color)+"' fill-opacity='"+N((color&255)/255f)+"'/>");}
-    public bool PrepareSealedGlass(IplPoint x,IplPoint y,IplPoint z,float scale,float centerY)=>false;
+    public bool PrepareSealedGlass(IplPoint x,IplPoint y,IplPoint z,float scale,float centerY)=>OmitGlassGeometry;
     public void BeginGlass()=>glass.Clear();
     private static IplPoint Mid(IplPoint a,IplPoint b)=>new IplPoint((a.X+b.X)/2,(a.Y+b.Y)/2);
     private static uint Mix(uint a,uint b)=>(((a>>24)+(b>>24))/2<<24)|((((a>>16)&255)+((b>>16)&255))/2<<16)|((((a>>8)&255)+((b>>8)&255))/2<<8)|(((a&255)+(b&255))/2);
@@ -66,10 +71,11 @@ internal sealed class IplProof : IIplCanvas
     }
     public void EndGlass() { }
     public void DrawGlassRear(){OpticalLayers.Clear();OpticalLayers.Append("rear>");shapes.Append(glass);}
+    public void DrawGlassBlur(){OpticalLayers.Append("blur>");} // Order-only marker; the host proof does not emulate GX blur.
     public void DrawGlassFront(){OpticalLayers.Append("front");} // Geometry-only proof has no native optical compositing.
     public void BeginPanels()=>panels.Clear();
     public void PanelTriangle(IplPoint a,IplPoint b,IplPoint d)
-    {panels.Append("M"+N(a.X)+" "+N(a.Y)+"L"+N(b.X)+" "+N(b.Y)+"L"+N(d.X)+" "+N(d.Y)+"Z");}
+    {PanelSink?.Invoke(a,b,d);panels.Append("M"+N(a.X)+" "+N(a.Y)+"L"+N(b.X)+" "+N(b.Y)+"L"+N(d.X)+" "+N(d.Y)+"Z");}
     public void PreparePanelTint(int selected){}
     public bool DrawPanelTint()=>false;
     public void EndPanels() { }
@@ -81,6 +87,7 @@ internal sealed class IplProof : IIplCanvas
     }
     public void Text(string text,float x,float y,float size,uint color,float angle,float stretch=1)
     {
+        TextSink?.Invoke(text,x,y,size);
         string id="ink"+(ink++).ToString();
         shapes.Append("<filter id='"+id+"'><feFlood flood-color='"+Color(color)+"'/><feComposite in2='SourceAlpha' operator='in'/></filter><g filter='url(#"+id+")' transform='translate("+N(x)+" "+N(y)+") rotate("+N(angle)+") scale("+N(size/28*stretch)+" "+N(size/28)+")' opacity='"+N((color&255)/255f)+"'>");
         float advance=0;
@@ -103,7 +110,7 @@ internal sealed class IplProof : IIplCanvas
         Directory.CreateDirectory(dir);var p=new IplProof();var s=new IplShell(new FakeOutput());s.Time=1;
         p.Save(Path.Combine(dir,"ipl-menu.svg"),s);
         s.TurnTo(ShellFace.Video);s.Tick(.7f);p.Save(Path.Combine(dir,"ipl-video.svg"),s);
-        s.Confirm();s.Row=2;s.Confirm();p.Save(Path.Combine(dir,"ipl-aspect.svg"),s);
+        s.Confirm();s.Direction(1,0,.016f);s.Direction(0,0,0);s.Direction(1,0,.016f);p.Save(Path.Combine(dir,"ipl-aspect.svg"),s);
         s.Back();s.TurnTo(ShellFace.Calendar);s.Tick(.7f);s.Confirm();s.Row=1;s.Confirm();s.Direction(1,0,.016f);
         p.Save(Path.Combine(dir,"ipl-date.svg"),s);
         File.WriteAllText(Path.Combine(dir,"index.html"),"<!doctype html><meta charset='utf-8'><title>Native IPL scene proofs</title><style>body{background:#161616;color:white;font:16px sans-serif}section{display:inline-block;margin:12px}img{width:640px;height:480px}</style><h1>Native scene geometry proofs</h1><p>Shared C# renderer and glyph atlas. These are host exports, not emulator captures.</p><section><h2>Cube</h2><img src='ipl-menu.svg'></section><section><h2>Video face</h2><img src='ipl-video.svg'></section><section><h2>Flat selector</h2><img src='ipl-aspect.svg'></section><section><h2>Independent date segments</h2><img src='ipl-date.svg'></section>");

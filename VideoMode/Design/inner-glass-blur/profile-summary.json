@@ -1,0 +1,46 @@
+{
+  "scope": "Dolphin guest-clock sample; normal interactive Video face, idle motion enabled; not hardware",
+  "dol_sha256": "466d9483f2b462ad42e92951067e0f7ad2d30ddb8896d1837cce24f4e956829f",
+  "levels": {
+    "off": {
+      "frame_mean_ms": 16.681010416666666,
+      "active_mean_ms": 3.9644479166666664,
+      "active_delta_from_off_ms": 0.0,
+      "prepare_mean_ms": 0.7567708333333334,
+      "submit_mean_ms": 3.1550104166666664,
+      "draws": 100,
+      "triangles": 38320,
+      "source": "final/profile-off/profile.json"
+    },
+    "low": {
+      "frame_mean_ms": 16.68091666666667,
+      "active_mean_ms": 4.503791666666667,
+      "active_delta_from_off_ms": 0.5393437500000005,
+      "prepare_mean_ms": 0.77821875,
+      "submit_mean_ms": 3.6735520833333335,
+      "draws": 103,
+      "triangles": 45234,
+      "source": "final/profile-low/profile.json"
+    },
+    "medium": {
+      "frame_mean_ms": 16.680854166666666,
+      "active_mean_ms": 4.503916666666667,
+      "active_delta_from_off_ms": 0.5394687500000005,
+      "prepare_mean_ms": 0.778,
+      "submit_mean_ms": 3.6735208333333333,
+      "draws": 103,
+      "triangles": 45234,
+      "source": "final/profile-medium/profile.json"
+    },
+    "high": {
+      "frame_mean_ms": 16.680927083333334,
+      "active_mean_ms": 4.503666666666667,
+      "active_delta_from_off_ms": 0.5392187500000004,
+      "prepare_mean_ms": 0.7781458333333334,
+      "submit_mean_ms": 3.6736875,
+      "draws": 103,
+      "triangles": 45234,
+      "source": "final/profile-high/profile.json"
+    }
+  }
+}

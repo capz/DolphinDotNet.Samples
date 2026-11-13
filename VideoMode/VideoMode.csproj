@@ -26,6 +26,7 @@
     <IplRunnerVideo Condition="'$(IplRunnerVideo)' == ''">480i</IplRunnerVideo>
     <IplRunnerPort Condition="'$(IplRunnerPort)' == ''">6281</IplRunnerPort>
     <DefineConstants Condition="'$(IplHardwareRunner)' == 'true'">$(DefineConstants);IPL_HARDWARE_RUNNER</DefineConstants>
+    <DefineConstants Condition="'$(IplHistoricalRenderer)' == 'true'">$(DefineConstants);IPL_HISTORICAL_RENDERER</DefineConstants>
     <DefineConstants Condition="'$(IplHardwareRunner)' == 'true' and '$(IplRunnerScene)' == 'Cube'">$(DefineConstants);IPL_RUNNER_CUBE</DefineConstants>
     <DefineConstants Condition="'$(IplHardwareRunner)' == 'true' and '$(IplRunnerScene)' == 'Detail'">$(DefineConstants);IPL_RUNNER_DETAIL</DefineConstants>
     <DefineConstants Condition="'$(IplHardwareRunner)' == 'true' and '$(IplRunnerScene)' == 'Oblique'">$(DefineConstants);IPL_VISUAL_REVIEW_ANGLE</DefineConstants>

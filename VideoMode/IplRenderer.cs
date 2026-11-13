@@ -24,6 +24,7 @@ internal interface IIplCanvas
     void EndGlassFace();
     void EndGlass();
     void DrawGlassRear();
+    void DrawGlassBlur();
     void DrawGlassFront();
     bool BeginFooterCache(int style);
     void EndFooterCache();
@@ -145,8 +146,8 @@ internal sealed partial class IplRenderer
     }
     private void Text(string text,float x,float y,float size,uint color)=>c.Text(text,x,y,size,color,0);
     private void Center(string text,float x,float y,float size,uint color)=>Text(text,x-TextWidth(text,size)/2,y,size,color);
-    private static float PoseYaw(ShellFace face)=>face==ShellFace.Video?-1.5707963f:face==ShellFace.Options?1.5707963f:face==ShellFace.Memory?3.1415926f:0;
-    private static float PosePitch(ShellFace face)=>face==ShellFace.Play?1.5707963f:face==ShellFace.Calendar?-1.5707963f:0;
+    private static float PoseYaw(ShellFace face)=>face==ShellFace.Video?-1.5707963f:face==ShellFace.Options?1.5707963f:face==ShellFace.Play?3.1415926f:0;
+    private static float PosePitch(ShellFace face)=>face==ShellFace.Memory?1.5707963f:face==ShellFace.Calendar?-1.5707963f:0;
     // Geometry uploads and capture allocation happen between frames, as required
     // by the SDK. No dynamic mesh is modified during a GX pass.
     internal void Prepare(IplShell shell)
@@ -182,13 +183,14 @@ internal sealed partial class IplRenderer
         if(t<1)ease+=(float)Math.Sin(t*3.1415926f)*.045f;
         yaw=PoseYaw(shell.PreviousFace)+(PoseYaw(shell.Face)-PoseYaw(shell.PreviousFace))*ease;
         pitch=PosePitch(shell.PreviousFace)+(PosePitch(shell.Face)-PosePitch(shell.PreviousFace))*ease;
-        if(!shell.ReducedMotion){yaw+=(float)Math.Sin(shell.Time/5.3f*6.2831853f)*.025f;pitch+=(float)Math.Sin(shell.Time/7.1f*6.2831853f)*.020f;}
+        var idle=IplCubeMotion.At(shell.MotionLevel,shell.Time);
+        yaw+=idle.Yaw;pitch+=idle.Pitch;
 #if IPL_VISUAL_REVIEW_ANGLE
         // Reproducible oblique pose exposes walls and face seams for native review.
         yaw+=.30f;pitch-=.16f;
 #endif
         cosYaw=(float)Math.Cos(yaw);sinYaw=(float)Math.Sin(yaw);cosPitch=(float)Math.Cos(pitch);sinPitch=(float)Math.Sin(pitch);
-        cy=IplCamera.CenterY+(shell.ReducedMotion?0:(float)Math.Sin(shell.Time*.7f));scale=IplCamera.Scale;
+        cy=IplCamera.CenterY+idle.Bob;scale=IplCamera.Scale;
         Cube();
         c.Section(IplRenderPhase.FrostGeometry);
         c.BeginPanels();
@@ -223,6 +225,7 @@ internal sealed partial class IplRenderer
         }
         c.Section(IplRenderPhase.Transmission);
         c.DrawGlassRear();
+        c.DrawGlassBlur();
         if(shell.Turn>.85f){c.Section(IplRenderPhase.Icons);FaceIcon(shell);}
         c.Section(IplRenderPhase.Transmission);c.DrawGlassFront();
         if(shell.Turn>.85f)
@@ -309,7 +312,7 @@ internal sealed partial class IplRenderer
         return new IplPoint((a.X*aw+b.X*bw)/sum,(a.Y*aw+b.Y*bw)/sum,(a.Z+b.Z)*.5f);
     }
     private static uint Rgba(int r,int g,int b,int a)=>(uint)((Math.Min(255,r)<<24)|(Math.Min(255,g)<<16)|(Math.Min(255,b)<<8)|a);
-    private static int SurfaceIndex(ShellFace face)=>face==ShellFace.Calendar?4:face==ShellFace.Options?2:face==ShellFace.Play?3:(int)face;
+    private static int SurfaceIndex(ShellFace face)=>face==ShellFace.Calendar?4:face==ShellFace.Options?2:face==ShellFace.Memory?3:face==ShellFace.Play?5:(int)face;
     private IplPoint FacePoint(IplShell s,float u,float v)=>Project(Surface(SurfaceIndex(s.Face),u,v));
     private void FaceText(IplShell s,string text,float u,float v,float size,uint color,float extraAngle=0,float stretch=1)
     {
@@ -321,7 +324,7 @@ internal sealed partial class IplRenderer
     }
     private void MenuLabels(IplShell s)
     {
-        FaceText(s,"Game Play",0,.72f,24,White);
+        FaceText(s,"Storage",0,.72f,24,White);
         FaceText(s,"Video",.64f,.05f,24,White,90);
         FaceText(s,"Calendar",0,-.60f,24,White);
         FaceText(s,"Options",-.67f,.05f,24,White,-90);
@@ -340,8 +343,9 @@ internal sealed partial class IplRenderer
     private void PanelTint(IplShell s,int row)=>PanelShape(s,row,row==s.Row?SelectedPanelTint:IdlePanelTint);
     private void PanelShape(IplShell s,int row,uint tint)
     {
-        const float left=-.777f,right=.795f,height=.33f,radius=.087f;
-        float top=.43f-row*.428f,bottom=top-height;
+        const float left=-.777f,right=.795f;
+        float height=s.Rows==4?.25f:.33f,radius=s.Rows==4?.075f:.087f;
+        float top=.43f-row*(s.Rows==4?.31f:.428f),bottom=top-height;
         var center=FacePoint(s,0,top-height/2);IplPoint first=default,previous=default;
         for(int corner=0;corner<4;corner++)for(int j=0;j<=8;j++)
         {
@@ -405,10 +409,10 @@ internal sealed partial class IplRenderer
         FaceText(s,s.Title,.045f,.765f,26,White,0,.95f);
         for(int i=0;i<s.Rows;i++)
         {
-            float y=.35f-i*.428f;
+            float y=s.Rows==4?.39f-i*.31f:.35f-i*.428f;
             uint color=i==s.Row?White:0xd5d6dcff;
             float focus=s.Page==ShellPage.Face?(i==s.Row?1:0):s.Focus(i);focus=focus*focus*(3-2*focus);
-            float size=16.5f*(1+.30f*focus);
+            float size=(s.Rows==4?14.5f:16.5f)*(1+.30f*focus);
             string value=s.Value(i);
             // Keep both edge anchors fixed as the type grows/shrinks.
             float maximum=TextWidth(s.Label(i),size)+TextWidth(value,size);
@@ -438,7 +442,7 @@ internal sealed partial class IplRenderer
             Banner(s.Video.Reverting?"Restoring previous settings.":"Keep these video settings?",s.Video.Reverting);
             Center(s.Video.Reverting?"Unable to restore. Retrying.":((int)Math.Ceiling(s.Video.Remaining)).ToString()+" seconds to confirm",320,357,18,White);
         }
-        Center(s.Label(s.Row),320,104,23,Green);
+        Center(s.Face==ShellFace.Calendar?s.Label(s.Row):s.Title,320,104,23,Green);
         Selectors(s,false);
         if(s.Face==ShellFace.Calendar)
             Center(s.RealCalendar?"A sets the clock. B discards changes and returns to the cube.":"Calendar demonstration. B discards changes and returns to the cube.",320,351,14,0xc4c9deff);
@@ -446,35 +450,24 @@ internal sealed partial class IplRenderer
         {
             string status=s.Video.Status;
             if(status=="UNSUPPORTED MODE OR CABLE"||status=="NOT ENOUGH MEMORY FOR MODE")Banner(status=="UNSUPPORTED MODE OR CABLE"?"Unsupported mode or cable.":"Not enough memory for this mode.",true);
-            else Center("A previews the mode. B returns to the cube.",320,350,16,White);
+            else Center("Left/Right selects. Up/Down changes. A previews. B returns to the cube.",320,350,13,White);
         }
         else if(s.Face==ShellFace.Options)Center("A confirms. B discards changes and returns to the cube.",320,351,14,0xc4c9deff);
     }
     private void Selectors(IplShell s,bool preparing)
     {
-        if(s.Face==ShellFace.Calendar)
+        int count=IplDetailLayout.Count(s),active=IplDetailLayout.Active(s);
+        for(int part=0;part<count;part++)
         {
-            int count=s.Row==0?2:3;
-            float total=s.Row==0?214:352,start=320-total/2;
-            for(int i=0;i<count;i++)
-            {
-                string value=preparing?s.Segment(i):selectorValues[i];if(preparing)selectorValues[i]=value;
-                float w=i==2?126:84;
-                float x=start+w/2;
-                Selector(s,i,value,x,180,i==s.Part?6:5,i==s.Part?Block:0x246b14ff,preparing);
-                if(!preparing){
-                    if(i==s.Part)Arrows(x,151,263);
-                    Center(s.Row==0?(i==0?"Hour":"Minute"):(i==0?"Day":i==1?"Month":"Year"),x,285,16,White);
-                }
-                start+=w+28;
+            string value=preparing?IplDetailLayout.Value(s,part):selectorValues[part];if(preparing)selectorValues[part]=value;
+            float x=IplDetailLayout.CenterX(s,part),cell=IplDetailLayout.Cell(s,part);
+            Selector(s,part,value,x,IplDetailLayout.ValueY,cell,part==active?Block:0x246b14ff,preparing);
+            if(!preparing){
+                if(part==active)Arrows(x,IplDetailLayout.ArrowTop,IplDetailLayout.ArrowBottom);
+                Center(IplDetailLayout.Label(s,part),x,IplDetailLayout.LabelY,16,White);
+                if(s.Face==ShellFace.Video&&part==1&&!s.Video.Pending&&s.Video.Status!="UNSUPPORTED MODE OR CABLE"&&s.Video.Status!="NOT ENOUGH MEMORY FOR MODE")
+                    Center(s.Value(1),x,309,13,0xc4c9deff);
             }
-        }
-        else
-        {
-            string value=preparing?s.Value(s.Row).ToUpperInvariant():selectorValues[0];if(preparing)selectorValues[0]=value;
-            float cell=Math.Min(8,510f/Math.Max(1,value.Length*6-1));
-            Selector(s,0,value,320,182,cell,Block,preparing);
-            if(!preparing)Arrows(320,148,267);
         }
     }
     private void Selector(IplShell s,int part,string value,float x,float y,float cell,uint color,bool preparing)
@@ -493,8 +486,8 @@ internal sealed partial class IplRenderer
     }
     private void Banner(string value,bool alert)
     {
-        Rect(70,312,500,47,0xc3c5d5ff);
-        for(int y=0;y<43;y++)Rect(72,314+y,496,1,alert?Rgba(138-y,12,58+y,240):Rgba(30+y/2,26,145-y,240));
+        Rect(70,312,500,47,alert?0x280b15efu:0x061c0fefu);
+        Line(72,313,568,313,1.2f,alert?0xf66d849fu:0x85e7659fu);
         Center(value,320,324,18,White);
     }
     private void Arrows(float x,float top,float bottom)
@@ -540,7 +533,7 @@ internal sealed partial class IplRenderer
         if(c.DrawFooterTextCache())return;
 #endif
         float stick=style==0?214:111;
-        Text(s.Page==ShellPage.Cube?"... Menu Selection":s.Face==ShellFace.Calendar&&s.Editing?"... Part / Value":"... Select",stick+24,y-13,s.Page==ShellPage.Cube?20:17,White);
+        Text(s.Page==ShellPage.Cube?"... Menu Selection":(s.Face==ShellFace.Calendar||s.Face==ShellFace.Video)&&s.Editing?"... Part / Value":"... Select",stick+24,y-13,s.Page==ShellPage.Cube?20:17,White);
         if(s.Page==ShellPage.Cube){Text("R  Storage",486,y-12,16,White);return;}
         bool modal=s.Page==ShellPage.Browser&&s.Browser?.Panel!=IplBrowserPanel.Grid;
         Center("B",320,y-14,20,White);Text(s.Video.Reverting?"... Wait":s.Page==ShellPage.Detail||s.Page==ShellPage.Browser?"... Cube":"... Back",340,y-13,17,White);

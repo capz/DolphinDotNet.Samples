@@ -19,11 +19,13 @@ internal static class IplBrowserTests
     internal static void Run()
     {
         var source=new Source();using var browser=new IplBrowser(source);var shell=new IplShell(new FakeOutput(),browser:browser);
-        Move(shell,0,1,true);shell.Tick(1);shell.Confirm();Check(shell.Page==ShellPage.Browser&&browser.Count==6,"Play opens flat six-card library");
+        // The library remains available to its internal controller, while the
+        // visible top cube side is now Storage.
+        shell.TurnTo(ShellFace.Play);shell.Tick(1);shell.Confirm();Check(shell.Page==ShellPage.Browser&&browser.Count==6,"Internal Play controller opens the flat six-card library");
         Move(shell,0,-1);Move(shell,0,-1);Check(browser.PageStart==6&&browser.Selection==0&&browser.Count==3,"Grid crosses page in three columns");Move(shell,-1,0);Check(browser.PageStart==0&&browser.Selection==5,"Previous page boundary retains selection");
         shell.Confirm();Check(browser.Panel==IplBrowserPanel.Launch&&browser.Choice==0&&source.Opened==0,"Opening a game asks before replacing the app");shell.Confirm();Check(browser.Panel==IplBrowserPanel.Grid&&source.Opened==0,"Default Cancel does not launch");
         shell.Confirm();Move(shell,1,0);shell.Confirm();Check(source.Opened==1&&source.Video.Scan==1&&browser.LaunchRequested,"Explicit Open uses applied output");shell.Back();Check(shell.Page==ShellPage.Face&&shell.Face==ShellFace.Play&&!browser.Active,"One B closes the library flow directly to the cube");
         var waiting=new Source{Wait=2};using var pending=new IplBrowser(waiting);pending.Open(IplBrowserKind.Games);Check(pending.Count==0&&pending.Busy,"No stale entries while scanning");pending.Direction(1,0);pending.Tick(.016f);pending.Tick(.016f);Check(pending.Count==6&&!pending.Busy,"Scan completion publishes one bounded page");pending.Refresh();Check(pending.PageStart==0,"Rescan returns to first page");
-        Console.WriteLine("Flat game library: cube entry/return, paged grid, pending scan, applied-mode launch and default Cancel passed.");
+        Console.WriteLine("Flat game library: internal entry/return, paged grid, pending scan, applied-mode launch and default Cancel passed.");
     }
 }

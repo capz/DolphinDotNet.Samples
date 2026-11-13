@@ -8,7 +8,7 @@ import subprocess
 import time
 
 
-def collect(frames, dol, root, press, release):
+def collect(frames, dol, root, press, release, observation_seconds=30):
     from profile_videomode import FIELDS
     symbols = {}
     table = subprocess.check_output(['nm', '-a', str(dol.with_suffix('.elf'))], text=True)
@@ -30,13 +30,22 @@ def collect(frames, dol, root, press, release):
     release()
     # No debugger stops, screenshots, frame dumping or app storage I/O during
     # the 30-frame warmup and 96-sample window. VSync remains enabled.
-    time.sleep(30)
+    # Software rendering on a busy cloud host can advance fewer guest frames
+    # per wall-clock second. Keep the guest uninterrupted for the whole window.
+    remaining=observation_seconds
+    while remaining>0:
+        interval=min(30,remaining);time.sleep(interval);remaining-=interval
     assert frames.request(conn, f'Z0,{frames.address:x},4') == 'OK'
     frames.request(conn, 'c', 45)
     frames.stable_frame()
     integer = lambda address: int.from_bytes(frames.read_bytes(address, 4), 'big')
     count, ready = integer(symbols['Count']), integer(symbols['Ready'])
     if count != 96 or not ready:
+        (root/'profile-incomplete.json').write_text(json.dumps({
+            'completed_samples':count,'expected_samples':96,'ready':bool(ready),
+            'observation_seconds':observation_seconds,'rejected':True,
+            'reason':'Guest rendering did not complete the uninterrupted sampling window.',
+            'dol_sha256':hashlib.sha256(dol.read_bytes()).hexdigest()},indent=2)+'\n')
         raise RuntimeError(f'Uninterrupted profile incomplete: {count}/96, ready={ready}')
     pointer = integer(symbols['Samples'])
     header = struct.unpack('>6I', frames.read_bytes(pointer, 24))
@@ -50,6 +59,7 @@ def collect(frames, dol, root, press, release):
         writer.writerows(rows)
     result = {'scope': 'Dolphin guest clock; normal interactive Video face, idle motion enabled; not hardware',
               'samples': 96, 'warmup': 30, 'vsync': True, 'interrupted_during_sampling': False,
+              'observation_seconds': observation_seconds,
               'dol_sha256': hashlib.sha256(dol.read_bytes()).hexdigest(),
               'mean_us': {k: statistics.mean(r[k] for r in rows) for k in FIELDS[:12]},
               'frame_p95_us': sorted(r['frame_us'] for r in rows)[91],

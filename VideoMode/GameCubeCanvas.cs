@@ -4,10 +4,11 @@ using Dolphin.Timing;
 
 internal sealed partial class GameCubeCanvas : IIplCanvas, IIplBrowserCanvas, IDisposable
 {
-    private const int GlassVertices=25*25, PanelRowVertices=36*3,PanelVertices=3*PanelRowVertices,BlurAxis=9,BlurTaps=BlurAxis*BlurAxis;
+    private const int GlassVertices=25*25, PanelRowVertices=36*3,ThreePanelVertices=3*PanelRowVertices,PanelVertices=4*PanelRowVertices,BlurAxis=9,BlurTaps=BlurAxis*BlurAxis;
     private readonly GraphicsDevice device;
     private readonly Draw2D draw;
     private readonly SealedGlassShell sealedGlass=new SealedGlassShell();
+    internal int GlassBlur;
 #if IPL_CACHED_SELECTORS
     private readonly IndexedRims[] selectors=new IndexedRims[3];
     private readonly string[] selectorValues=new string[3];
@@ -66,18 +67,22 @@ internal sealed partial class GameCubeCanvas : IIplCanvas, IIplBrowserCanvas, ID
 
     private readonly IplPoint[] panelPoints=new IplPoint[PanelVertices];
     private readonly VertexPositionColorTexture[] panelVertices=new VertexPositionColorTexture[PanelVertices];
-    private readonly DynamicMesh panelMesh;
+    private readonly DynamicMesh threePanelMesh,fourPanelMesh;
+    private DynamicMesh panelMesh;
 #if IPL_RETAINED_TINT
-    private readonly MeshColorView panelTintMesh;
+    private readonly MeshColorView threePanelTintMesh,fourPanelTintMesh;
+    private MeshColorView panelTintMesh;
     private readonly Color32[] panelTints=new Color32[PanelVertices];
     private readonly Material panelTintMaterial=new Material {Blend=BlendMode.Alpha,Cull=CullMode.None,DepthTest=false,DepthWrite=false};
     private int tintRows=-1,tintSelected=-1;
 #endif
 #if IPL_BATCHED_BLUR
     #if IPL_HYPERCUBE_PASSES
-    private readonly Hypercube.GameCube.OrderedMeshPasses blurPasses;
+    private readonly Hypercube.GameCube.OrderedMeshPasses threeBlurPasses,fourBlurPasses;
+    private Hypercube.GameCube.OrderedMeshPasses blurPasses;
 #else
-    private readonly MeshPasses blurPasses;
+    private readonly MeshPasses threeBlurPasses,fourBlurPasses;
+    private MeshPasses blurPasses;
 #endif
 #endif
     private readonly UvTransform[] blurOffsets=new UvTransform[BlurTaps];
@@ -91,7 +96,7 @@ internal sealed partial class GameCubeCanvas : IIplCanvas, IIplBrowserCanvas, ID
         this.device=device;
         renderer=new Renderer(device);
         footer=new CachedFooter(glass);
-        browserCards=new CachedFooter(glass,6,24);
+        browserCards=new CachedFooter(glass,7,24);
 #if IPL_CACHED_GRID
         editorGrid=new CachedFooter(glass,1,32);
 #endif
@@ -104,7 +109,13 @@ internal sealed partial class GameCubeCanvas : IIplCanvas, IIplBrowserCanvas, ID
 #else
         draw=new Draw2D(device,new Draw2DOptions {VertexCapacity=32760});
 #endif
-        panelMesh=DynamicMesh.Create(panelVertices);
+        // Both capacities retain uniform white, including unused vertices:
+        // native pass validation examines the entire retained vertex stream.
+        for(int i=0;i<PanelVertices;i++)panelVertices[i]=new VertexPositionColorTexture(default,Color32.White,default);
+        var threePanelIndices=new ushort[ThreePanelVertices];var fourPanelIndices=new ushort[PanelVertices];
+        for(int i=0;i<PanelVertices;i++){fourPanelIndices[i]=(ushort)i;if(i<ThreePanelVertices)threePanelIndices[i]=(ushort)i;}
+        threePanelMesh=DynamicMesh.Create(panelVertices,threePanelIndices);fourPanelMesh=DynamicMesh.Create(panelVertices,fourPanelIndices);
+        panelMesh=threePanelMesh;
         var browserIndices=new ushort[576];for(int i=0;i<browserIndices.Length;i++)browserIndices[i]=(ushort)i;
         browserMask=DynamicMesh.Create(glass,browserIndices);
         browserBannerQuad=BrowserArtworkMesh(8f/142,8f/48);browserIconQuad=BrowserArtworkMesh(8f/48,8f/48);
@@ -113,14 +124,17 @@ internal sealed partial class GameCubeCanvas : IIplCanvas, IIplBrowserCanvas, ID
 #endif
         float browserWeight=0;for(int i=0;i<9;i++){float weight=(i%3==1?2:1)*(i/3==1?2:1);browserWeight+=weight;browserBlurColors[i]=new Color32(255,255,255,(byte)(255*weight/browserWeight+.5f));}
 #if IPL_RETAINED_TINT
-        panelTintMesh=new MeshColorView(panelMesh,panelTints);
+        threePanelTintMesh=new MeshColorView(threePanelMesh,panelTints);fourPanelTintMesh=new MeshColorView(fourPanelMesh,panelTints);
+        panelTintMesh=threePanelTintMesh;
 #endif
 #if IPL_BATCHED_BLUR
 #if IPL_HYPERCUBE_PASSES
-        blurPasses=new Hypercube.GameCube.OrderedMeshPasses(panelMesh,BlurTaps);
+        threeBlurPasses=new Hypercube.GameCube.OrderedMeshPasses(threePanelMesh,BlurTaps);
+        fourBlurPasses=new Hypercube.GameCube.OrderedMeshPasses(fourPanelMesh,BlurTaps);
 #else
-        blurPasses=new MeshPasses(panelMesh,BlurTaps);
+        threeBlurPasses=new MeshPasses(threePanelMesh,BlurTaps);fourBlurPasses=new MeshPasses(fourPanelMesh,BlurTaps);
 #endif
+        blurPasses=threeBlurPasses;
 #endif
         // Allocate the optional native material options between frames, once.
         frostMaterial.TextureTransform=UvTransform.Identity;
@@ -178,7 +192,7 @@ internal sealed partial class GameCubeCanvas : IIplCanvas, IIplBrowserCanvas, ID
             for(int tap=0;tap<BlurTaps;tap++){
                 blurOffsets[tap]=new UvTransform(new Vector2((tap%BlurAxis-BlurAxis/2)*3*sx,(tap/BlurAxis-BlurAxis/2)*3*sy),new Vector2(1,1));
 #if IPL_BATCHED_BLUR
-                blurPasses.Set(tap,blurColors[tap],blurOffsets[tap]);
+                threeBlurPasses.Set(tap,blurColors[tap],blurOffsets[tap]);fourBlurPasses.Set(tap,blurColors[tap],blurOffsets[tap]);
 #endif
             }
         }
@@ -189,12 +203,13 @@ internal sealed partial class GameCubeCanvas : IIplCanvas, IIplBrowserCanvas, ID
     private static Color32 Color(uint c)=>new Color32((byte)(c>>24),(byte)(c>>16),(byte)(c>>8),(byte)c);
     private Vector3 World(IplPoint p)=>new Vector3((p.X-320)*scale,(240-p.Y)*scale,0);
     public bool PrepareSealedGlass(IplPoint x,IplPoint y,IplPoint z,float sceneScale,float centerY)
-    {sealedGlass.Prepare(x,y,z,sceneScale,centerY,logicalWidth,logicalHeight,scale,offset,device.Width,device.Height);return true;}
+    {sealedGlass.Prepare(x,y,z,sceneScale,centerY,logicalWidth,logicalHeight,scale,offset,device.Width,device.Height,GlassBlur);return true;}
     public void BeginGlass() { }
     public void GlassVertex(int index,IplPoint point,uint color,float u,float v,float reflection) { }
     public void EndGlassFace() { }
     public void EndGlass() { }
     public void DrawGlassRear(){draw.End();sealedGlass.DrawRear(device);draw.Begin();}
+    public void DrawGlassBlur(){if(GlassBlur==0)return;draw.End();sealedGlass.DrawBlur(device);draw.Begin();}
     public void DrawGlassFront(){draw.End();sealedGlass.DrawFront(device);draw.Begin();}
     public void BeginPanels(){panelCount=0;}
     public void PanelTriangle(IplPoint a,IplPoint b,IplPoint d)
@@ -202,16 +217,25 @@ internal sealed partial class GameCubeCanvas : IIplCanvas, IIplBrowserCanvas, ID
     public void EndPanels()
     {
         if(panelCount==0)return;
+        bool fourRows=panelCount>ThreePanelVertices;
+        int activeCount=fourRows?PanelVertices:ThreePanelVertices;
+        panelMesh=fourRows?fourPanelMesh:threePanelMesh;
+#if IPL_RETAINED_TINT
+        panelTintMesh=fourRows?fourPanelTintMesh:threePanelTintMesh;
+#endif
+#if IPL_BATCHED_BLUR
+        blurPasses=fourRows?fourBlurPasses:threeBlurPasses;
+#endif
         // Upload the rounded mask once. GX texture coordinates supply each
         // sampling offset, instead of rebuilding 81 copies of identical geometry.
-        for(int i=0;i<PanelVertices;i++)
+        for(int i=0;i<activeCount;i++)
         {
             if(i>=panelCount){panelVertices[i]=new VertexPositionColorTexture(default,Color32.White,default);continue;}
             var p=panelPoints[i];
             var uv=new Vector2((offset+p.X*scale)/logicalWidth*device.Width/copyWidth,p.Y*scale/logicalHeight*device.Height/copyHeight);
             panelVertices[i]=new VertexPositionColorTexture(World(p),Color32.White,uv);
         }
-        panelMesh.SetVertices(panelVertices);
+        panelMesh.SetVertices(panelVertices,count:activeCount);
     }
     // Reuse the already-projected blur mask. Only row/selection changes upload
     // its independent color stream; moving the cube needs no second geometry.
@@ -262,7 +286,7 @@ internal sealed partial class GameCubeCanvas : IIplCanvas, IIplBrowserCanvas, ID
         }
 #endif
         renderer.End3D();draw.Begin();
-        if(IplFrameProfiler.Active)IplFrameProfiler.BlurUs=IplFrameProfiler.Since(start);
+        if(IplFrameProfiler.Active)IplFrameProfiler.BlurUs+=IplFrameProfiler.Since(start);
     }
     public void Triangle(float ax,float ay,float bx,float by,float cx,float cy,uint color)
     {
@@ -623,9 +647,9 @@ internal sealed partial class GameCubeCanvas : IIplCanvas, IIplBrowserCanvas, ID
 #endif
         capture?.Dispose();
 #if IPL_RETAINED_TINT
-        panelTintMesh.Dispose();
+        threePanelTintMesh.Dispose();fourPanelTintMesh.Dispose();
 #endif
-        panelMesh.Dispose();
+        threePanelMesh.Dispose();fourPanelMesh.Dispose();
         sealedGlass.Dispose();draw.Dispose();atlas.Dispose();
     }
 }

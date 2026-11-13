@@ -108,7 +108,10 @@ internal static class Program
         shell.TurnTo(ShellFace.Options);shell.Row=1;shell.Tick(1);shell.Time=0;
 #if IPL_RUNNER_DETAIL || IPL_REVIEW_DETAIL
         shell.TurnTo(ShellFace.Video);shell.Row=1;shell.Tick(1);
-        shell.Confirm();shell.Confirm();
+        shell.Confirm();
+#if IPL_HISTORICAL_RENDERER
+        shell.Confirm();
+#endif
 #endif
 #endif
 #endif
@@ -189,6 +192,9 @@ internal static class Program
             IplPerformanceOverlay.BeginFrame();
             bool timing=IplFrameProfiler.Active||IplPerformanceOverlay.Stats.Visible;
             long phaseStart=timing?Clock.Timestamp:0;
+#if !IPL_HISTORICAL_RENDERER
+            canvas.GlassBlur=shell.GlassBlur;
+#endif
             canvas.Prepare();
 #if !IPL_HARDWARE_RUNNER
             canvas.UpdateArtwork(shell.Page==ShellPage.Browser?browser:null);

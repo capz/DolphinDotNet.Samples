@@ -1,0 +1,13 @@
+{
+  "base_commit": "12ca272e7c542c06fa64c9bba6aa055a963f0003",
+  "original_working_tree_overlay": "One 02b-blur-boundary-corner capture inserted before replay launch; runtime unchanged.",
+  "file_hash_scope": "Tool snapshot taken during replay after root confirmed no tool edits since launch.",
+  "files_sha256": {
+    "ci/review_performance_overlay.py": "636a7ad8a3e824c35fd038ba50751889184820f07aef5468c734115074fbc0ed",
+    "ci/native_frame_boundary.py": "036dc217532253b1dd499cbd66f57526983ef5319f7245e4f4a266b0c6778bac",
+    "ci/profile_interactive_rim.py": "df38f308857b5b85185dacb744a6d43a2fa6ffe51a94f45d25075a052e21bdc6",
+    "ci/decode_native_xfb.py": "1a560cbb4ba252a8ca05d335b619161eb54e54058cc3a9d4755b55260aa6358a",
+    "ci/capture_x11.py": "4a41c7bef8a22d64ac0fffc648ed046121c89f5ce8c71eeb67f1c0b6ebdf18e3"
+  },
+  "overlay_patch": "diff --git a/ci/review_performance_overlay.py b/ci/review_performance_overlay.py\nindex 9e99b04..761d779 100644\n--- a/ci/review_performance_overlay.py\n+++ b/ci/review_performance_overlay.py\n@@ -178,7 +178,12 @@ try:\n         key('Left');key('a');key('Up');key('a');key('Down');key('a');key('b')\n         shot('01-options-high-blur')\n         key('b');shot('02-crisp-centered-icon')\n-        key('Right');shot('03-video-cube')\n+        # Inspect the physical frost boundary during a real cube turn. Existing\n+        # transition rules hide the icon here; this is a material/corner probe.\n+        code=x.XKeysymToKeycode(d,x.XStringToKeysym(b'Right'))\n+        assert xt.XTestFakeKeyEvent(d,code,1,0);x.XSync(d,0);native_frames.advance(4)\n+        assert xt.XTestFakeKeyEvent(d,code,0,0);x.XSync(d,0)\n+        shot('02b-blur-boundary-corner');native_frames.advance(45);shot('03-video-cube')\n         key('a');shot('04-video-grouped-detail')\n         key('Right',settle_frames=12);key('Up');key('a');shot('05-progressive-preview')\n         key('a');shot('06-progressive-kept-detail')\n"
+}

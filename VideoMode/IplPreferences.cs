@@ -4,10 +4,14 @@ internal readonly struct IplPreferences
 {
     internal readonly VideoModeSettings Video;
     internal readonly int Sound;
-    internal readonly bool ReducedMotion;
-    internal IplPreferences(VideoModeSettings video,int sound,bool reducedMotion)
-    {Video=video;Sound=sound;ReducedMotion=reducedMotion;}
-    internal bool Valid=>Video.Resolution>=0&&Video.Resolution<=2&&Video.Scan>=0&&Video.Scan<=2&&Sound>=0&&Sound<=1;
+    internal readonly int MotionLevel;
+    internal bool ReducedMotion=>MotionLevel==0;
+    internal readonly int GlassBlur;
+    internal IplPreferences(VideoModeSettings video,int sound,bool reducedMotion,int glassBlur=0)
+        :this(video,sound,reducedMotion?0:1,glassBlur){}
+    internal IplPreferences(VideoModeSettings video,int sound,int motionLevel,int glassBlur=0)
+    {Video=video;Sound=sound;MotionLevel=motionLevel;GlassBlur=glassBlur;}
+    internal bool Valid=>Video.Resolution>=0&&Video.Resolution<=2&&Video.Scan>=0&&Video.Scan<=2&&Sound>=0&&Sound<=1&&MotionLevel>=0&&MotionLevel<=2&&GlassBlur>=0&&GlassBlur<=3;
 }
 internal interface IIplPreferencesStore
 {
@@ -31,16 +35,24 @@ internal static class IplPreferencesCodec
     internal static byte[] Encode(IplPreferences value,uint generation)
     {
         if(!value.Valid)throw new ArgumentException("Invalid preferences.");
-        var data=new byte[Size];data[0]=73;data[1]=80;data[2]=76;data[3]=83;data[4]=1;
+        var data=new byte[Size];data[0]=73;data[1]=80;data[2]=76;data[3]=83;data[4]=3;
         data[5]=(byte)value.Video.Resolution;data[6]=(byte)value.Video.Scan;data[7]=(byte)((value.Video.Widescreen?1:0)|(value.ReducedMotion?2:0));data[8]=(byte)value.Sound;
+        data[9]=(byte)value.GlassBlur;data[10]=(byte)value.MotionLevel;
         Write(data,12,generation);Write(data,28,Crc(data));return data;
     }
     internal static bool Decode(byte[]? data,out IplPreferences value,out uint generation)
     {
         value=default;generation=0;
-        if(data==null||data.Length!=Size||data[0]!=73||data[1]!=80||data[2]!=76||data[3]!=83||data[4]!=1||data[7]>3||Read(data,28)!=Crc(data))return false;
-        for(int i=9;i<28;i++)if((i<12||i>15)&&data[i]!=0)return false;
-        var decoded=new IplPreferences(new VideoModeSettings(data[5],data[6],(data[7]&1)!=0),data[8],(data[7]&2)!=0);
+        if(data==null||data.Length!=Size||data[0]!=73||data[1]!=80||data[2]!=76||data[3]!=83||(data[4]!=1&&data[4]!=2&&data[4]!=3)||data[7]>3||Read(data,28)!=Crc(data))return false;
+        // Version one reserved this byte. Accept old slots as blur Off, without
+        // weakening their reserved-byte validation or their generation/CRC rules.
+        if(data[4]==1&&data[9]!=0)return false;
+        if(data[4]<3&&data[10]!=0)return false;
+        int motion=data[4]==3?data[10]:(data[7]&2)!=0?0:1;
+        // Version three retains the legacy Disabled bit as a consistency check.
+        if(data[4]==3&&((data[7]&2)!=0)!=(motion==0))return false;
+        for(int i=11;i<28;i++)if((i<12||i>15)&&data[i]!=0)return false;
+        var decoded=new IplPreferences(new VideoModeSettings(data[5],data[6],(data[7]&1)!=0),data[8],motion,data[4]==1?0:data[9]);
         if(!decoded.Valid)return false;
         value=decoded;generation=Read(data,12);return true;
     }

@@ -1,0 +1,142 @@
+[
+  {
+    "capture": "01-blur-off",
+    "completed_frames": 0,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "capture_source": "Complete X11 client, guest paused at VIDEO_WaitVSync after GX_CopyDisp/GX_DrawDone",
+    "native_boundaries": 112,
+    "xfb": {
+      "width": 640,
+      "height": 480,
+      "efb_height": 480,
+      "vi_tv_mode": 0,
+      "vi_scan_bits": 0,
+      "format": "YUYV422",
+      "source": "Native GX_CopyDisp output, read after GX_DrawDone before VIDEO_WaitVSync"
+    },
+    "xfb_source": "/workspace/artifacts/inner-blur/final-review/01-blur-off-xfb.yuv",
+    "xfb_sha256": "48ff74e73fa8b23957e67071e85284618da1175876160218dcb406112e047993",
+    "png_sha256": "4a367f4552b4636fca478571c63080754619dfa05a5c59288cf35910741c24ee",
+    "conversion": "BT.601 limited-range YUYV422 to RGB8; no crop/resize/composition"
+  },
+  {
+    "capture": "cube-off",
+    "completed_frames": 0,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "capture_source": "Complete X11 client, guest paused at VIDEO_WaitVSync after GX_CopyDisp/GX_DrawDone",
+    "native_boundaries": 164,
+    "xfb": {
+      "width": 640,
+      "height": 480,
+      "efb_height": 480,
+      "vi_tv_mode": 0,
+      "vi_scan_bits": 0,
+      "format": "YUYV422",
+      "source": "Native GX_CopyDisp output, read after GX_DrawDone before VIDEO_WaitVSync"
+    },
+    "xfb_source": "/workspace/artifacts/inner-blur/final-review/cube-off-xfb.yuv",
+    "xfb_sha256": "fb44ac906a1ed10b8ad3aaa273228d6f3953a268e879d041d3f5f18b9b2a0517",
+    "png_sha256": "48c8351b8ea94506f33a76f959f21803f2e95d4763559c289c530aaa7c43fcba",
+    "conversion": "BT.601 limited-range YUYV422 to RGB8; no crop/resize/composition"
+  },
+  {
+    "capture": "05-blur-low",
+    "completed_frames": 0,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "capture_source": "Complete X11 client, guest paused at VIDEO_WaitVSync after GX_CopyDisp/GX_DrawDone",
+    "native_boundaries": 1273,
+    "xfb": {
+      "width": 640,
+      "height": 480,
+      "efb_height": 480,
+      "vi_tv_mode": 0,
+      "vi_scan_bits": 0,
+      "format": "YUYV422",
+      "source": "Native GX_CopyDisp output, read after GX_DrawDone before VIDEO_WaitVSync"
+    },
+    "xfb_source": "/workspace/artifacts/inner-blur/final-review/05-blur-low-xfb.yuv",
+    "xfb_sha256": "a5853ec8c83cd9bd4667e7d3b782dfea5ccc828328572c0ee6a2be6c0285eca6",
+    "png_sha256": "a8195c7901f9940a86b3833eddb7ebb1dd451415fdc76225e217377bdf74e52e",
+    "conversion": "BT.601 limited-range YUYV422 to RGB8; no crop/resize/composition"
+  },
+  {
+    "capture": "06-blur-medium",
+    "completed_frames": 0,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "capture_source": "Complete X11 client, guest paused at VIDEO_WaitVSync after GX_CopyDisp/GX_DrawDone",
+    "native_boundaries": 2472,
+    "xfb": {
+      "width": 640,
+      "height": 480,
+      "efb_height": 480,
+      "vi_tv_mode": 0,
+      "vi_scan_bits": 0,
+      "format": "YUYV422",
+      "source": "Native GX_CopyDisp output, read after GX_DrawDone before VIDEO_WaitVSync"
+    },
+    "xfb_source": "/workspace/artifacts/inner-blur/final-review/06-blur-medium-xfb.yuv",
+    "xfb_sha256": "19422e9c28b70a20fa8c51dabe9480196117e576d50fb2d17ef5a82d1c4f0a68",
+    "png_sha256": "53c07d307bad23a8a6241e24e5519fa915b8cbac3e97afaa1e19921568c0e6b1",
+    "conversion": "BT.601 limited-range YUYV422 to RGB8; no crop/resize/composition"
+  },
+  {
+    "capture": "07-blur-high",
+    "completed_frames": 0,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "capture_source": "Complete X11 client, guest paused at VIDEO_WaitVSync after GX_CopyDisp/GX_DrawDone",
+    "native_boundaries": 3644,
+    "xfb": {
+      "width": 640,
+      "height": 480,
+      "efb_height": 480,
+      "vi_tv_mode": 0,
+      "vi_scan_bits": 0,
+      "format": "YUYV422",
+      "source": "Native GX_CopyDisp output, read after GX_DrawDone before VIDEO_WaitVSync"
+    },
+    "xfb_source": "/workspace/artifacts/inner-blur/final-review/07-blur-high-xfb.yuv",
+    "xfb_sha256": "354756ddd4a4a8fa9f2e0aa41cc184237b9c6218b7de86ce806124bfa78b6a89",
+    "png_sha256": "d2bf945d326545b25cd88c7a1ec19bfa8b634a27e8635c3fdc1f8b8db39fd113",
+    "conversion": "BT.601 limited-range YUYV422 to RGB8; no crop/resize/composition"
+  },
+  {
+    "capture": "cube-high",
+    "completed_frames": 0,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "capture_source": "Complete X11 client, guest paused at VIDEO_WaitVSync after GX_CopyDisp/GX_DrawDone",
+    "native_boundaries": 3696,
+    "xfb": {
+      "width": 640,
+      "height": 480,
+      "efb_height": 480,
+      "vi_tv_mode": 0,
+      "vi_scan_bits": 0,
+      "format": "YUYV422",
+      "source": "Native GX_CopyDisp output, read after GX_DrawDone before VIDEO_WaitVSync"
+    },
+    "xfb_source": "/workspace/artifacts/inner-blur/final-review/cube-high-xfb.yuv",
+    "xfb_sha256": "33874180de4b9251bda76f82cddd26fbcbcb31254ccac2a052bad5198b2d6e3f",
+    "png_sha256": "bcb60aa9638c57040ae754d2c5c9ce1a31f5010d86a76d378e4285c2a3e2e57d",
+    "conversion": "BT.601 limited-range YUYV422 to RGB8; no crop/resize/composition"
+  },
+  {
+    "capture": "10-off-restored",
+    "completed_frames": 0,
+    "input": "XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)",
+    "capture_source": "Complete X11 client, guest paused at VIDEO_WaitVSync after GX_CopyDisp/GX_DrawDone",
+    "native_boundaries": 5022,
+    "xfb": {
+      "width": 640,
+      "height": 480,
+      "efb_height": 480,
+      "vi_tv_mode": 0,
+      "vi_scan_bits": 0,
+      "format": "YUYV422",
+      "source": "Native GX_CopyDisp output, read after GX_DrawDone before VIDEO_WaitVSync"
+    },
+    "xfb_source": "/workspace/artifacts/inner-blur/final-review/10-off-restored-xfb.yuv",
+    "xfb_sha256": "f2a6b221a1856aed062f201a55f5f738d99ddaaf7efa4d9dc29b81e4efc01cb8",
+    "png_sha256": "ad16b8aaaf64a0a4e236251fe129d41263a1a1864fe1d9077bf220ea24e8ab3e",
+    "conversion": "BT.601 limited-range YUYV422 to RGB8; no crop/resize/composition"
+  }
+]

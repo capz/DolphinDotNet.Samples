@@ -4,7 +4,7 @@ internal sealed partial class IplRenderer
 {
     private bool flatMaskReady;
     private ShellFace flatMaskFace;
-    private static float FlatRowY(int rows,int row)=>(rows==2?146:112)+82*row;
+    private static float FlatRowY(int rows,int row)=>rows==4?84+76*row:(rows==2?146:112)+82*row;
     private void FlatRowShape(int rows,int row,IIplBrowserCanvas? mask,bool body)
     {
         const float x=76,width=488,height=62,radius=20;
@@ -21,7 +21,7 @@ internal sealed partial class IplRenderer
     }
     private void FlatRowTriangle(IplPoint a,IplPoint b,IplPoint d,float x,float y,float width,float height)
         =>CardTriangle(a,CardLight((a.X-x)/width,(a.Y-y)/height),b,CardLight((b.X-x)/width,(b.Y-y)/height),d,CardLight((d.X-x)/width,(d.Y-y)/height));
-    private static int FlatStyle(int rows)=>rows==3?2:rows==2?3:4;
+    private static int FlatStyle(int rows)=>rows==4?6:rows==3?2:rows==2?3:4;
     private void FlatRows(int rows){for(int i=0;i<rows;i++)FlatRowShape(rows,i,null,true);}
     private void PrepareFlatMenu(IplShell shell)
     {
