@@ -10,7 +10,7 @@ The active value rocks, tilts and floats while its editor is open. Left/right
 moves that motion between independent Video or time/date parts; inactive parts
 and labels stay still. Motion eases in over 180 ms and pauses during a video
 preview. It stops when leaving the value editor and respects Options → Motion →
-Reduced. Wide values use less roll to keep clear
+Disabled. Wide values use less roll to keep clear
 of the arrows. [Native selector-motion review](Design/selector-motion/README.md).
 
 The rounded cube is projected 3D geometry, not a screenshot or rotating image.
@@ -20,6 +20,12 @@ a sampled, view-dependent reflection layer. Front labels sit inside the
 rounded rim. Each face has its own subdued beveled-block icon. List rows have
 rounded frosted backplates, fixed left/right text anchors and 180 ms focus
 scaling (1.00 to 1.30), including shrink-back on the outgoing row.
+
+Options > Motion offers Disabled, Subtle and Pronounced. Subtle is the default
+and preserves the original cube float. Pronounced adds roughly three times the
+angular sway and vertical float with a smooth secondary wiggle. Disabled keeps
+the cube stationary and retains the reduced-motion behavior for UI animation.
+Open the setting with A, change its draft with Up/Down, then A saves or B discards.
 
 The native frost is a real backdrop operation: after the cube and icon are
 drawn, GX captures the EFB at half resolution. A dense 9×9 Gaussian-weighted kernel samples that
@@ -38,7 +44,8 @@ the scene through the user-facing inner boundary before the centered 3D icon,
 glass reflections and UI are composited. Icons keep their original projected
 3D position and stay crisp between the frosted UI rows. Exterior highlights and
 labels stay sharp. A narrow environment-lit highlight follows the existing
-rounded cavity at the blur boundary; it adds no separate rim geometry.
+rounded cavity at the blur boundary, accompanied by a narrow dark absorption
+band just inside the bright return. Both follow the existing glass geometry.
 It uses a separable nine-tap Gaussian kernel fused into five bilinear samples
 in each axis, a retained
 half-resolution intermediate and the existing indexed cavity mesh. Off skips
@@ -50,7 +57,7 @@ on first use and retained until shutdown (about 361 KiB native memory).
 
 ## Controller flow
 
-- At the cube: right opens Video, left Options, up Game Play, down Calendar.
+- At the cube: right opens Video, left Options, up Storage, down Calendar.
 - On a face: pushing the stick opposite the direction used to enter returns to
   the cube. Recenter before entering another face.
 - On a face: A opens its flat configuration screen. Video opens three block-style
@@ -67,7 +74,8 @@ on first use and retained until shutdown (about 361 KiB native memory).
   filenames and file sizes. See [compact storage views](Design/dense-storage/README.md).
 - Outside memory-card/SD browsers, Z toggles a live performance overlay (off at startup). Outside browsers, Y records the
   bounded frame-time sample independently.
-- Options > Motion disables idle floating and turning overshoot.
+- Storage opens Memory Card and SD Storage; R is a shortcut to the same top side.
+- Options contains Sound, Motion and Glass Blur.
 
 Video settings use real `GraphicsDevice.ConfigureDisplay` calls between frames.
 A starts a 12-second hardware preview; A again keeps it, B or the timeout reverts
@@ -94,14 +102,15 @@ to include the fix in the DOL. [Native scan-mode evidence, package provenance an
 limitations](Design/scan-mode-review.md) cover both resolution sequences and retain
 the earlier failure for comparison. Physical console/cable/display testing remains open.
 
-Confirmed video settings, sound, Reduced Motion and Glass Blur are stored in alternating
+Confirmed video settings, sound, Motion and Glass Blur are stored in alternating
 32-byte checksummed records on GC Loader SD (`videomode/settings-a.bin` and
 `settings-b.bin`). Startup loads the newest valid record and applies its video
 mode, with a boot-output fallback on unsupported modes. Hold X during startup to
 bypass saved video. Preview drafts and reverted modes are never saved. A read-only
 or missing card is reported without changing another storage device. Version-one
-settings remain readable and load Glass Blur as Off; confirmed writes use
-version two. Blur drafts are not saved.
+and version-two settings remain readable: Full maps to Subtle and Reduced maps
+to Disabled. Version one also loads Glass Blur as Off. Confirmed writes use
+version three. Motion and blur drafts are not saved.
 
 Source builds with `IplConsoleServices=true` use the SDK console-services APIs to
 read the real local console calendar and write IPL SRAM clock bias and sound.
@@ -110,9 +119,10 @@ date edits preserve the current time. The clock refreshes once a second and uses
 an independent monotonic animation timer. Builds using the older published SDK
 show these services as unavailable. [Native validation and limits](Design/console-settings/README.md).
 
-Game Play now opens a paged GC Loader game library with native banner artwork
-and Swiss video-mode launch integration. [Library design, validation and limits](Design/game-library/README.md). Memory Card remains the next storage integration. The sample
-does not include Nintendo firmware, fonts, logos or game-save artwork.
+Storage replaces the former top Game Play entry. The earlier GC Loader library
+and Swiss launch integration remains in the source as an internal path;
+[its design and evidence](Design/game-library/README.md) describe the earlier UI.
+The sample does not include Nintendo firmware, fonts, logos or game-save artwork.
 
 ## Build and validation
 

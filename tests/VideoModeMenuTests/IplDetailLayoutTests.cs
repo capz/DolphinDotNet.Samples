@@ -37,7 +37,11 @@ internal static class IplDetailLayoutTests
         for(int row=0;row<3;row++){Bounds(video);Move(video,1,0);}
         var date=Open(ShellFace.Calendar,1);for(int part=0;part<3;part++){Bounds(date);Move(date,1,0);}
         var time=Open(ShellFace.Calendar);for(int part=0;part<2;part++){Bounds(time);Move(time,1,0);}
-        foreach(int row in new[]{0,3}){var options=Open(ShellFace.Options,row);Bounds(options);}
+        foreach(int row in new[]{0,1,2}){
+            var options=Open(ShellFace.Options,row);
+            if(row==1){Move(options,0,1);Check(options.Value(1)=="Pronounced","The full Motion choice must fit the shared value editor.");}
+            Bounds(options);
+        }
         Console.WriteLine("Detail layout: shared Calendar-scale values, three independent Video columns, readable scan symbols and animated bounds passed.");
     }
 }

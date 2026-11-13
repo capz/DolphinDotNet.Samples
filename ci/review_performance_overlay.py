@@ -31,6 +31,8 @@ parser.add_argument('--mockup-review',action='store_true',help='Deterministic na
 parser.add_argument('--glass-modes',action='store_true',help='Closed-shell rendering after 480p, widescreen, 576i, 240-line, rollback and safe-mode switches')
 parser.add_argument('--detail-review',action='store_true',help='High blur/icon layering, grouped Video detail, preview/rollback, Calendar Date and Options value editor')
 parser.add_argument('--detail-profile',action='store_true',help='With --detail-review, measure an uninterrupted High-blur Video cube window')
+parser.add_argument('--motion-storage-review',action='store_true',help='Native Disabled/Subtle/Pronounced motion pairs, top Storage actions and light/dark blur boundary')
+parser.add_argument('--motion-storage-profile',action='store_true',help='After motion/storage captures, measure High blur with Pronounced motion on the Video cube')
 parser.add_argument('--inner-blur-review',action='store_true',help='Use real Options input to capture all inner-glass blur levels and cancellation')
 parser.add_argument('--inner-blur-profile',action='store_true',help='With --inner-blur-review, measure each level on the normal interactive Video face')
 parser.add_argument('--inner-blur-profile-only',action='store_true',help='Skip repeated editor/list captures during the full blur profile')
@@ -39,7 +41,7 @@ parser.add_argument('--quick-input',action='store_true',help='Use shorter settle
 parser.add_argument('--inner-blur-cubes',action='store_true',help='Also capture the unobstructed menu cube at each reviewed blur level')
 parser.add_argument('--inner-blur-high',action='store_true',help='Enable High inner-glass blur via Options before --glass-modes')
 parser.add_argument('--calendar',action='store_true',help='Review two-row blur and independent time/date editing instead of the overlay sequence')
-parser.add_argument('--selector-motion',action='store_true',help='Record active hour/minute/month/year motion, A/B and Reduced Motion')
+parser.add_argument('--selector-motion',action='store_true',help='Record active hour/minute/month/year motion, A/B and Disabled motion')
 parser.add_argument('--selector-scan',action='store_true',help='Exercise animated scan values across progressive/interlaced preview, keep, rollback and safe mode')
 parser.add_argument('--directional-return',action='store_true',help='Review reverse stick return, hold latching and D-pad Calendar rows')
 parser.add_argument('--flat-pages',action='store_true',help='Read-only sides, grouped Video detail, flat option lists and single-B exits')
@@ -52,22 +54,26 @@ parser.add_argument('--dense-quick',action='store_true',help='Final native fixed
 parser.add_argument('--memory-only',action='store_true',help='Skip SD review when validating a normal DOL without physical GC Loader')
 parser.add_argument('--disc',type=Path)
 parser.add_argument('--card-user',type=Path)
-parser.add_argument('--library',action='store_true',help='Native library layout/navigation using explicitly labeled synthetic UI data')
+parser.add_argument('--library',action='store_true',help='Obsolete normal-DOL game-library route; the top cube side is now Storage')
 parser.add_argument('--system-clock',action='store_true',help='Adjust isolated clock, inspect SRAM and Dolphin restart policy, then decrement')
 args=parser.parse_args()
 if args.optics_diagnostic and not args.mockup_review:parser.error('--optics-diagnostic requires --mockup-review')
 if args.mockup_single and not args.mockup_review:parser.error('--mockup-single requires --mockup-review')
 if args.mockup_corners and (not args.mockup_review or args.mockup_single or args.optics_diagnostic):parser.error('--mockup-corners requires an independent --mockup-review')
 if args.mockup_review and not args.native_boundaries:parser.error('--mockup-review requires --native-boundaries')
-if sum([args.mockup_review,args.rim_review,args.glass_modes,args.detail_review,args.calendar,args.widescreen,args.selector_motion,args.selector_scan,args.directional_return,args.system_clock,args.library,args.storage,args.flat_pages,args.dense_storage])>1:parser.error('Choose one review sequence')
+if args.library:parser.error('--library is no longer available in the normal shell: the top cube side is Storage. Use an explicit game-library fixture for internal library tests.')
+if sum([args.mockup_review,args.rim_review,args.glass_modes,args.detail_review,args.motion_storage_review,args.calendar,args.widescreen,args.selector_motion,args.selector_scan,args.directional_return,args.system_clock,args.library,args.storage,args.flat_pages,args.dense_storage])>1:parser.error('Choose one review sequence')
 if args.detail_profile and not args.detail_review:parser.error('--detail-profile requires --detail-review')
 if args.detail_review and not args.native_boundaries:parser.error('--detail-review requires --native-boundaries')
 if args.detail_review and (args.inner_blur_review or args.inner_blur_high):parser.error('--detail-review independently enables High blur; disable the other blur review modes')
+if args.motion_storage_profile and not args.motion_storage_review:parser.error('--motion-storage-profile requires --motion-storage-review')
+if args.motion_storage_review and not args.native_boundaries:parser.error('--motion-storage-review requires --native-boundaries')
+if args.motion_storage_review and (args.inner_blur_review or args.inner_blur_high):parser.error('--motion-storage-review independently enables High blur; disable the other blur review modes')
 if args.glass_profile_only and not args.rim_profile:parser.error('--glass-profile-only requires --glass-profile')
 if args.inner_blur_profile and (not args.inner_blur_review or args.mockup_review):parser.error('--inner-blur-profile requires --inner-blur-review on a normal DOL')
 if args.inner_blur_profile_only and not args.inner_blur_profile:parser.error('--inner-blur-profile-only requires --inner-blur-profile')
 if args.profile_seconds<30 or args.profile_seconds>180:parser.error('--profile-seconds must be between 30 and 180')
-if args.quick_input and not (args.inner_blur_review or args.glass_modes or args.detail_review or args.selector_scan or args.flat_pages or args.widescreen):parser.error('--quick-input is supported for blur and detail/video reviews')
+if args.quick_input and not (args.inner_blur_review or args.glass_modes or args.detail_review or args.motion_storage_review or args.selector_scan or args.flat_pages or args.widescreen):parser.error('--quick-input is supported for blur, motion/storage and detail/video reviews')
 if args.inner_blur_cubes and not args.inner_blur_review:parser.error('--inner-blur-cubes requires --inner-blur-review')
 if (args.inner_blur_review or args.inner_blur_high) and not args.native_boundaries:parser.error('Inner-glass blur review requires --native-boundaries')
 if args.inner_blur_high and not args.glass_modes:parser.error('--inner-blur-high requires --glass-modes')
@@ -163,6 +169,10 @@ def shot(name):
             info=event['xfb'];expected_scan=2 if name.startswith(('05-','06-','07-')) else 0
             if (info['width'],info['height'],info['vi_scan_bits'])!=(640,480,expected_scan):
                 raise RuntimeError(f'{name}: grouped Video preview/keep/rollback has the wrong native VI mode: {info}')
+        elif args.motion_storage_review:
+            info=event['xfb']
+            if (info['width'],info['height'],info['vi_scan_bits'])!=(640,480,0):
+                raise RuntimeError(f'{name}: motion/storage review must stay in native 640x480 interlaced output: {info}')
         if native_frames.stable_frame()!=boundary:raise RuntimeError('Native frame advanced during framebuffer read')
     events.append(event)
     if native_frames is None:p.send_signal(signal.SIGCONT)
@@ -170,7 +180,34 @@ try:
     if native_frames is None:time.sleep(15)
     else:wait_frames(frame_count(),60)
     capture(root/'unused.ppm',True);time.sleep(.3)
-    if args.detail_review:
+    if args.motion_storage_review:
+        # Establish output and select all values through the ordinary controller
+        # path. The default Motion is Subtle; Options has three settings rows.
+        key('x');key('b')
+        key('Left');key('a');key('Up');key('a');key('Down');key('a');key('b',settle_frames=12)
+        key('a');key('Up');key('a');key('Down');key('a');key('b',settle_frames=12)
+        shot('01-disabled-a');native_frames.advance(45);shot('02-disabled-b')
+        key('a');key('a');key('Up');key('a');key('b',settle_frames=12)
+        shot('03-subtle-a');native_frames.advance(45);shot('04-subtle-b')
+        key('a');key('a');key('Up');shot('05-pronounced-value-detail')
+        key('a');key('b',settle_frames=12)
+        shot('06-pronounced-a');native_frames.advance(45);shot('07-pronounced-b')
+        key('b');key('i');shot('08-storage-top-side')
+        key('a');shot('09-storage-flat-actions');key('b',settle_frames=12)
+        key('k');shot('10-storage-down-return')
+        code=x.XKeysymToKeycode(d,x.XStringToKeysym(b'Right'))
+        assert xt.XTestFakeKeyEvent(d,code,1,0);x.XSync(d,0);native_frames.advance(4)
+        assert xt.XTestFakeKeyEvent(d,code,0,0);x.XSync(d,0)
+        shot('11-dark-border-corner');native_frames.advance(45)
+        if args.motion_storage_profile:
+            from profile_interactive_rim import collect
+            profile=root/'profile-high-pronounced';profile.mkdir()
+            code=x.XKeysymToKeycode(d,x.XStringToKeysym(b'Y'))
+            def profile_key(down):
+                assert xt.XTestFakeKeyEvent(d,code,down,0)
+                x.XSync(d,0)
+            collect(native_frames,args.dol.resolve(),profile,lambda:profile_key(1),lambda:profile_key(0),args.profile_seconds)
+    elif args.detail_review:
         # Normal interactive DOL: Options stays a flat list, while Video opens
         # its three Calendar-style parts directly. All changes use controller
         # input, with no native application-state or frame-buffer mutation.
@@ -222,20 +259,20 @@ try:
             key('b');key('Left')
         shot('01-blur-off');cube_blur('off');measure_blur('off')
         key('a')
-        for _ in range(2 if args.mockup_review and not args.inner_blur_cubes else 3):key('Down')
+        for _ in range(1 if args.mockup_review and not args.inner_blur_cubes else 2):key('Down')
         shot('02-options-blur-setting');key('a');shot('03-blur-off-editor')
         for index,level in enumerate(('low','medium','high')):
             if index>0:
                 key('a')
                 if args.inner_blur_profile or args.inner_blur_cubes:
-                    for _ in range(3):key('Down')
+                    for _ in range(2):key('Down')
                 key('a')
             key('Up');key('a')
             if index==0:shot('04-options-low-confirmed')
             key('b');shot(f'{index+5:02d}-blur-{level}');cube_blur(level);measure_blur(level)
         key('a')
         if args.inner_blur_profile or args.inner_blur_cubes:
-            for _ in range(3):key('Down')
+            for _ in range(2):key('Down')
         key('a');key('Up');shot('08-off-draft');key('b');shot('09-cancel-keeps-high')
         key('a');key('a');key('Up');key('a');key('b');shot('10-off-restored')
     elif args.mockup_review:
@@ -266,14 +303,14 @@ try:
         key('Down');shot('04-clock-after-restart')
         key('a');key('a');key('Down');key('Right');key('Down');key('a');shot('05-clock-decremented-after-emulator-reset')
     elif args.directional_return:
-        key('i');shot('01-up-play');key('k',2);shot('02-down-return-held')
+        key('i');shot('01-up-storage');key('k',2);shot('02-down-return-held')
         key('k');key('Up');shot('03-calendar-read-only-preview');key('i');shot('04-up-return')
         key('l');shot('05-right-video');key('j');shot('06-left-return')
         key('j');shot('07-left-options');key('l');shot('08-right-return')
     elif args.flat_pages:
         key('Left');key('Down');shot('01-options-side-read-only')
         key('a');shot('02-options-flat-list')
-        key('Down');key('a');shot('03-motion-changed-on-flat-page');key('a')
+        key('Down');key('a');shot('03-motion-value-editor');key('Down');key('a')
         key('b');shot('04-flat-list-b-to-cube')
         key('b');key('Right');key('a');shot('05-video-grouped-detail')
         key('Right',settle_frames=12);shot('06-scan-field-editor')
@@ -287,8 +324,8 @@ try:
         key('a');shot('14-native-memory-card-grid')
         key('a');shot('15-native-card-action-dialog')
         key('b');shot('16-dialog-b-closes-to-cube')
-        key('b');key('Up',settle_frames=40);key('a');shot('17-game-browser')
-        key('b');shot('18-browser-b-to-cube')
+        key('b');key('Up',settle_frames=40);shot('17-storage-top-side')
+        key('a');shot('18-storage-top-options');key('b')
         key('x');shot('19-safe-interlaced-preview-side')
     elif args.dense_storage:
         if args.dense_quick:
@@ -345,18 +382,10 @@ try:
             key('a');shot('11-text-preview')
             key('a');key('q');shot('12-l-parent-folder')
             key('b');shot('13-file-browser-b-to-cube')
-    elif args.library:
-        key('Up');shot('01-play-library')
-        key('a');shot('02-six-glass-game-cards')
-        key('Down');key('Down');shot('03-next-library-page')
-        key('a');shot('04-swiss-confirm-default-cancel')
-        key('Right');key('a');shot('05-fixture-launch-refused')
-        key('b');shot('06-browser-b-to-cube')
-        key('k');shot('07-reverse-stick-to-cube')
     elif args.glass_modes:
         if args.inner_blur_high:
             key('Left');key('a')
-            for _ in range(3):key('Down')
+            for _ in range(2):key('Down')
             key('a');key('Down');key('a');key('b')
         key('x');shot('01-safe-480i-cube')
         key('a');key('Right',settle_frames=12);key('Up');key('a');shot('02-480p-preview')
@@ -384,8 +413,8 @@ try:
         key('Down');key('a');key('Right');key('Up');shot('07-month-edited')
         key('Right');key('Up');shot('08-year-edited')
         key('b');shot('09-date-cancelled')
-        key('b');key('Left');key('a');key('Down');key('a');key('b');key('b');key('Down');key('a');key('a')
-        shot('10-reduced-a');wait_frames(frame_count(),45);shot('11-reduced-b')
+        key('b');key('Left');key('a');key('Down');key('a');key('Down');key('a');key('b');key('b');key('Down');key('a');key('a')
+        shot('10-disabled-a');wait_frames(frame_count(),45);shot('11-disabled-b')
     elif args.rim_review:
         if args.glass_profile_only:key('Right')
         else:
