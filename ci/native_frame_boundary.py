@@ -15,6 +15,49 @@ import sys
 import time
 
 
+def _receive(connection,length,deadline,flags=0):
+    remaining=deadline-time.monotonic()
+    if remaining<=0:raise TimeoutError('Native memory reply deadline exceeded')
+    connection.settimeout(remaining)
+    data=connection.recv(length,flags)
+    if not data:raise ConnectionError('Truncated native memory reply')
+    return data
+
+
+def _exact(connection,length,deadline):
+    result=bytearray()
+    while len(result)<length:result.extend(_receive(connection,length-len(result),deadline))
+    return bytes(result)
+
+
+def _memory_reply(connection,deadline):
+    """Read one checksummed packet without buffering bytes belonging to SDK controls.
+
+    A peek can include the checksum or the next packet. Consume only through
+    this packet's delimiter, then exactly its two checksum digits. Guest memory
+    is hex-encoded, so its payload cannot contain an escaped '#' delimiter.
+    """
+    while True:
+        header=_exact(connection,1,deadline)
+        if header==b'$':break
+        if header not in (b'+',b'-'):raise ValueError('Unexpected native GDB framing byte: '+repr(header))
+    payload=bytearray()
+    while True:
+        preview=_receive(connection,min(4096,8193-len(payload)),deadline,socket.MSG_PEEK)
+        marker=preview.find(b'#')
+        count=marker+1 if marker>=0 else len(preview)
+        added=count-1 if marker>=0 else count
+        if len(payload)+added>8192:raise ValueError('Oversized native memory reply')
+        consumed=_exact(connection,count,deadline)
+        payload.extend(consumed[:-1] if marker>=0 else consumed)
+        if marker>=0:break
+    checksum=_exact(connection,2,deadline)
+    if not re.fullmatch(b'[0-9a-fA-F]{2}',checksum) or int(checksum,16)!=(sum(payload)&255):
+        raise ValueError('Invalid native memory reply checksum')
+    connection.sendall(b'+')
+    return bytes(payload)
+
+
 class NativeFrames:
     def __init__(self,sdk,dol,process):
         sys.path.insert(0,str(Path(sdk)/'scripts'))
@@ -86,11 +129,18 @@ class NativeFrames:
         raise RuntimeError('Guest did not remain paused for native capture')
 
     def read_bytes(self,address,length):
+        if not isinstance(address,int) or not isinstance(length,int) or address<0 or length<0 or address>0xffffffff or length>0x100000000-address:
+            raise ValueError('Native memory read is outside the 32-bit address space')
         result=bytearray()
         for offset in range(0,length,2048):
-            n=min(2048,length-offset);reply=self.request(self.connection,f'm{address+offset:x},{n:x}')
-            if not re.fullmatch('[0-9a-fA-F]{'+str(n*2)+'}',reply):raise RuntimeError('Incomplete native framebuffer read: '+reply[:32])
-            result.extend(bytes.fromhex(reply))
+            n=min(2048,length-offset);self.send(self.connection,f'm{address+offset:x},{n:x}')
+            deadline=time.monotonic()+10;reply=_memory_reply(self.connection,deadline)
+            # Retain the SDK request helper's treatment of unsolicited stops and
+            # empty packets, while leaving ordinary control requests untouched.
+            while reply==b'' or reply.startswith(b'T05'):reply=_memory_reply(self.connection,deadline)
+            if len(reply)!=n*2 or not re.fullmatch(b'[0-9a-fA-F]*',reply):
+                raise RuntimeError('Incomplete native framebuffer read: '+repr(reply[:32]))
+            result.extend(bytes.fromhex(reply.decode('ascii')))
         return bytes(result)
 
     def capture_xfb(self,path):

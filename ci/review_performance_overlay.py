@@ -31,6 +31,8 @@ parser.add_argument('--mockup-review',action='store_true',help='Deterministic na
 parser.add_argument('--glass-modes',action='store_true',help='Closed-shell rendering after 480p, widescreen, 576i, 240-line, rollback and safe-mode switches')
 parser.add_argument('--inner-blur-review',action='store_true',help='Use real Options input to capture all inner-glass blur levels and cancellation')
 parser.add_argument('--inner-blur-profile',action='store_true',help='With --inner-blur-review, measure each level on the normal interactive Video face')
+parser.add_argument('--inner-blur-profile-only',action='store_true',help='Skip repeated editor/list captures during the full blur profile')
+parser.add_argument('--profile-seconds',type=int,default=30,help='Uninterrupted host observation window; increase for slow software rendering')
 parser.add_argument('--inner-blur-cubes',action='store_true',help='Also capture the unobstructed menu cube at each reviewed blur level')
 parser.add_argument('--inner-blur-high',action='store_true',help='Enable High inner-glass blur via Options before --glass-modes')
 parser.add_argument('--calendar',action='store_true',help='Review two-row blur and independent time/date editing instead of the overlay sequence')
@@ -57,6 +59,8 @@ if args.mockup_review and not args.native_boundaries:parser.error('--mockup-revi
 if sum([args.mockup_review,args.rim_review,args.glass_modes,args.calendar,args.widescreen,args.selector_motion,args.selector_scan,args.directional_return,args.system_clock,args.library,args.storage,args.flat_pages,args.dense_storage])>1:parser.error('Choose one review sequence')
 if args.glass_profile_only and not args.rim_profile:parser.error('--glass-profile-only requires --glass-profile')
 if args.inner_blur_profile and (not args.inner_blur_review or args.mockup_review):parser.error('--inner-blur-profile requires --inner-blur-review on a normal DOL')
+if args.inner_blur_profile_only and not args.inner_blur_profile:parser.error('--inner-blur-profile-only requires --inner-blur-profile')
+if args.profile_seconds<30 or args.profile_seconds>180:parser.error('--profile-seconds must be between 30 and 180')
 if args.inner_blur_cubes and not args.inner_blur_review:parser.error('--inner-blur-cubes requires --inner-blur-review')
 if (args.inner_blur_review or args.inner_blur_high) and not args.native_boundaries:parser.error('Inner-glass blur review requires --native-boundaries')
 if args.inner_blur_high and not args.glass_modes:parser.error('--inner-blur-high requires --glass-modes')
@@ -117,6 +121,7 @@ if args.native_boundaries:
     native_frames=NativeFrames(args.sdk,args.dol,p)
 events=[]
 def shot(name):
+    if args.inner_blur_profile_only and name not in ('01-blur-off','05-blur-low','06-blur-medium','07-blur-high','10-off-restored','cube-off','cube-high'):return
     if p.poll() is not None:raise RuntimeError('Dolphin exited')
     boundary=native_frames.stable_frame() if native_frames is not None else None
     if native_frames is None:p.send_signal(signal.SIGSTOP)
@@ -165,7 +170,7 @@ try:
             def profile_key(down):
                 assert xt.XTestFakeKeyEvent(d,code,down,0)
                 x.XSync(d,0)
-            collect(native_frames,args.dol.resolve(),profile,lambda:profile_key(1),lambda:profile_key(0))
+            collect(native_frames,args.dol.resolve(),profile,lambda:profile_key(1),lambda:profile_key(0),args.profile_seconds)
             key('b');key('Left')
         shot('01-blur-off');cube_blur('off');measure_blur('off')
         key('a')
@@ -375,6 +380,8 @@ try:
             key('x');shot('09-safe-mode')
     (root/'events.json').write_text(json.dumps(events,indent=2)+'\n')
 finally:
+    # Preserve completed capture metadata even if a later profile is incomplete.
+    if events:(root/'events.json').write_text(json.dumps(events,indent=2)+'\n')
     if native_frames is not None:native_frames.close()
     if p.poll() is None:
         p.send_signal(signal.SIGCONT);p.terminate()
