@@ -66,7 +66,12 @@ internal sealed class IplShell
     }
     internal void SafeMode()
     {if(Page==ShellPage.Browser)Browser?.Dispose();Video.SafeMode();if(!Video.Pending&&Video.Status=="SAFE MODE - 640X480I 4:3"){TurnTo(ShellFace.Video);SavePreferences();}else SystemStatus=Video.Status;}
+#if IPL_HISTORICAL_RENDERER
+    // The measured historical adapter retains only three panel rows.
+    internal int Rows => Face == ShellFace.Video ? 3 : Face == ShellFace.Calendar ? 2 : Face == ShellFace.Options ? 3 : Face==ShellFace.Memory?2:1;
+#else
     internal int Rows => Face == ShellFace.Video ? 3 : Face == ShellFace.Calendar ? 2 : Face == ShellFace.Options ? 4 : Face==ShellFace.Memory?2:1;
+#endif
     internal bool Editing => Page == ShellPage.Detail&&fieldEditing;
     internal bool FlatMenu => Page == ShellPage.Detail&&!fieldEditing;
     internal string Title => Face == ShellFace.Video ? "Video" : Face == ShellFace.Calendar ? "Calendar" : Face == ShellFace.Options ? "Options" : Face == ShellFace.Memory ? "Storage" : "Game Play";
