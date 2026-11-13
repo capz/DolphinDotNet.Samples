@@ -37,6 +37,8 @@ internal sealed class SealedGlassShell : IDisposable
     private readonly NativeBuffer reflectionPositionMatrix=NativeBuffer.Allocate(48);
     private readonly float[] reflectionPosition=new float[12];
     private int copyWidth,copyHeight;
+    private InnerGlassBlur? innerBlur;
+    private int blurLevel;
     private readonly int commandBytes=(3+IplSealedGlassGeometry.Indices*4+31)/32*32;
     internal SealedGlassShell()
     {
@@ -163,7 +165,7 @@ internal sealed class SealedGlassShell : IDisposable
         }
         bendImage.Flush();
     }
-    internal void Prepare(IplPoint x,IplPoint y,IplPoint z,float sceneScale,float centerY,float width,float height,float canvasScale,float offset,int physicalWidth,int physicalHeight)
+    internal void Prepare(IplPoint x,IplPoint y,IplPoint z,float sceneScale,float centerY,float width,float height,float canvasScale,float offset,int physicalWidth,int physicalHeight,int glassBlur=0)
     {
         float sx=(IplCamera.CenterX*canvasScale+offset),sy=centerY*canvasScale,scale=sceneScale*canvasScale;
         projection[0]=2*IplCamera.Distance*scale*IplCamera.HorizontalScale/width;projection[2]=1-2*sx/width;
@@ -222,6 +224,13 @@ internal sealed class SealedGlassShell : IDisposable
         fresnelMatrix.Flush();screenMatrix.Flush();refractionMatrix.Flush();
         projectionBuffer.Write(projection);modelBuffer.Write(model);textureMatrix.Write(texMatrix);positionMatrix.Write(positionTransform);
         projectionBuffer.Flush();modelBuffer.Flush();textureMatrix.Flush();positionMatrix.Flush();
+        blurLevel=glassBlur;
+        if(blurLevel!=0)
+        {
+            // Native allocation and matrix uploads happen between frames.
+            if(innerBlur==null)innerBlur=new InnerGlassBlur();
+            innerBlur.Prepare(blurLevel,screenTransform,canvasScale/width*cropX,canvasScale/height*cropY,copyWidth,copyHeight);
+        }
     }
     private void BeginInterfacePass(GraphicsDevice device,bool front)
     {
@@ -291,6 +300,8 @@ internal sealed class SealedGlassShell : IDisposable
     }
     internal void DrawFront(GraphicsDevice device)
     {
+        if(blurLevel!=0)
+            innerBlur!.Draw(device,rearImage,rearTexture,vertices,inner,commandBytes,projectionBuffer,modelBuffer,copyWidth,copyHeight);
         BeginInterfacePass(device,true);
         // The cavity's front interface must cover the centered icon before
         // the transmitted scene is captured through the outer front wall.
@@ -374,5 +385,5 @@ internal sealed class SealedGlassShell : IDisposable
         GX.GX_SetTexCoordScaleManually(3,0,1,1);GX.GX_SetTexCoordScaleManually(4,0,1,1);GX.GX_SetTexCoordScaleManually(5,0,1,1);
         device.EndRaw();
     }
-    public void Dispose(){vertices.Dispose();outer.Dispose();inner.Dispose();environment.Dispose();rearEnvironment.Dispose();innerEnvironment.Dispose();texture.Dispose();projectionBuffer.Dispose();modelBuffer.Dispose();textureMatrix.Dispose();reversedTextureMatrix.Dispose();normalMatrix.Dispose();viewOffsets.Dispose();offsetTexture.Dispose();positionMatrix.Dispose();indirectMatrix.Dispose();fresnel.Dispose();fresnelTexture.Dispose();fresnelMatrix.Dispose();innerFresnelMatrix.Dispose();rearImage.Dispose();rearTexture.Dispose();screenMatrix.Dispose();refractionMatrix.Dispose();bendImage.Dispose();bendTexture.Dispose();bendMatrix.Dispose();echoMatrix.Dispose();fieldImage.Dispose();fieldTexture.Dispose();reflectionPositionMatrix.Dispose();}
+    public void Dispose(){innerBlur?.Dispose();vertices.Dispose();outer.Dispose();inner.Dispose();environment.Dispose();rearEnvironment.Dispose();innerEnvironment.Dispose();texture.Dispose();projectionBuffer.Dispose();modelBuffer.Dispose();textureMatrix.Dispose();reversedTextureMatrix.Dispose();normalMatrix.Dispose();viewOffsets.Dispose();offsetTexture.Dispose();positionMatrix.Dispose();indirectMatrix.Dispose();fresnel.Dispose();fresnelTexture.Dispose();fresnelMatrix.Dispose();innerFresnelMatrix.Dispose();rearImage.Dispose();rearTexture.Dispose();screenMatrix.Dispose();refractionMatrix.Dispose();bendImage.Dispose();bendTexture.Dispose();bendMatrix.Dispose();echoMatrix.Dispose();fieldImage.Dispose();fieldTexture.Dispose();reflectionPositionMatrix.Dispose();}
 }

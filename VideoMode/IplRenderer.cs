@@ -340,8 +340,9 @@ internal sealed partial class IplRenderer
     private void PanelTint(IplShell s,int row)=>PanelShape(s,row,row==s.Row?SelectedPanelTint:IdlePanelTint);
     private void PanelShape(IplShell s,int row,uint tint)
     {
-        const float left=-.777f,right=.795f,height=.33f,radius=.087f;
-        float top=.43f-row*.428f,bottom=top-height;
+        const float left=-.777f,right=.795f;
+        float height=s.Rows==4?.25f:.33f,radius=s.Rows==4?.075f:.087f;
+        float top=.43f-row*(s.Rows==4?.31f:.428f),bottom=top-height;
         var center=FacePoint(s,0,top-height/2);IplPoint first=default,previous=default;
         for(int corner=0;corner<4;corner++)for(int j=0;j<=8;j++)
         {
@@ -405,10 +406,10 @@ internal sealed partial class IplRenderer
         FaceText(s,s.Title,.045f,.765f,26,White,0,.95f);
         for(int i=0;i<s.Rows;i++)
         {
-            float y=.35f-i*.428f;
+            float y=s.Rows==4?.39f-i*.31f:.35f-i*.428f;
             uint color=i==s.Row?White:0xd5d6dcff;
             float focus=s.Page==ShellPage.Face?(i==s.Row?1:0):s.Focus(i);focus=focus*focus*(3-2*focus);
-            float size=16.5f*(1+.30f*focus);
+            float size=(s.Rows==4?14.5f:16.5f)*(1+.30f*focus);
             string value=s.Value(i);
             // Keep both edge anchors fixed as the type grows/shrinks.
             float maximum=TextWidth(s.Label(i),size)+TextWidth(value,size);

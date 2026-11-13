@@ -45,7 +45,7 @@ class NativeFrames:
         assert len(calls)==1;self.address=calls[0]
         deadline=time.monotonic()+30;self.connection=None
         while time.monotonic()<deadline:
-            if process.poll() is not None:raise RuntimeError('Dolphin exited before debugger connection')
+            if process.poll() is not None:raise RuntimeError(f'Dolphin exited before debugger connection (exit {process.returncode}); inspect emulator.log')
             try:self.connection=socket.create_connection(('127.0.0.1',2174),timeout=.3);break
             except OSError:time.sleep(.1)
         if self.connection is None:raise TimeoutError('No native frame-boundary debugger')

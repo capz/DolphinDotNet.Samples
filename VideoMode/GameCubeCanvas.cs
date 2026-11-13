@@ -4,10 +4,11 @@ using Dolphin.Timing;
 
 internal sealed partial class GameCubeCanvas : IIplCanvas, IIplBrowserCanvas, IDisposable
 {
-    private const int GlassVertices=25*25, PanelRowVertices=36*3,PanelVertices=3*PanelRowVertices,BlurAxis=9,BlurTaps=BlurAxis*BlurAxis;
+    private const int GlassVertices=25*25, PanelRowVertices=36*3,PanelVertices=4*PanelRowVertices,BlurAxis=9,BlurTaps=BlurAxis*BlurAxis;
     private readonly GraphicsDevice device;
     private readonly Draw2D draw;
     private readonly SealedGlassShell sealedGlass=new SealedGlassShell();
+    internal int GlassBlur;
 #if IPL_CACHED_SELECTORS
     private readonly IndexedRims[] selectors=new IndexedRims[3];
     private readonly string[] selectorValues=new string[3];
@@ -91,7 +92,7 @@ internal sealed partial class GameCubeCanvas : IIplCanvas, IIplBrowserCanvas, ID
         this.device=device;
         renderer=new Renderer(device);
         footer=new CachedFooter(glass);
-        browserCards=new CachedFooter(glass,6,24);
+        browserCards=new CachedFooter(glass,7,24);
 #if IPL_CACHED_GRID
         editorGrid=new CachedFooter(glass,1,32);
 #endif
@@ -189,7 +190,7 @@ internal sealed partial class GameCubeCanvas : IIplCanvas, IIplBrowserCanvas, ID
     private static Color32 Color(uint c)=>new Color32((byte)(c>>24),(byte)(c>>16),(byte)(c>>8),(byte)c);
     private Vector3 World(IplPoint p)=>new Vector3((p.X-320)*scale,(240-p.Y)*scale,0);
     public bool PrepareSealedGlass(IplPoint x,IplPoint y,IplPoint z,float sceneScale,float centerY)
-    {sealedGlass.Prepare(x,y,z,sceneScale,centerY,logicalWidth,logicalHeight,scale,offset,device.Width,device.Height);return true;}
+    {sealedGlass.Prepare(x,y,z,sceneScale,centerY,logicalWidth,logicalHeight,scale,offset,device.Width,device.Height,GlassBlur);return true;}
     public void BeginGlass() { }
     public void GlassVertex(int index,IplPoint point,uint color,float u,float v,float reflection) { }
     public void EndGlassFace() { }
@@ -262,7 +263,7 @@ internal sealed partial class GameCubeCanvas : IIplCanvas, IIplBrowserCanvas, ID
         }
 #endif
         renderer.End3D();draw.Begin();
-        if(IplFrameProfiler.Active)IplFrameProfiler.BlurUs=IplFrameProfiler.Since(start);
+        if(IplFrameProfiler.Active)IplFrameProfiler.BlurUs+=IplFrameProfiler.Since(start);
     }
     public void Triangle(float ax,float ay,float bx,float by,float cx,float cy,uint color)
     {

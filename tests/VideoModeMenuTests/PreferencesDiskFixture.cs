@@ -43,14 +43,14 @@ internal static class IplPreferencesDiskTests
         try{
             Dolphin.Storage.Storage.Root=root;
             var store=new IplPreferencesStore();Check(!store.Load(out _));
-            var first=new IplPreferences(new VideoModeSettings(1,1,false),0,false);
-            var second=new IplPreferences(new VideoModeSettings(2,2,true),1,true);
-            Check(store.Save(first)&&store.Save(second));var boot=new IplPreferencesStore();Check(boot.Load(out var saved)&&saved.Video.Resolution==2&&saved.Sound==1);
+            var first=new IplPreferences(new VideoModeSettings(1,1,false),0,false,1);
+            var second=new IplPreferences(new VideoModeSettings(2,2,true),1,true,3);
+            Check(store.Save(first)&&store.Save(second));var boot=new IplPreferencesStore();Check(boot.Load(out var saved)&&saved.Video.Resolution==2&&saved.Sound==1&&saved.GlassBlur==3);
             string b=Dolphin.Storage.Storage.PathFor(IplPreferencesStore.SlotB);
-            File.WriteAllBytes(b,new byte[9]);boot=new IplPreferencesStore();Check(boot.Load(out saved)&&saved.Video.Resolution==1);
-            Check(boot.Save(second));Dolphin.Storage.Storage.FailSlotA=true;boot=new IplPreferencesStore();Check(boot.Load(out saved)&&saved.Video.Resolution==2);
+            File.WriteAllBytes(b,new byte[9]);boot=new IplPreferencesStore();Check(boot.Load(out saved)&&saved.Video.Resolution==1&&saved.GlassBlur==1);
+            Check(boot.Save(second));Dolphin.Storage.Storage.FailSlotA=true;boot=new IplPreferencesStore();Check(boot.Load(out saved)&&saved.Video.Resolution==2&&saved.GlassBlur==3);
             Dolphin.Storage.Storage.FailSlotA=false;Dolphin.Storage.Storage.Writable=false;Check(!boot.Save(first));
-            boot=new IplPreferencesStore();Check(boot.Load(out saved)&&saved.Video.Resolution==2);
+            boot=new IplPreferencesStore();Check(boot.Load(out saved)&&saved.Video.Resolution==2&&saved.GlassBlur==3);
             File.WriteAllBytes(b,new byte[32]);File.WriteAllBytes(Dolphin.Storage.Storage.PathFor(IplPreferencesStore.SlotA),new byte[32]);
             Check(!new IplPreferencesStore().Load(out _));
             Console.WriteLine("Preferences disk: short reads, reboot restore, torn slot fallback, unreadable slot recovery and read-only failures passed.");

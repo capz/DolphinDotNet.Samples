@@ -29,6 +29,10 @@ parser.add_argument('--mockup-single',action='store_true',help='Capture only the
 parser.add_argument('--mockup-corners',action='store_true',help='Capture the native mockup pose and rotating corner only')
 parser.add_argument('--mockup-review',action='store_true',help='Deterministic native Options/flat/return/turn views')
 parser.add_argument('--glass-modes',action='store_true',help='Closed-shell rendering after 480p, widescreen, 576i, 240-line, rollback and safe-mode switches')
+parser.add_argument('--inner-blur-review',action='store_true',help='Use real Options input to capture all inner-glass blur levels and cancellation')
+parser.add_argument('--inner-blur-profile',action='store_true',help='With --inner-blur-review, measure each level on the normal interactive Video face')
+parser.add_argument('--inner-blur-cubes',action='store_true',help='Also capture the unobstructed menu cube at each reviewed blur level')
+parser.add_argument('--inner-blur-high',action='store_true',help='Enable High inner-glass blur via Options before --glass-modes')
 parser.add_argument('--calendar',action='store_true',help='Review two-row blur and independent time/date editing instead of the overlay sequence')
 parser.add_argument('--selector-motion',action='store_true',help='Record active hour/minute/month/year motion, A/B and Reduced Motion')
 parser.add_argument('--selector-scan',action='store_true',help='Exercise animated scan values across progressive/interlaced preview, keep, rollback and safe mode')
@@ -52,6 +56,10 @@ if args.mockup_corners and (not args.mockup_review or args.mockup_single or args
 if args.mockup_review and not args.native_boundaries:parser.error('--mockup-review requires --native-boundaries')
 if sum([args.mockup_review,args.rim_review,args.glass_modes,args.calendar,args.widescreen,args.selector_motion,args.selector_scan,args.directional_return,args.system_clock,args.library,args.storage,args.flat_pages,args.dense_storage])>1:parser.error('Choose one review sequence')
 if args.glass_profile_only and not args.rim_profile:parser.error('--glass-profile-only requires --glass-profile')
+if args.inner_blur_profile and (not args.inner_blur_review or args.mockup_review):parser.error('--inner-blur-profile requires --inner-blur-review on a normal DOL')
+if args.inner_blur_cubes and not args.inner_blur_review:parser.error('--inner-blur-cubes requires --inner-blur-review')
+if (args.inner_blur_review or args.inner_blur_high) and not args.native_boundaries:parser.error('Inner-glass blur review requires --native-boundaries')
+if args.inner_blur_high and not args.glass_modes:parser.error('--inner-blur-high requires --glass-modes')
 if args.rim_profile and not args.rim_review:parser.error('--rim-profile requires --rim-review')
 if args.rim_review and not args.native_boundaries:parser.error('--rim-review requires --native-boundaries')
 if args.native_boundaries and args.sdk is None:parser.error('--native-boundaries requires --sdk')
@@ -143,7 +151,41 @@ try:
     if native_frames is None:time.sleep(15)
     else:wait_frames(frame_count(),60)
     capture(root/'unused.ppm',True);time.sleep(.3)
-    if args.mockup_review:
+    if args.inner_blur_review:
+        if not args.mockup_review:key('Left')
+        def cube_blur(level):
+            if not args.inner_blur_cubes:return
+            key('b');shot('cube-'+level);key('Left')
+        def measure_blur(level):
+            if not args.inner_blur_profile:return
+            from profile_interactive_rim import collect
+            key('b');key('Right')
+            profile=root/('profile-'+level);profile.mkdir()
+            code=x.XKeysymToKeycode(d,x.XStringToKeysym(b'Y'))
+            def profile_key(down):
+                assert xt.XTestFakeKeyEvent(d,code,down,0)
+                x.XSync(d,0)
+            collect(native_frames,args.dol.resolve(),profile,lambda:profile_key(1),lambda:profile_key(0))
+            key('b');key('Left')
+        shot('01-blur-off');cube_blur('off');measure_blur('off')
+        key('a')
+        for _ in range(2 if args.mockup_review and not args.inner_blur_cubes else 3):key('Down')
+        shot('02-options-blur-setting');key('a');shot('03-blur-off-editor')
+        for index,level in enumerate(('low','medium','high')):
+            if index>0:
+                key('a')
+                if args.inner_blur_profile or args.inner_blur_cubes:
+                    for _ in range(3):key('Down')
+                key('a')
+            key('Up');key('a')
+            if index==0:shot('04-options-low-confirmed')
+            key('b');shot(f'{index+5:02d}-blur-{level}');cube_blur(level);measure_blur(level)
+        key('a')
+        if args.inner_blur_profile or args.inner_blur_cubes:
+            for _ in range(3):key('Down')
+        key('a');key('Up');shot('08-off-draft');key('b');shot('09-cancel-keeps-high')
+        key('a');key('a');key('Up');key('a');key('b');shot('10-off-restored')
+    elif args.mockup_review:
         if args.optics_diagnostic:
             shot('01-fresnel');key('z');shot('02-environment-uv');key('z');shot('03-field-uv')
         else:shot('01-options-target')
@@ -259,6 +301,10 @@ try:
         key('b');shot('06-browser-b-to-cube')
         key('k');shot('07-reverse-stick-to-cube')
     elif args.glass_modes:
+        if args.inner_blur_high:
+            key('Left');key('a')
+            for _ in range(3):key('Down')
+            key('a');key('Down');key('a');key('b')
         key('x');shot('01-safe-480i-cube')
         key('a');key('Down');key('a');key('Up');key('a');shot('02-480p-preview')
         key('a');key('b');shot('03-480p-cube')

@@ -1,0 +1,48 @@
+using System;
+
+internal static class IplGlassBlur
+{
+    internal static float Spacing(int level)
+    {
+        if(level==0)return 0;
+        if(level==1)return 1;
+        if(level==2)return 2;
+        if(level==3)return 3;
+        throw new ArgumentOutOfRangeException(nameof(level));
+    }
+    // A dense nine-sample Gaussian expressed as five bilinear texture fetches.
+    // Each adjacent pair retains its weighted position; quantized symmetric
+    // weights total 255 exactly. Called only when strength or pixel size changes.
+    // Return the actual discrete impulse's standard deviation after quantization.
+    internal static float BuildKernel(float sigma,float[] offsets,byte[] weights,int at)
+    {
+        if(!(sigma>=0&&sigma<=float.MaxValue))throw new ArgumentOutOfRangeException(nameof(sigma));
+        double w1=0,w2=0,w3=0,w4=0;
+        if(sigma>0)
+        {
+            double inverse=-.5/((double)sigma*sigma);
+            w1=Math.Exp(inverse);w2=Math.Exp(inverse*4);
+            w3=Math.Exp(inverse*9);w4=Math.Exp(inverse*16);
+        }
+        double inner=w1+w2,outer=w3+w4,total=1+2*(inner+outer);
+        float innerOffset=inner>0?(float)((w1+2*w2)/inner):1;
+        float outerOffset=outer>0?(float)((3*w3+4*w4)/outer):3;
+        int innerWeight=(int)(255*inner/total+.5),outerWeight=(int)(255*outer/total+.5);
+        offsets[at]=-outerOffset;offsets[at+1]=-innerOffset;offsets[at+2]=0;
+        offsets[at+3]=innerOffset;offsets[at+4]=outerOffset;
+        weights[at]=weights[at+4]=(byte)outerWeight;
+        weights[at+1]=weights[at+3]=(byte)innerWeight;
+        weights[at+2]=(byte)(255-2*(innerWeight+outerWeight));
+        // Bilinear reconstruction distributes the pair over adjacent integer
+        // texels. Its second moment differs from the fused offset squared.
+        double moment=2*(innerWeight*(1+3*(innerOffset-1))+outerWeight*(9+7*(outerOffset-3)))/255.0;
+        return (float)Math.Sqrt(moment);
+    }
+    // Translate normalized screen T by dy at every depth: (T + dy*Q)/Q.
+    // Preserve S and Q so the existing projected cavity geometry stays aligned.
+    internal static void OffsetScreenT(float[] screen,float[] target,int at,float dy)
+    {
+        for(int i=0;i<12;i++)target[at+i]=screen[i];
+        for(int i=0;i<4;i++)target[at+4+i]+=dy*screen[8+i];
+    }
+}

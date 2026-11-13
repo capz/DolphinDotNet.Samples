@@ -30,6 +30,17 @@ one native rounded mesh and snapshot, with precomputed texture offsets and weigh
 Glass skips invisible faces and zero-alpha triangles; invariant wall math is cached.
 Physical hardware performance has not been measured in this cloud session.
 
+Options > Glass Blur controls the cube's inner glass: Off (default), Low,
+Medium or High. Open Options with A, select Glass Blur, then use Up/Down and
+A to confirm; B discards the draft and returns to the cube. The effect filters
+the scene through the user-facing inner boundary before the glass reflections
+and UI are composited, so the exterior highlights and labels stay sharp.
+It uses a separable nine-tap Gaussian kernel fused into five bilinear samples
+in each axis, a retained
+half-resolution intermediate and the existing indexed cavity mesh. Off skips
+all extra blur draws and copies. The intermediate is allocated between frames
+on first use and retained until shutdown (about 361 KiB native memory).
+
 [Six-pass native review and mockup comparisons](Design/six-pass-review.md).
 [Rounded-corner correction, front and angle captures](Design/corner-review.md).
 
@@ -76,12 +87,14 @@ to include the fix in the DOL. [Native scan-mode evidence, package provenance an
 limitations](Design/scan-mode-review.md) cover both resolution sequences and retain
 the earlier failure for comparison. Physical console/cable/display testing remains open.
 
-Confirmed video settings, sound and Reduced Motion are stored in alternating
+Confirmed video settings, sound, Reduced Motion and Glass Blur are stored in alternating
 32-byte checksummed records on GC Loader SD (`videomode/settings-a.bin` and
 `settings-b.bin`). Startup loads the newest valid record and applies its video
 mode, with a boot-output fallback on unsupported modes. Hold X during startup to
 bypass saved video. Preview drafts and reverted modes are never saved. A read-only
-or missing card is reported without changing another storage device.
+or missing card is reported without changing another storage device. Version-one
+settings remain readable and load Glass Blur as Off; confirmed writes use
+version two. Blur drafts are not saved.
 
 Source builds with `IplConsoleServices=true` use the SDK console-services APIs to
 read the real local console calendar and write IPL SRAM clock bias and sound.

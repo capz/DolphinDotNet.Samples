@@ -189,6 +189,7 @@ internal static class Program
             IplPerformanceOverlay.BeginFrame();
             bool timing=IplFrameProfiler.Active||IplPerformanceOverlay.Stats.Visible;
             long phaseStart=timing?Clock.Timestamp:0;
+            canvas.GlassBlur=shell.GlassBlur;
             canvas.Prepare();
 #if !IPL_HARDWARE_RUNNER
             canvas.UpdateArtwork(shell.Page==ShellPage.Browser?browser:null);
