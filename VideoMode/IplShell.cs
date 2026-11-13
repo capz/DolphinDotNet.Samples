@@ -13,9 +13,13 @@ internal sealed class IplShell
     internal int Row, Part;
     internal float Time, Turn = 1;
     internal float SelectorTime { get; private set; }
-    internal bool ReducedMotion;
+    private int motion=1,motionDraft=1;
+    internal int MotionLevel=>Editing&&Face==ShellFace.Options&&Row==1?motionDraft:motion;
+    // Older renderers and accessibility consumers still use the binary form.
+    internal bool ReducedMotion {get=>MotionLevel==0;set{motion=value?0:1;motionDraft=motion;}}
+    internal string MotionName=>MotionLevel==0?"Disabled":MotionLevel==1?"Subtle":"Pronounced";
     private int glassBlur,glassBlurDraft;
-    internal int GlassBlur=>Editing&&Face==ShellFace.Options&&Row==3?glassBlurDraft:glassBlur;
+    internal int GlassBlur=>Editing&&Face==ShellFace.Options&&Row==2?glassBlurDraft:glassBlur;
     private readonly IIplPreferencesStore? preferences;
     private readonly IIplConsoleCalendar? calendar;
     private readonly IIplConsoleSound? soundService;
@@ -39,7 +43,7 @@ internal sealed class IplShell
         Browser=browser;this.preferences=preferences;this.calendar=calendar;this.soundService=soundService;bool loaded=false;
         if(preferences!=null&&preferences.Load(out var saved)){
             loaded=true;
-            Sound=saved.Sound;ReducedMotion=saved.ReducedMotion;glassBlur=saved.GlassBlur;
+            Sound=saved.Sound;motion=motionDraft=saved.MotionLevel;glassBlur=saved.GlassBlur;
             if(restoreVideo){
                 try{output.Configure(saved.Video);SystemStatus="Saved settings restored.";}
                 catch(InvalidOperationException){SystemStatus="Saved video unavailable. Using boot output.";}
@@ -55,7 +59,7 @@ internal sealed class IplShell
     private bool SavePreferences()
     {
         if(preferences==null)return true;
-        bool saved=preferences.Save(new IplPreferences(Video.Applied,Sound,ReducedMotion,glassBlur));SystemStatus=preferences.Status;return saved;
+        bool saved=preferences.Save(new IplPreferences(Video.Applied,Sound,motion,glassBlur));SystemStatus=preferences.Status;return saved;
     }
     private bool RefreshCalendar()
     {
@@ -70,18 +74,18 @@ internal sealed class IplShell
     // The measured historical adapter retains only three panel rows.
     internal int Rows => Face == ShellFace.Video ? 3 : Face == ShellFace.Calendar ? 2 : Face == ShellFace.Options ? 3 : Face==ShellFace.Memory?2:1;
 #else
-    internal int Rows => Face == ShellFace.Video ? 3 : Face == ShellFace.Calendar ? 2 : Face == ShellFace.Options ? 4 : Face==ShellFace.Memory?2:1;
+    internal int Rows => Face == ShellFace.Video ? 3 : Face == ShellFace.Calendar ? 2 : Face == ShellFace.Options ? 3 : Face==ShellFace.Memory?2:1;
 #endif
     internal bool Editing => Page == ShellPage.Detail&&fieldEditing;
     internal bool FlatMenu => Page == ShellPage.Detail&&!fieldEditing;
     internal string Title => Face == ShellFace.Video ? "Video" : Face == ShellFace.Calendar ? "Calendar" : Face == ShellFace.Options ? "Options" : Face == ShellFace.Memory ? "Storage" : "Game Play";
-    internal string Label(int row) => Face == ShellFace.Video ? (row == 0 ? "Output" : row == 1 ? "Scan" : "Aspect Ratio") : Face == ShellFace.Calendar ? (row == 0 ? "Time" : "Date") : Face == ShellFace.Options ? (row == 0 ? "Sound" : row == 1 ? "Motion" : row == 2 ? "Storage" : "Glass Blur") : Face == ShellFace.Memory ? (row==0?"Memory Card":"SD Storage") : "Game Library";
+    internal string Label(int row) => Face == ShellFace.Video ? (row == 0 ? "Output" : row == 1 ? "Scan" : "Aspect Ratio") : Face == ShellFace.Calendar ? (row == 0 ? "Time" : "Date") : Face == ShellFace.Options ? (row == 0 ? "Sound" : row == 1 ? "Motion" : "Glass Blur") : Face == ShellFace.Memory ? (row==0?"Memory Card":"SD Storage") : "Game Library";
     internal string Value(int row)
     {
         var v = Editing ? Video.Selected : Video.Applied;
         if (Face == ShellFace.Video) return row == 0 ? (v.Resolution == 0 ? "240" : v.Resolution == 2 ? "576" : "480") : row == 1 ? (v.Scan == 0 ? "Auto" : v.Scan == 1 ? "Interlaced" : "Progressive") : v.Widescreen ? "16:9" : "4:3";
         if (Face == ShellFace.Calendar) return !CalendarAvailable?"Unavailable":row == 0 ? Two(Editing ? hour : Hour) + ":" + Two(Editing ? minute : Minute) : Two(Editing ? day : Day) + "/" + Two(Editing ? month : Month) + "/" + (Editing ? year : Year).ToString();
-        if (Face == ShellFace.Options) return row == 0 ? !SoundAvailable?"Unavailable":((Editing ? sound : Sound) == 0 ? "Stereo" : "Mono") : row == 1 ? (ReducedMotion ? "Reduced" : "Full") : row == 2 ? "Open" : GlassBlur==0?"Off":GlassBlur==1?"Low":GlassBlur==2?"Medium":"High";
+        if (Face == ShellFace.Options) return row == 0 ? !SoundAvailable?"Unavailable":((Editing ? sound : Sound) == 0 ? "Stereo" : "Mono") : row == 1 ? MotionName : GlassBlur==0?"Off":GlassBlur==1?"Low":GlassBlur==2?"Medium":"High";
         return "Open";
     }
     internal string Segment(int part) => Row == 0 ? Two(part == 0 ? hour : minute) : part == 0 ? Two(day) : part == 1 ? Two(month) : year.ToString();
@@ -113,7 +117,7 @@ internal sealed class IplShell
         Page = face == ShellFace.Menu ? ShellPage.Cube : ShellPage.Face;
         Turn = ReducedMotion ? 1 : 0;
         entryX=face==ShellFace.Video?1:face==ShellFace.Options?-1:0;
-        entryY=face==ShellFace.Play?1:face==ShellFace.Calendar?-1:0;
+        entryY=face==ShellFace.Memory?1:face==ShellFace.Calendar?-1:0;
     }
     // A held direction repeats values, never confirmation or a change of screen.
     internal void Direction(int x, int y, float dt,bool stick=false)
@@ -130,7 +134,7 @@ internal sealed class IplShell
         if(Page==ShellPage.Browser){Browser?.Direction(x,y);return;}
         if (Page == ShellPage.Cube)
         {
-            TurnTo(x > 0 ? ShellFace.Video : x < 0 ? ShellFace.Options : y > 0 ? ShellFace.Play : ShellFace.Calendar);
+            TurnTo(x > 0 ? ShellFace.Video : x < 0 ? ShellFace.Options : y > 0 ? ShellFace.Memory : ShellFace.Calendar);
             return;
         }
         if(Page==ShellPage.Face)return; // Side labels preview the options; A opens the flat list.
@@ -154,7 +158,8 @@ internal sealed class IplShell
             }
         }
         else if (Face == ShellFace.Options && Row == 0) sound = 1 - sound;
-        else if (Face == ShellFace.Options && Row == 3) glassBlurDraft=Wrap(glassBlurDraft+y,0,3);
+        else if (Face == ShellFace.Options && Row == 1) motionDraft=Wrap(motionDraft+y,0,2);
+        else if (Face == ShellFace.Options && Row == 2) glassBlurDraft=Wrap(glassBlurDraft+y,0,3);
     }
     internal void Confirm()
     {
@@ -168,13 +173,11 @@ internal sealed class IplShell
         }
         if(FlatMenu)
         {
-            if(Face==ShellFace.Options&&Row==2){TurnTo(ShellFace.Memory);Turn=1;ShowFlatMenu();return;}
             if(Face==ShellFace.Memory){OpenBrowser(Row==0?IplBrowserKind.MemoryCards:IplBrowserKind.Sd);return;}
             if (Face == ShellFace.Calendar && !CalendarAvailable) {SystemStatus=calendar==null?"System clock unavailable.":calendar.Status;return;}
             if (Face == ShellFace.Options && Row==0 && !SoundAvailable) {SystemStatus=soundService==null?"Console sound unavailable.":soundService.Status;return;}
-            if (Face == ShellFace.Options && Row == 1) { ReducedMotion = !ReducedMotion;SavePreferences(); return; }
             Video.CancelSelection(); Video.SelectRow(Row);
-            hour = Hour; minute = Minute; day = Day; month = Month; year = Year; sound = Sound;glassBlurDraft=glassBlur;
+            hour = Hour; minute = Minute; day = Day; month = Month; year = Year; sound = Sound;glassBlurDraft=glassBlur;motionDraft=motion;
             Part=0;SelectorTime=0;fieldEditing=true;Page=ShellPage.Detail;return;
         }
         if (Face == ShellFace.Video)
@@ -192,7 +195,8 @@ internal sealed class IplShell
             SystemStatus=soundService.Status;if(soundService.Read(out int actual))Sound=actual;return;
         }
         Sound = sound;
-        if(Face==ShellFace.Options&&Row==3)glassBlur=glassBlurDraft;
+        if(Face==ShellFace.Options&&Row==1)motion=motionDraft;
+        if(Face==ShellFace.Options&&Row==2)glassBlur=glassBlurDraft;
         if(Face==ShellFace.Options&&!SavePreferences()&&Row==0&&soundService!=null)SystemStatus="Console sound saved; SD settings not saved.";
         ShowFlatMenu();
     }

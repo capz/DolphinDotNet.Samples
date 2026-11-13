@@ -32,6 +32,9 @@ internal static class IplIconLayoutTests
             if(a.X*a.X+a.Y*a.Y+a.Z*a.Z!=1||b.X*b.X+b.Y*b.Y+b.Z*b.Z!=1||a.X*b.X+a.Y*b.Y+a.Z*b.Z!=0)
                 throw new Exception("Each centered icon needs an orthonormal face orientation.");
         }
+        var topRight=IplIconLayout.Point(ShellFace.Memory,1,0);var topUp=IplIconLayout.Point(ShellFace.Memory,0,1);
+        if(topRight.X!=1||topRight.Y!=0||topRight.Z!=0||topUp.X!=0||topUp.Y!=0||topUp.Z!=-1)
+            throw new Exception("Storage's centered icon must follow the top face basis.");
         Console.WriteLine("Cube icons: all six visible bounds centered at the 3D origin, with >=0.30 cavity clearance; rigid cube rotation preserves that clearance.");
     }
 }

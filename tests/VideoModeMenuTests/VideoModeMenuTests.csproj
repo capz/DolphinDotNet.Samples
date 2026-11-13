@@ -30,6 +30,7 @@
     <Compile Include="../../VideoMode/IplGlassOptics.cs" Link="IplGlassOptics.cs" />
     <Compile Include="../../VideoMode/IplGlassBlur.cs" Link="IplGlassBlur.cs" />
     <Compile Include="../../VideoMode/IplCamera.cs" Link="IplCamera.cs" />
+    <Compile Include="../../VideoMode/IplCubeMotion.cs" Link="IplCubeMotion.cs" />
     <Compile Include="../../VideoMode/IplRenderer.cs" Link="IplRenderer.cs" />
     <Compile Include="../../VideoMode/IplNumberCacheState.cs" Link="IplNumberCacheState.cs" />
     <Compile Include="../../VideoMode/IplPerformanceStats.cs" Link="IplPerformanceStats.cs" />

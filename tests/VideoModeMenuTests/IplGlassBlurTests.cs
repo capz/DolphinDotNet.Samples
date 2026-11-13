@@ -41,7 +41,7 @@ internal static class IplGlassBlurTests
         }
         CheckKernels();
         CheckBoundary();
-        Console.WriteLine("Glass blur: dense Gaussian impulse, normalized symmetric bilinear kernels, effective variance, projected radius and bounded cavity highlight passed.");
+        Console.WriteLine("Glass blur: dense Gaussian impulse, normalized symmetric bilinear kernels, effective variance, projected radius and bounded cavity light/dark returns passed.");
     }
     private static void CheckBoundary()
     {
@@ -61,6 +61,24 @@ internal static class IplGlassBlurTests
             // exposure. Even a unit internal return plus this gate fits8bits.
             Check(30*4*(1+weight)<255,"The optional return must not require wrapped HDR TEV inputs.");
             previous=weight;
+        }
+        Check(IplGlassBlur.BoundaryDarkening(0)==0&&IplGlassBlur.BoundaryDarkening(.2f)==0&&
+              IplGlassBlur.BoundaryDarkening(.5f)==0&&IplGlassBlur.BoundaryDarkening(1)==0,
+            "The dark border must spare frontal glass and the bright grazing silhouette.");
+        Check(IplGlassBlur.BoundaryHighlight(.16f)>.5f&&IplGlassBlur.BoundaryDarkening(.16f)==0&&
+              IplGlassBlur.BoundaryHighlight(.36f)==0&&IplGlassBlur.BoundaryDarkening(.36f)>.319f,
+            "The dark return must sit inward from the bright reflection, not dim its peak.");
+        float darkPrevious=0;
+        for(int i=0;i<=1000;i++)
+        {
+            float cosine=i/1000f,dark=IplGlassBlur.BoundaryDarkening(cosine);
+            Check(dark>=0&&dark<=.320001f&&dark==IplGlassBlur.BoundaryDarkening(-cosine),
+                "Border absorption must be bounded and symmetric under normal reversal.");
+            Check(Math.Abs(dark-darkPrevious)<.0041f,
+                "The dark return must remain continuous through its ramps and peak.");
+            if(cosine<=.24f||cosine>=.50f)Check(dark==0,
+                "The dark return must stay inside its finite cavity-normal band.");
+            darkPrevious=dark;
         }
     }
     private static void CheckKernels()

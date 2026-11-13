@@ -146,8 +146,8 @@ internal sealed partial class IplRenderer
     }
     private void Text(string text,float x,float y,float size,uint color)=>c.Text(text,x,y,size,color,0);
     private void Center(string text,float x,float y,float size,uint color)=>Text(text,x-TextWidth(text,size)/2,y,size,color);
-    private static float PoseYaw(ShellFace face)=>face==ShellFace.Video?-1.5707963f:face==ShellFace.Options?1.5707963f:face==ShellFace.Memory?3.1415926f:0;
-    private static float PosePitch(ShellFace face)=>face==ShellFace.Play?1.5707963f:face==ShellFace.Calendar?-1.5707963f:0;
+    private static float PoseYaw(ShellFace face)=>face==ShellFace.Video?-1.5707963f:face==ShellFace.Options?1.5707963f:face==ShellFace.Play?3.1415926f:0;
+    private static float PosePitch(ShellFace face)=>face==ShellFace.Memory?1.5707963f:face==ShellFace.Calendar?-1.5707963f:0;
     // Geometry uploads and capture allocation happen between frames, as required
     // by the SDK. No dynamic mesh is modified during a GX pass.
     internal void Prepare(IplShell shell)
@@ -183,13 +183,14 @@ internal sealed partial class IplRenderer
         if(t<1)ease+=(float)Math.Sin(t*3.1415926f)*.045f;
         yaw=PoseYaw(shell.PreviousFace)+(PoseYaw(shell.Face)-PoseYaw(shell.PreviousFace))*ease;
         pitch=PosePitch(shell.PreviousFace)+(PosePitch(shell.Face)-PosePitch(shell.PreviousFace))*ease;
-        if(!shell.ReducedMotion){yaw+=(float)Math.Sin(shell.Time/5.3f*6.2831853f)*.025f;pitch+=(float)Math.Sin(shell.Time/7.1f*6.2831853f)*.020f;}
+        var idle=IplCubeMotion.At(shell.MotionLevel,shell.Time);
+        yaw+=idle.Yaw;pitch+=idle.Pitch;
 #if IPL_VISUAL_REVIEW_ANGLE
         // Reproducible oblique pose exposes walls and face seams for native review.
         yaw+=.30f;pitch-=.16f;
 #endif
         cosYaw=(float)Math.Cos(yaw);sinYaw=(float)Math.Sin(yaw);cosPitch=(float)Math.Cos(pitch);sinPitch=(float)Math.Sin(pitch);
-        cy=IplCamera.CenterY+(shell.ReducedMotion?0:(float)Math.Sin(shell.Time*.7f));scale=IplCamera.Scale;
+        cy=IplCamera.CenterY+idle.Bob;scale=IplCamera.Scale;
         Cube();
         c.Section(IplRenderPhase.FrostGeometry);
         c.BeginPanels();
@@ -311,7 +312,7 @@ internal sealed partial class IplRenderer
         return new IplPoint((a.X*aw+b.X*bw)/sum,(a.Y*aw+b.Y*bw)/sum,(a.Z+b.Z)*.5f);
     }
     private static uint Rgba(int r,int g,int b,int a)=>(uint)((Math.Min(255,r)<<24)|(Math.Min(255,g)<<16)|(Math.Min(255,b)<<8)|a);
-    private static int SurfaceIndex(ShellFace face)=>face==ShellFace.Calendar?4:face==ShellFace.Options?2:face==ShellFace.Play?3:(int)face;
+    private static int SurfaceIndex(ShellFace face)=>face==ShellFace.Calendar?4:face==ShellFace.Options?2:face==ShellFace.Memory?3:face==ShellFace.Play?5:(int)face;
     private IplPoint FacePoint(IplShell s,float u,float v)=>Project(Surface(SurfaceIndex(s.Face),u,v));
     private void FaceText(IplShell s,string text,float u,float v,float size,uint color,float extraAngle=0,float stretch=1)
     {
@@ -323,7 +324,7 @@ internal sealed partial class IplRenderer
     }
     private void MenuLabels(IplShell s)
     {
-        FaceText(s,"Game Play",0,.72f,24,White);
+        FaceText(s,"Storage",0,.72f,24,White);
         FaceText(s,"Video",.64f,.05f,24,White,90);
         FaceText(s,"Calendar",0,-.60f,24,White);
         FaceText(s,"Options",-.67f,.05f,24,White,-90);

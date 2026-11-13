@@ -139,7 +139,8 @@ internal sealed class SealedGlassShell : IDisposable
                 float cosine=Math.Abs((tx*4+x-63.5f)/63.5f);
                 float r=IplGlassOptics.Reflectance(cosine,IplGlassOptics.RefractiveIndex);
                 int py=ty*4+y;
-                // Rows0..23 hold an optional cavity-boundary return. The
+                // Rows0..23 hold optional cavity-boundary light in RGB and
+                // adjacent dark-return absorption in alpha. The
                 // ordinary outer sample at V=.25 stays eight rows clear of
                 // this bank, including its bilinear sampling footprint.
                 // The remaining upper bank retains R^2 and outer opacity.
@@ -147,7 +148,7 @@ internal sealed class SealedGlassShell : IDisposable
                 // RGB, while alpha keeps that same outer opacity response.
                 float insideCosine=((py+.5f)/128-.755f)/.235f;
                 float radiance=py<24?IplGlassBlur.BoundaryHighlight(cosine):py<64?r*r:IplGlassOptics.BoundedInternalReturn(cosine,insideCosine,IplGlassOptics.RefractiveIndex);
-                int alpha=(int)(255*r),weight=(int)(255*radiance);
+                int alpha=(int)(255*(py<24?IplGlassBlur.BoundaryDarkening(cosine):r)),weight=(int)(255*radiance);
                 int at=(y*4+x)*2;tile[at]=(byte)alpha;tile[at+1]=(byte)weight;tile[32+at]=(byte)weight;tile[33+at]=(byte)weight;
             }
             fresnel.Write(tile,0,(ty*32+tx)*64);
@@ -326,7 +327,8 @@ internal sealed class SealedGlassShell : IDisposable
         if(blurLevel!=0)
         {
             // Restore the outer shader's inputs after the optional third near
-            // stage. No added shell draw or altered opacity is needed.
+            // stage. The dark-return alpha is confined to the near boundary;
+            // the outer opacity response and draw count stay unchanged.
             GX.GX_SetNumTexGens(6);GX.GX_SetNumTevStages(2);
             GX.GX_SetTevColorOp(0,GX_TEV_ADD,GX_TB_ZERO,GX_CS_SCALE_1,1,GX_TEVPREV);
         }
@@ -415,7 +417,8 @@ internal sealed class SealedGlassShell : IDisposable
         GX.GX_SetTexCoordScaleManually(6,1,128,128);
         // Move the existing four-times exposure before the Fresnel multiply.
         // REG1 remains within eight bits (K0 RGB <=30), and supplies the small
-        // extra reflected return. Alpha keeps its unchanged dielectric path.
+        // extra reflected return. The third stage adds bounded absorption to
+        // the dielectric alpha without attenuating the reflected highlight.
         GX.GX_SetTevColorOp(0,GX_TEV_ADD,GX_TB_ZERO,GX_CS_SCALE_4,1,GX_TEVREG1);
         GX.GX_SetTevColorIn(1,GX_CC_ZERO,GX_CC_C1,GX_CC_TEXC,GX_CC_ZERO);
         GX.GX_SetTevColorOp(1,GX_TEV_ADD,GX_TB_ZERO,GX_CS_SCALE_1,1,GX_TEVPREV);
@@ -423,7 +426,10 @@ internal sealed class SealedGlassShell : IDisposable
         GX.GX_SetTevOrder(2,GX_TEXCOORD6,GX_TEXMAP2,GX_COLORNULL);
         GX.GX_SetTevColorIn(2,GX_CC_ZERO,GX_CC_C1,GX_CC_TEXC,GX_CC_CPREV);
         GX.GX_SetTevColorOp(2,GX_TEV_ADD,GX_TB_ZERO,GX_CS_SCALE_1,1,GX_TEVPREV);
-        GX.GX_SetTevAlphaIn(2,GX_CA_ZERO,GX_CA_ZERO,GX_CA_ZERO,GX_CA_APREV);
+        // A + D*(1-A): retain the existing dielectric opacity while a narrow
+        // neutral dark band absorbs the scene underneath the bright return.
+        GX.GX_SetTevKAlphaSel(2,GX_TEV_KASEL_1);
+        GX.GX_SetTevAlphaIn(2,GX_CA_APREV,GX_CA_KONST,GX_CA_TEXA,GX_CA_ZERO);
         GX.GX_SetTevAlphaOp(2,GX_TEV_ADD,GX_TB_ZERO,GX_CS_SCALE_1,1,GX_TEVPREV);
         GX.GX_SetNumTevStages(3);
     }

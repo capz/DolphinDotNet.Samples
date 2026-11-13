@@ -28,8 +28,8 @@ internal readonly struct IplIconLayout
         if(face==ShellFace.Video)return new IplPoint(0,v,-u);
         if(face==ShellFace.Options)return new IplPoint(0,v,u);
         if(face==ShellFace.Calendar)return new IplPoint(u,0,v);
-        if(face==ShellFace.Play)return new IplPoint(u,0,-v);
-        if(face==ShellFace.Memory)return new IplPoint(-u,v,0);
+        if(face==ShellFace.Memory)return new IplPoint(u,0,-v);
+        if(face==ShellFace.Play)return new IplPoint(-u,v,0);
         return new IplPoint(u,v,0);
     }
 }

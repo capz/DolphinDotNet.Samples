@@ -47,9 +47,9 @@ internal static class IplShellTests
     internal static void Run()
     {
         ScanRoundTrip();
-        foreach(var face in new[]{ShellFace.Video,ShellFace.Options,ShellFace.Play,ShellFace.Calendar}){
-            int x=face==ShellFace.Video?1:face==ShellFace.Options?-1:0,y=face==ShellFace.Play?1:face==ShellFace.Calendar?-1:0;
-            var nav=new IplShell(new FakeOutput());Move(nav,x,y,true);nav.Tick(.7f);Move(nav,-x,-y,true);Check(nav.Page==ShellPage.Cube,"Reverse stick still returns a preview to cube");
+        foreach(var face in new[]{ShellFace.Video,ShellFace.Options,ShellFace.Memory,ShellFace.Calendar}){
+            int x=face==ShellFace.Video?1:face==ShellFace.Options?-1:0,y=face==ShellFace.Memory?1:face==ShellFace.Calendar?-1:0;
+            var nav=new IplShell(new FakeOutput());Move(nav,x,y,true);Check(nav.Face==face,"Each cube direction opens its advertised side");nav.Tick(.7f);Move(nav,-x,-y,true);Check(nav.Page==ShellPage.Cube,"Reverse stick still returns a preview to cube");
             nav.Tick(.7f);for(int i=0;i<60;i++)nav.Direction(-x,-y,.016f,true);Check(nav.Page==ShellPage.Cube,"Holding reverse cannot re-enter another side");Move(nav,-x,-y,true);Check(nav.Page==ShellPage.Face,"Neutral rearms preview navigation");
         }
         foreach(var face in new[]{ShellFace.Calendar,ShellFace.Options,ShellFace.Memory}){
@@ -60,7 +60,8 @@ internal static class IplShellTests
         var output=new FakeOutput();var s=new IplShell(output);
         Flat(s,ShellFace.Calendar);s.Hour=23;s.Minute=59;s.Confirm();Move(s,0,1);Check(s.Segment(0)=="00"&&s.Segment(1)=="59","Hour wraps independently");Move(s,1,0);Move(s,0,1);Check(s.Segment(1)=="00","Minute wraps independently");s.Back();Check(s.Page==ShellPage.Face&&s.Face==ShellFace.Calendar&&s.Hour==23&&s.Minute==59,"B discards all time parts and leaves to cube");
         Flat(s,ShellFace.Calendar);s.Year=2024;s.Month=2;s.Day=29;s.Row=1;s.Confirm();Move(s,1,0);Move(s,1,0);Move(s,0,1);s.Confirm();Check(s.FlatMenu&&s.Year==2025&&s.Day==28,"Date commit clamps leap day and returns to flat list");
-        Side(s,ShellFace.Options);s.Confirm();Check(!s.ReducedMotion&&s.FlatMenu,"Opening Options does not toggle Motion");s.Row=1;s.Confirm();Check(s.ReducedMotion&&s.FlatMenu,"Motion changes only on the flat page");s.Row=2;s.Confirm();Check(s.Face==ShellFace.Memory&&s.FlatMenu,"Storage link opens flat Storage options");s.Back();Check(s.Page==ShellPage.Face&&s.Face==ShellFace.Memory,"Nested flat Storage returns straight to cube");
+        Side(s,ShellFace.Options);s.Confirm();Check(s.FlatMenu&&s.Rows==3&&s.Label(1)=="Motion"&&s.Label(2)=="Glass Blur","Options contains settings only after Storage moves to the top");s.Row=1;s.Confirm();Check(s.Editing&&!s.ReducedMotion,"Motion opens the common value editor without changing its default");s.Back();
+        s.TurnTo(ShellFace.Menu);s.Tick(.7f);Move(s,0,1,true);s.Tick(.7f);Check(s.Face==ShellFace.Memory&&s.Title=="Storage"&&s.Rows==2,"Up opens the dedicated Storage side");s.Confirm();Check(s.FlatMenu&&s.Label(0)=="Memory Card"&&s.Label(1)=="SD Storage","Storage opens its two flat storage actions directly");s.Back();Check(s.Page==ShellPage.Face&&s.Face==ShellFace.Memory,"B returns directly from Storage options to the top cube side");Move(s,0,-1,true);Check(s.Page==ShellPage.Cube,"Down reverses the stick entry to the top Storage side");
         var focus=new IplShell(new FakeOutput());Side(focus,ShellFace.Options);Check(focus.Focus(0)==0,"Read-only previews have no active row animation");focus.Confirm();focus.Tick(.18f);Check(focus.Focus(0)==1,"Flat list focus eases in");Move(focus,0,-1);focus.Tick(.09f);Check(focus.Focus(0)>0&&focus.Focus(1)>0,"Flat row focus crossfades");focus.Tick(.09f);Check(focus.Focus(0)==0&&focus.Focus(1)==1,"Flat focus finishes its transition");
         Console.WriteLine("IPL shell: read-only sides, flat lists/editors, B-to-cube, guarded rollback, calendar parts, Motion and focus passed.");
     }

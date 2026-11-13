@@ -18,6 +18,16 @@ internal static class IplGlassBlur
         float t=Math.Max(0,Math.Min(1,(.34f-Math.Abs(cosine))/.18f));
         return .55f*t*t*(3-2*t);
     }
+    // A dark return immediately inward from the bright cavity contour. Both
+    // ramps meet with zero slope, so the absorption does not form a hard line
+    // or darken either the frontal glass or the grazing highlight itself.
+    internal static float BoundaryDarkening(float cosine)
+    {
+        float c=Math.Abs(cosine);
+        float rise=Math.Max(0,Math.Min(1,(c-.24f)/.12f));
+        float fall=Math.Max(0,Math.Min(1,(.50f-c)/.14f));
+        return .32f*rise*rise*(3-2*rise)*fall*fall*(3-2*fall);
+    }
     // A dense nine-sample Gaussian expressed as five bilinear texture fetches.
     // Each adjacent pair retains its weighted position; quantized symmetric
     // weights total 255 exactly. Called only when strength or pixel size changes.

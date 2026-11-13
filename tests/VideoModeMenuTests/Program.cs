@@ -76,6 +76,7 @@ internal static class Program
         IplRimCommandsTests.Run();
         IplProjectedWallTests.Run();
         IplCameraTests.Run();
+        IplCubeMotionTests.Run();
         IplSealedGlassTests.Run();
         IplIconLayoutTests.Run();
         IplGlassOpticsTests.Run();
