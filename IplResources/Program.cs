@@ -84,7 +84,7 @@ internal static class Program
     private static async Task<int> Main()
     {
         Audio.Initialize();DebugOverlay.TextVisible=false;
-        using var draw=new Draw2D(GraphicsDevice.Default,new Draw2DOptions{Width=640,Height=480,SpriteCapacity=2048});
+        using var draw=new Draw2D(GraphicsDevice.Default,new Draw2DOptions{Width=640,Height=480});
         using var text=new IplText();using var cancellation=new CancellationTokenSource();
         var selection=new IplSelection();var textures=new Texture2D?[IplSelection.Textures.Length];
         Task<IplAudioResources>? loading=Task.Run(()=>IplAudioResources.Prepare(cancellation.Token));
