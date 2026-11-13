@@ -1,7 +1,7 @@
 name: GameCube hardware bridge validation
 on:
   pull_request:
-    paths: ['tools/gamecube_bridge/**', 'VideoMode/**', '.github/workflows/hardware-bridge.yml', 'global.json', 'Directory.Build.props']
+    paths: ['tools/gamecube_bridge/**', 'VideoMode/**', 'ci/native_frame_boundary.py', 'ci/test_native_frame_boundary.py', '.github/workflows/hardware-bridge.yml', 'global.json', 'Directory.Build.props']
   workflow_dispatch:
 permissions:
   contents: read
@@ -34,6 +34,9 @@ jobs:
           echo "DND_LAUNCHER_STDIO_FIXTURE=$RUNNER_TEMP/dnd-stdio-receiver" >> "$GITHUB_ENV"
       - name: Test authenticated API, launcher wire protocol and telemetry
         run: python -m unittest discover -s tools/gamecube_bridge/tests -v
+      - name: Test checksummed native framebuffer capture
+        if: runner.os == 'Linux'
+        run: python ci/test_native_frame_boundary.py
       - name: Parse Windows provisioning scripts
         if: runner.os == 'Windows'
         shell: pwsh

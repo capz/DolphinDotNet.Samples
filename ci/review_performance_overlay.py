@@ -33,6 +33,7 @@ parser.add_argument('--inner-blur-review',action='store_true',help='Use real Opt
 parser.add_argument('--inner-blur-profile',action='store_true',help='With --inner-blur-review, measure each level on the normal interactive Video face')
 parser.add_argument('--inner-blur-profile-only',action='store_true',help='Skip repeated editor/list captures during the full blur profile')
 parser.add_argument('--profile-seconds',type=int,default=30,help='Uninterrupted host observation window; increase for slow software rendering')
+parser.add_argument('--quick-input',action='store_true',help='Use shorter settled row/editor inputs in blur and video-mode reviews')
 parser.add_argument('--inner-blur-cubes',action='store_true',help='Also capture the unobstructed menu cube at each reviewed blur level')
 parser.add_argument('--inner-blur-high',action='store_true',help='Enable High inner-glass blur via Options before --glass-modes')
 parser.add_argument('--calendar',action='store_true',help='Review two-row blur and independent time/date editing instead of the overlay sequence')
@@ -61,6 +62,7 @@ if args.glass_profile_only and not args.rim_profile:parser.error('--glass-profil
 if args.inner_blur_profile and (not args.inner_blur_review or args.mockup_review):parser.error('--inner-blur-profile requires --inner-blur-review on a normal DOL')
 if args.inner_blur_profile_only and not args.inner_blur_profile:parser.error('--inner-blur-profile-only requires --inner-blur-profile')
 if args.profile_seconds<30 or args.profile_seconds>180:parser.error('--profile-seconds must be between 30 and 180')
+if args.quick_input and not (args.inner_blur_review or args.glass_modes):parser.error('--quick-input is supported for blur and video-mode reviews')
 if args.inner_blur_cubes and not args.inner_blur_review:parser.error('--inner-blur-cubes requires --inner-blur-review')
 if (args.inner_blur_review or args.inner_blur_high) and not args.native_boundaries:parser.error('Inner-glass blur review requires --native-boundaries')
 if args.inner_blur_high and not args.glass_modes:parser.error('--inner-blur-high requires --glass-modes')
@@ -112,7 +114,9 @@ def key(name,held=.15):
     assert xt.XTestFakeKeyEvent(d,code,1,0)
     x.XSync(d,0);time.sleep(held);wait_frames(before,6)
     assert xt.XTestFakeKeyEvent(d,code,0,0)
-    x.XSync(d,0);wait_frames(frame_count(),45)
+    # A cube turn lasts .64 s (39 frames); row focus needs only .18 s.
+    settle=40 if name.lower() in ('b','x','left','right','i','j','k','l','q','w') else 12
+    x.XSync(d,0);wait_frames(frame_count(),settle if args.quick_input else 45)
 
 log=(root/'emulator.log').open('w')
 p=subprocess.Popen(['/usr/games/dolphin-emu-nogui','--platform','x11','-u',str(root/'user'),'-C','SYSCONF.IPL.PGS=True','-e',str(args.dol.resolve())],stdout=log,stderr=subprocess.STDOUT)
@@ -160,6 +164,7 @@ try:
         if not args.mockup_review:key('Left')
         def cube_blur(level):
             if not args.inner_blur_cubes:return
+            if args.inner_blur_profile_only and level not in ('off','high'):return
             key('b');shot('cube-'+level);key('Left')
         def measure_blur(level):
             if not args.inner_blur_profile:return
