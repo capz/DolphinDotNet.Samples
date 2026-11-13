@@ -17,6 +17,10 @@ authored notes and tails. The three movement identities map to
 `OptionMove1`, `OptionMove2` and `OptionMove3` respectively.
 
 `SystemFirmware.ReadConsole` reads the configured console ROM through EXI.
+On a real GameCube, that ROM is built in: no IPL file needs to be installed.
+The corrected SDK reader confines each transaction to a 1 KiB ROM page;
+older builds using preview 333 could report an encoding error on hardware
+because a single read crossed those boundaries.
 In Dolphin, configure an appropriate original IPL in its regional `GC` user
 directory. The app does not download firmware or probe storage for `ipl.bin`.
 The menu profile supports NTSC 1.2 and PAL 1.2; other firmware can report

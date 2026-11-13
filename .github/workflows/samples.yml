@@ -122,3 +122,17 @@ jobs:
             */bin/Release/net8.0/*.elf
           if-no-files-found: error
           retention-days: 14
+      - name: Stage IPL resource demo download
+        if: matrix.group == 'services'
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/ipl-resources-dol"
+          cp IplResources/bin/Release/net8.0/IplResources.dol "$RUNNER_TEMP/ipl-resources-dol/IplResources-fixed.dol"
+          sha256sum "$RUNNER_TEMP/ipl-resources-dol/IplResources-fixed.dol"
+      - uses: actions/upload-artifact@v4
+        if: matrix.group == 'services'
+        with:
+          name: ipl-resources-dol
+          path: ${{ runner.temp }}/ipl-resources-dol/IplResources-fixed.dol
+          if-no-files-found: error
+          retention-days: 14
