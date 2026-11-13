@@ -30,6 +30,7 @@ internal static class Program
         IplSelectorPoseTests.Run();
         IplPreferencesTests.Run();
         IplMenuLayoutTests.Run();
+        IplDetailLayoutTests.Run();
         IplLibraryTests.Run();
         IplBrowserTests.Run();
         IplStorageTests.Run();

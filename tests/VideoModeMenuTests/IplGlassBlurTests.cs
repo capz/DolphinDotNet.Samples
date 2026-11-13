@@ -40,7 +40,28 @@ internal static class IplGlassBlurTests
             }
         }
         CheckKernels();
-        Console.WriteLine("Glass blur: dense Gaussian impulse, normalized symmetric bilinear kernels, effective variance, valid levels and constant projected radius passed.");
+        CheckBoundary();
+        Console.WriteLine("Glass blur: dense Gaussian impulse, normalized symmetric bilinear kernels, effective variance, projected radius and bounded cavity highlight passed.");
+    }
+    private static void CheckBoundary()
+    {
+        Check(IplGlassBlur.BoundaryHighlight(1)==0&&IplGlassBlur.BoundaryHighlight(.5f)==0,
+            "The optional boundary highlight must leave frontal/planar glass dark.");
+        Check(IplGlassBlur.BoundaryHighlight(.2f)>.3f,
+            "A perspective cavity contour must collect the optional optical return.");
+        float previous=1;
+        for(int i=0;i<=100;i++)
+        {
+            float cosine=i/100f,weight=IplGlassBlur.BoundaryHighlight(cosine);
+            Check(weight>=0&&weight<=.55f&&weight<=previous+.000001f,
+                "The boundary return must be bounded and fade smoothly away from grazing normals.");
+            Check(weight==IplGlassBlur.BoundaryHighlight(-cosine),
+                "Opposite cavity-normal hemispheres must have the same boundary falloff.");
+            // The near material's largest channel is 30, with four-times
+            // exposure. Even a unit internal return plus this gate fits8bits.
+            Check(30*4*(1+weight)<255,"The optional return must not require wrapped HDR TEV inputs.");
+            previous=weight;
+        }
     }
     private static void CheckKernels()
     {

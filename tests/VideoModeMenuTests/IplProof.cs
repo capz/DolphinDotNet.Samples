@@ -9,6 +9,7 @@ internal sealed class IplProof : IIplCanvas
     internal Action<IplPoint,IplPoint,IplPoint>? PanelSink;
     internal Action<float,float,float,float,float,float,uint>? TriangleSink;
     internal Action<string,float,float,float>? TextSink;
+    internal Action<IplRenderPhase>? SectionSink;
     internal bool OmitGlassGeometry;
     public bool BeginSelectorCache(int part,string value,float cell,uint color)=>false;
     public void EndSelectorCache(){}
@@ -22,7 +23,7 @@ internal sealed class IplProof : IIplCanvas
     public void EndFooterTextCache(){}
     public bool DrawFooterTextCache()=>false;
     internal readonly StringBuilder OpticalLayers=new StringBuilder();
-    public void Section(IplRenderPhase phase) { if(phase==IplRenderPhase.Icons)OpticalLayers.Append("icon>"); }
+    public void Section(IplRenderPhase phase) { SectionSink?.Invoke(phase);if(phase==IplRenderPhase.Icons)OpticalLayers.Append("icon>"); }
     public bool BeginIconCache(int style)=>false;
     public void EndIconCache() { }
     public void PrepareIcon(IplPoint origin,IplPoint x,IplPoint y,float scale,float centerY) { }
@@ -70,6 +71,7 @@ internal sealed class IplProof : IIplCanvas
     }
     public void EndGlass() { }
     public void DrawGlassRear(){OpticalLayers.Clear();OpticalLayers.Append("rear>");shapes.Append(glass);}
+    public void DrawGlassBlur(){OpticalLayers.Append("blur>");} // Order-only marker; the host proof does not emulate GX blur.
     public void DrawGlassFront(){OpticalLayers.Append("front");} // Geometry-only proof has no native optical compositing.
     public void BeginPanels()=>panels.Clear();
     public void PanelTriangle(IplPoint a,IplPoint b,IplPoint d)
@@ -108,7 +110,7 @@ internal sealed class IplProof : IIplCanvas
         Directory.CreateDirectory(dir);var p=new IplProof();var s=new IplShell(new FakeOutput());s.Time=1;
         p.Save(Path.Combine(dir,"ipl-menu.svg"),s);
         s.TurnTo(ShellFace.Video);s.Tick(.7f);p.Save(Path.Combine(dir,"ipl-video.svg"),s);
-        s.Confirm();s.Row=2;s.Confirm();p.Save(Path.Combine(dir,"ipl-aspect.svg"),s);
+        s.Confirm();s.Direction(1,0,.016f);s.Direction(0,0,0);s.Direction(1,0,.016f);p.Save(Path.Combine(dir,"ipl-aspect.svg"),s);
         s.Back();s.TurnTo(ShellFace.Calendar);s.Tick(.7f);s.Confirm();s.Row=1;s.Confirm();s.Direction(1,0,.016f);
         p.Save(Path.Combine(dir,"ipl-date.svg"),s);
         File.WriteAllText(Path.Combine(dir,"index.html"),"<!doctype html><meta charset='utf-8'><title>Native IPL scene proofs</title><style>body{background:#161616;color:white;font:16px sans-serif}section{display:inline-block;margin:12px}img{width:640px;height:480px}</style><h1>Native scene geometry proofs</h1><p>Shared C# renderer and glyph atlas. These are host exports, not emulator captures.</p><section><h2>Cube</h2><img src='ipl-menu.svg'></section><section><h2>Video face</h2><img src='ipl-video.svg'></section><section><h2>Flat selector</h2><img src='ipl-aspect.svg'></section><section><h2>Independent date segments</h2><img src='ipl-date.svg'></section>");

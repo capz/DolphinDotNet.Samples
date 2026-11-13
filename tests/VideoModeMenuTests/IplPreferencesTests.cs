@@ -81,8 +81,8 @@ internal static class IplPreferencesTests
         Check(output.Current.Resolution==2&&output.Current.Scan==2&&output.Current.Widescreen&&s.Sound==1&&s.ReducedMotion&&s.Hour==14&&s.Day==6,"Startup applies persisted mode/options and reads real calendar");
         var skipped=new FakeOutput();new IplShell(skipped,store,null,false);Check(skipped.Changes==0,"Startup video restore can be bypassed");
         var unavailable=new FakeOutput {Failure=1};var fallback=new IplShell(unavailable,store);Check(unavailable.Current.Resolution==1&&fallback.SystemStatus.Contains("unavailable"),"Unsupported saved video leaves boot output");
-        Face(s,ShellFace.Video);s.Row=1;s.Confirm();Move(s,0,-1);s.Confirm();Check(store.Saves==0,"Hardware preview is not persisted");s.Back();Check(store.Saves==0,"Rollback is not persisted");
-        Face(s,ShellFace.Video);s.Row=1;s.Confirm();Move(s,0,-1);s.Confirm();s.Confirm();Check(store.Saves==1&&store.Value.Video.Scan==1,"Only confirmed hardware output is saved");
+        Face(s,ShellFace.Video);Move(s,1,0);Move(s,0,-1);s.Confirm();Check(store.Saves==0,"Hardware preview is not persisted");s.Back();Check(store.Saves==0,"Rollback is not persisted");
+        Face(s,ShellFace.Video);Move(s,1,0);Move(s,0,-1);s.Confirm();s.Confirm();Check(store.Saves==1&&store.Value.Video.Scan==1,"Only confirmed hardware output is saved");
         Face(s,ShellFace.Calendar);s.Confirm();Move(s,0,1);Move(s,1,0);Move(s,0,1);s.Confirm();
         Check(clock.Now.Hour==15&&clock.Now.Minute==28&&clock.Now.Second==43&&clock.Now.Day==6&&!s.Editing,"Time commit preserves current date and seconds");
         s.Row=1;s.Confirm();Move(s,1,0);Move(s,0,-1);clock.Now=new IplCalendarValue(2026,11,6,16,30,12);s.Confirm();

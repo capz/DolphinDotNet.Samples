@@ -29,18 +29,20 @@ parser.add_argument('--mockup-single',action='store_true',help='Capture only the
 parser.add_argument('--mockup-corners',action='store_true',help='Capture the native mockup pose and rotating corner only')
 parser.add_argument('--mockup-review',action='store_true',help='Deterministic native Options/flat/return/turn views')
 parser.add_argument('--glass-modes',action='store_true',help='Closed-shell rendering after 480p, widescreen, 576i, 240-line, rollback and safe-mode switches')
+parser.add_argument('--detail-review',action='store_true',help='High blur/icon layering, grouped Video detail, preview/rollback, Calendar Date and Options value editor')
+parser.add_argument('--detail-profile',action='store_true',help='With --detail-review, measure an uninterrupted High-blur Video cube window')
 parser.add_argument('--inner-blur-review',action='store_true',help='Use real Options input to capture all inner-glass blur levels and cancellation')
 parser.add_argument('--inner-blur-profile',action='store_true',help='With --inner-blur-review, measure each level on the normal interactive Video face')
 parser.add_argument('--inner-blur-profile-only',action='store_true',help='Skip repeated editor/list captures during the full blur profile')
 parser.add_argument('--profile-seconds',type=int,default=30,help='Uninterrupted host observation window; increase for slow software rendering')
-parser.add_argument('--quick-input',action='store_true',help='Use shorter settled row/editor inputs in blur and video-mode reviews')
+parser.add_argument('--quick-input',action='store_true',help='Use shorter settled editor inputs while retaining full cube-turn settling')
 parser.add_argument('--inner-blur-cubes',action='store_true',help='Also capture the unobstructed menu cube at each reviewed blur level')
 parser.add_argument('--inner-blur-high',action='store_true',help='Enable High inner-glass blur via Options before --glass-modes')
 parser.add_argument('--calendar',action='store_true',help='Review two-row blur and independent time/date editing instead of the overlay sequence')
 parser.add_argument('--selector-motion',action='store_true',help='Record active hour/minute/month/year motion, A/B and Reduced Motion')
 parser.add_argument('--selector-scan',action='store_true',help='Exercise animated scan values across progressive/interlaced preview, keep, rollback and safe mode')
 parser.add_argument('--directional-return',action='store_true',help='Review reverse stick return, hold latching and D-pad Calendar rows')
-parser.add_argument('--flat-pages',action='store_true',help='Read-only sides, full flat option lists and single-B exit from editors/browsers/dialogs')
+parser.add_argument('--flat-pages',action='store_true',help='Read-only sides, grouped Video detail, flat option lists and single-B exits')
 parser.add_argument('--dense-storage',action='store_true',help='Compact native card/SD grid, list, paging and preserved selection')
 parser.add_argument('--storage',action='store_true',help='Actual native card services and original DVD file fixtures')
 parser.add_argument('--native-boundaries',action='store_true',help='Pause at actual native presentation boundaries; capture the complete X11 client')
@@ -57,12 +59,15 @@ if args.optics_diagnostic and not args.mockup_review:parser.error('--optics-diag
 if args.mockup_single and not args.mockup_review:parser.error('--mockup-single requires --mockup-review')
 if args.mockup_corners and (not args.mockup_review or args.mockup_single or args.optics_diagnostic):parser.error('--mockup-corners requires an independent --mockup-review')
 if args.mockup_review and not args.native_boundaries:parser.error('--mockup-review requires --native-boundaries')
-if sum([args.mockup_review,args.rim_review,args.glass_modes,args.calendar,args.widescreen,args.selector_motion,args.selector_scan,args.directional_return,args.system_clock,args.library,args.storage,args.flat_pages,args.dense_storage])>1:parser.error('Choose one review sequence')
+if sum([args.mockup_review,args.rim_review,args.glass_modes,args.detail_review,args.calendar,args.widescreen,args.selector_motion,args.selector_scan,args.directional_return,args.system_clock,args.library,args.storage,args.flat_pages,args.dense_storage])>1:parser.error('Choose one review sequence')
+if args.detail_profile and not args.detail_review:parser.error('--detail-profile requires --detail-review')
+if args.detail_review and not args.native_boundaries:parser.error('--detail-review requires --native-boundaries')
+if args.detail_review and (args.inner_blur_review or args.inner_blur_high):parser.error('--detail-review independently enables High blur; disable the other blur review modes')
 if args.glass_profile_only and not args.rim_profile:parser.error('--glass-profile-only requires --glass-profile')
 if args.inner_blur_profile and (not args.inner_blur_review or args.mockup_review):parser.error('--inner-blur-profile requires --inner-blur-review on a normal DOL')
 if args.inner_blur_profile_only and not args.inner_blur_profile:parser.error('--inner-blur-profile-only requires --inner-blur-profile')
 if args.profile_seconds<30 or args.profile_seconds>180:parser.error('--profile-seconds must be between 30 and 180')
-if args.quick_input and not (args.inner_blur_review or args.glass_modes):parser.error('--quick-input is supported for blur and video-mode reviews')
+if args.quick_input and not (args.inner_blur_review or args.glass_modes or args.detail_review or args.selector_scan or args.flat_pages or args.widescreen):parser.error('--quick-input is supported for blur and detail/video reviews')
 if args.inner_blur_cubes and not args.inner_blur_review:parser.error('--inner-blur-cubes requires --inner-blur-review')
 if (args.inner_blur_review or args.inner_blur_high) and not args.native_boundaries:parser.error('Inner-glass blur review requires --native-boundaries')
 if args.inner_blur_high and not args.glass_modes:parser.error('--inner-blur-high requires --glass-modes')
@@ -108,7 +113,7 @@ def wait_frames(start,count):
         if time.monotonic()>deadline:raise TimeoutError('Native frames stalled during input replay')
         time.sleep(.05)
 
-def key(name,held=.15):
+def key(name,held=.15,settle_frames=None):
     code=x.XKeysymToKeycode(d,x.XStringToKeysym(name.encode()))
     before=frame_count()
     assert xt.XTestFakeKeyEvent(d,code,1,0)
@@ -116,7 +121,8 @@ def key(name,held=.15):
     assert xt.XTestFakeKeyEvent(d,code,0,0)
     # A cube turn lasts .64 s (39 frames); row focus needs only .18 s.
     settle=40 if name.lower() in ('b','x','left','right','i','j','k','l','q','w') else 12
-    x.XSync(d,0);wait_frames(frame_count(),settle if args.quick_input else 45)
+    if settle_frames is None:settle_frames=settle if args.quick_input else 45
+    x.XSync(d,0);wait_frames(frame_count(),settle_frames)
 
 log=(root/'emulator.log').open('w')
 p=subprocess.Popen(['/usr/games/dolphin-emu-nogui','--platform','x11','-u',str(root/'user'),'-C','SYSCONF.IPL.PGS=True','-e',str(args.dol.resolve())],stdout=log,stderr=subprocess.STDOUT)
@@ -153,6 +159,10 @@ def shot(name):
             # 240p is VI double-strike (NON_INTERLACE=1), not 480p's PROGRESSIVE=2.
             expected_scan=1 if name.startswith('06-') else 2 if name.startswith(('02-','03-','04-')) else 0
             if info['vi_scan_bits']!=expected_scan:raise RuntimeError(f'{name}: native VI scan mode is wrong: {info}')
+        elif args.detail_review:
+            info=event['xfb'];expected_scan=2 if name.startswith(('05-','06-','07-')) else 0
+            if (info['width'],info['height'],info['vi_scan_bits'])!=(640,480,expected_scan):
+                raise RuntimeError(f'{name}: grouped Video preview/keep/rollback has the wrong native VI mode: {info}')
         if native_frames.stable_frame()!=boundary:raise RuntimeError('Native frame advanced during framebuffer read')
     events.append(event)
     if native_frames is None:p.send_signal(signal.SIGCONT)
@@ -160,7 +170,35 @@ try:
     if native_frames is None:time.sleep(15)
     else:wait_frames(frame_count(),60)
     capture(root/'unused.ppm',True);time.sleep(.3)
-    if args.inner_blur_review:
+    if args.detail_review:
+        # Normal interactive DOL: Options stays a flat list, while Video opens
+        # its three Calendar-style parts directly. All changes use controller
+        # input, with no native application-state or frame-buffer mutation.
+        key('x');key('b') # Establish 480i and a neutral cube using real safe-mode/back input.
+        key('Left');key('a');key('Up');key('a');key('Down');key('a');key('b')
+        shot('01-options-high-blur')
+        key('b');shot('02-crisp-centered-icon')
+        key('Right');shot('03-video-cube')
+        key('a');shot('04-video-grouped-detail')
+        key('Right',settle_frames=12);key('Up');key('a');shot('05-progressive-preview')
+        key('a');shot('06-progressive-kept-detail')
+        key('Down');key('a');key('b');shot('07-rollback-to-progressive-cube')
+        key('x');key('a');shot('08-safe-interlaced-detail')
+        key('b');key('b');key('Down');key('a');key('Down');key('a');shot('09-calendar-date-detail')
+        key('b');key('b');key('Left');key('a');key('Up');key('a');shot('10-options-blur-value-detail')
+        if args.detail_profile:
+            # Complete the product captures before Y enables diagnostic text.
+            # B from the value editor returns instantly to its cube side;
+            # B/Right then perform fully settled cube turns to Video.
+            key('b',settle_frames=12);key('b');key('Right')
+            from profile_interactive_rim import collect
+            profile=root/'profile-high';profile.mkdir()
+            code=x.XKeysymToKeycode(d,x.XStringToKeysym(b'Y'))
+            def profile_key(down):
+                assert xt.XTestFakeKeyEvent(d,code,down,0)
+                x.XSync(d,0)
+            collect(native_frames,args.dol.resolve(),profile,lambda:profile_key(1),lambda:profile_key(0),args.profile_seconds)
+    elif args.inner_blur_review:
         if not args.mockup_review:key('Left')
         def cube_blur(level):
             if not args.inner_blur_cubes:return
@@ -232,11 +270,11 @@ try:
         key('a');shot('02-options-flat-list')
         key('Down');key('a');shot('03-motion-changed-on-flat-page');key('a')
         key('b');shot('04-flat-list-b-to-cube')
-        key('b');key('Right');key('a');shot('05-video-flat-list')
-        key('Down');key('a');shot('06-scan-field-editor')
+        key('b');key('Right');key('a');shot('05-video-grouped-detail')
+        key('Right',settle_frames=12);shot('06-scan-field-editor')
         key('Up');key('a');shot('07-progressive-preview')
         key('b');shot('08-b-reverts-before-cube')
-        key('b');key('Right');key('a');key('Down');key('a');key('Up');key('a');key('a');shot('09-kept-progressive-flat-list')
+        key('b');key('Right');key('a');key('Right',settle_frames=12);key('Up');key('a');key('a');shot('09-kept-progressive-detail')
         key('b');key('b');key('Down');key('a');shot('10-calendar-flat-list')
         key('a');key('Up');shot('11-hour-draft')
         key('b');shot('12-editor-b-discards-to-cube')
@@ -316,21 +354,20 @@ try:
             for _ in range(3):key('Down')
             key('a');key('Down');key('a');key('b')
         key('x');shot('01-safe-480i-cube')
-        key('a');key('Down');key('a');key('Up');key('a');shot('02-480p-preview')
+        key('a');key('Right',settle_frames=12);key('Up');key('a');shot('02-480p-preview')
         key('a');key('b');shot('03-480p-cube')
-        key('a');key('Down');key('a');key('Up');key('a');key('a');key('b');shot('04-wide-480p-cube')
-        key('x');key('a');key('a');key('Up');key('a');key('a');key('b');shot('05-576i-cube')
+        key('a');key('Right',settle_frames=12);key('Up');key('a');key('a');key('b');shot('04-wide-480p-cube')
+        key('x');key('a');key('Up');key('a');key('a');key('b');shot('05-576i-cube')
         # The SDK correctly rejects 240i. Select progressive before applying 240p.
-        key('x');key('a');key('Down');key('a');key('Up');key('a');key('a')
-        key('Up');key('a');key('Down');key('a');key('a');key('b');shot('06-240-line-cube')
-        key('x');key('a');key('Down');key('a');key('Up');key('a');key('b');shot('07-b-rolls-back-to-480i-cube')
+        key('x');key('a');key('Right',settle_frames=12);key('Up');key('Left',settle_frames=12);key('Down');key('a');key('a');key('b');shot('06-240-line-cube')
+        key('x');key('a');key('Right',settle_frames=12);key('Up');key('a');key('b');shot('07-b-rolls-back-to-480i-cube')
         key('x');shot('08-safe-mode-cube')
     elif args.selector_scan:
-        key('Right');key('a');key('Down');key('a');shot('01-interlaced-editor')
+        key('Right');key('a');key('Right',settle_frames=12);shot('01-interlaced-editor')
         key('Up');shot('02-progressive-editor')
         key('a');shot('03-progressive-preview')
         key('a');shot('04-progressive-kept')
-        key('a');key('Down');key('a');shot('05-interlaced-preview')
+        key('Down');key('a');shot('05-interlaced-preview')
         key('b');shot('06-progressive-restored')
         key('x');shot('07-safe-interlaced')
     elif args.selector_motion:
@@ -357,8 +394,8 @@ try:
             native_frames.advance(60);shot('03-video-front')
         if args.rim_profile:
             if not args.glass_profile_only:
-                key('a');shot('04-video-flat')
-                key('b');shot('05-flat-b-to-cube')
+                key('a');shot('04-video-grouped-detail')
+                key('b');shot('05-detail-b-to-cube')
             from profile_interactive_rim import collect
             code=x.XKeysymToKeycode(d,x.XStringToKeysym(b'Y'))
             def profile_key(down):
@@ -379,8 +416,8 @@ try:
         key('z',1);shot('05-z-hidden-editor')
         key('b');key('z');time.sleep(12);shot('06-overlay-visible-cube')
         if args.widescreen:
-            key('x');key('a');key('Down');key('Down')
-            key('a');key('Up');key('a');key('a');shot('07-widescreen-kept')
+            key('x');key('a');key('Right',settle_frames=12);key('Right',settle_frames=12)
+            key('Up');key('a');key('a');shot('07-widescreen-kept')
             key('z');shot('08-widescreen-hidden')
             key('x');shot('09-safe-mode')
     (root/'events.json').write_text(json.dumps(events,indent=2)+'\n')

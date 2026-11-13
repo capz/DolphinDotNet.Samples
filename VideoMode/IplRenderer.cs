@@ -24,6 +24,7 @@ internal interface IIplCanvas
     void EndGlassFace();
     void EndGlass();
     void DrawGlassRear();
+    void DrawGlassBlur();
     void DrawGlassFront();
     bool BeginFooterCache(int style);
     void EndFooterCache();
@@ -223,6 +224,7 @@ internal sealed partial class IplRenderer
         }
         c.Section(IplRenderPhase.Transmission);
         c.DrawGlassRear();
+        c.DrawGlassBlur();
         if(shell.Turn>.85f){c.Section(IplRenderPhase.Icons);FaceIcon(shell);}
         c.Section(IplRenderPhase.Transmission);c.DrawGlassFront();
         if(shell.Turn>.85f)
@@ -439,7 +441,7 @@ internal sealed partial class IplRenderer
             Banner(s.Video.Reverting?"Restoring previous settings.":"Keep these video settings?",s.Video.Reverting);
             Center(s.Video.Reverting?"Unable to restore. Retrying.":((int)Math.Ceiling(s.Video.Remaining)).ToString()+" seconds to confirm",320,357,18,White);
         }
-        Center(s.Label(s.Row),320,104,23,Green);
+        Center(s.Face==ShellFace.Calendar?s.Label(s.Row):s.Title,320,104,23,Green);
         Selectors(s,false);
         if(s.Face==ShellFace.Calendar)
             Center(s.RealCalendar?"A sets the clock. B discards changes and returns to the cube.":"Calendar demonstration. B discards changes and returns to the cube.",320,351,14,0xc4c9deff);
@@ -447,35 +449,24 @@ internal sealed partial class IplRenderer
         {
             string status=s.Video.Status;
             if(status=="UNSUPPORTED MODE OR CABLE"||status=="NOT ENOUGH MEMORY FOR MODE")Banner(status=="UNSUPPORTED MODE OR CABLE"?"Unsupported mode or cable.":"Not enough memory for this mode.",true);
-            else Center("A previews the mode. B returns to the cube.",320,350,16,White);
+            else Center("Left/Right selects. Up/Down changes. A previews. B returns to the cube.",320,350,13,White);
         }
         else if(s.Face==ShellFace.Options)Center("A confirms. B discards changes and returns to the cube.",320,351,14,0xc4c9deff);
     }
     private void Selectors(IplShell s,bool preparing)
     {
-        if(s.Face==ShellFace.Calendar)
+        int count=IplDetailLayout.Count(s),active=IplDetailLayout.Active(s);
+        for(int part=0;part<count;part++)
         {
-            int count=s.Row==0?2:3;
-            float total=s.Row==0?214:352,start=320-total/2;
-            for(int i=0;i<count;i++)
-            {
-                string value=preparing?s.Segment(i):selectorValues[i];if(preparing)selectorValues[i]=value;
-                float w=i==2?126:84;
-                float x=start+w/2;
-                Selector(s,i,value,x,180,i==s.Part?6:5,i==s.Part?Block:0x246b14ff,preparing);
-                if(!preparing){
-                    if(i==s.Part)Arrows(x,151,263);
-                    Center(s.Row==0?(i==0?"Hour":"Minute"):(i==0?"Day":i==1?"Month":"Year"),x,285,16,White);
-                }
-                start+=w+28;
+            string value=preparing?IplDetailLayout.Value(s,part):selectorValues[part];if(preparing)selectorValues[part]=value;
+            float x=IplDetailLayout.CenterX(s,part),cell=IplDetailLayout.Cell(s,part);
+            Selector(s,part,value,x,IplDetailLayout.ValueY,cell,part==active?Block:0x246b14ff,preparing);
+            if(!preparing){
+                if(part==active)Arrows(x,IplDetailLayout.ArrowTop,IplDetailLayout.ArrowBottom);
+                Center(IplDetailLayout.Label(s,part),x,IplDetailLayout.LabelY,16,White);
+                if(s.Face==ShellFace.Video&&part==1&&!s.Video.Pending&&s.Video.Status!="UNSUPPORTED MODE OR CABLE"&&s.Video.Status!="NOT ENOUGH MEMORY FOR MODE")
+                    Center(s.Value(1),x,309,13,0xc4c9deff);
             }
-        }
-        else
-        {
-            string value=preparing?s.Value(s.Row).ToUpperInvariant():selectorValues[0];if(preparing)selectorValues[0]=value;
-            float cell=Math.Min(8,510f/Math.Max(1,value.Length*6-1));
-            Selector(s,0,value,320,182,cell,Block,preparing);
-            if(!preparing)Arrows(320,148,267);
         }
     }
     private void Selector(IplShell s,int part,string value,float x,float y,float cell,uint color,bool preparing)
@@ -494,8 +485,8 @@ internal sealed partial class IplRenderer
     }
     private void Banner(string value,bool alert)
     {
-        Rect(70,312,500,47,0xc3c5d5ff);
-        for(int y=0;y<43;y++)Rect(72,314+y,496,1,alert?Rgba(138-y,12,58+y,240):Rgba(30+y/2,26,145-y,240));
+        Rect(70,312,500,47,alert?0x280b15efu:0x061c0fefu);
+        Line(72,313,568,313,1.2f,alert?0xf66d849fu:0x85e7659fu);
         Center(value,320,324,18,White);
     }
     private void Arrows(float x,float top,float bottom)
@@ -541,7 +532,7 @@ internal sealed partial class IplRenderer
         if(c.DrawFooterTextCache())return;
 #endif
         float stick=style==0?214:111;
-        Text(s.Page==ShellPage.Cube?"... Menu Selection":s.Face==ShellFace.Calendar&&s.Editing?"... Part / Value":"... Select",stick+24,y-13,s.Page==ShellPage.Cube?20:17,White);
+        Text(s.Page==ShellPage.Cube?"... Menu Selection":(s.Face==ShellFace.Calendar||s.Face==ShellFace.Video)&&s.Editing?"... Part / Value":"... Select",stick+24,y-13,s.Page==ShellPage.Cube?20:17,White);
         if(s.Page==ShellPage.Cube){Text("R  Storage",486,y-12,16,White);return;}
         bool modal=s.Page==ShellPage.Browser&&s.Browser?.Panel!=IplBrowserPanel.Grid;
         Center("B",320,y-14,20,White);Text(s.Video.Reverting?"... Wait":s.Page==ShellPage.Detail||s.Page==ShellPage.Browser?"... Cube":"... Back",340,y-13,17,White);

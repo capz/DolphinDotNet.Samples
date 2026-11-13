@@ -137,6 +137,9 @@ internal sealed class IplShell
         if(FlatMenu){if(y!=0)Row=Wrap(Row-y,0,Rows-1);return;}
         // Horizontal movement selects a part; it never changes a value.
         if (Face == ShellFace.Calendar && x != 0) { Part = Wrap(Part + x, 0, Row == 0 ? 1 : 2); SelectorTime = 0; }
+#if !IPL_HISTORICAL_RENDERER
+        if (Face == ShellFace.Video && x != 0) { Row=Wrap(Row+x,0,2);Part=Row;Video.SelectRow(Row);SelectorTime=0; }
+#endif
         if (y == 0) return;
         if (Face == ShellFace.Video) { Video.SelectRow(Row); Video.Edit(y); }
         else if (Face == ShellFace.Calendar)
@@ -193,7 +196,15 @@ internal sealed class IplShell
         if(Face==ShellFace.Options&&!SavePreferences()&&Row==0&&soundService!=null)SystemStatus="Console sound saved; SD settings not saved.";
         ShowFlatMenu();
     }
-    private void ShowFlatMenu(){fieldEditing=false;SelectorTime=0;Page=ShellPage.Detail;}
+    private void ShowFlatMenu()
+    {
+        fieldEditing=false;SelectorTime=0;Page=ShellPage.Detail;
+#if !IPL_HISTORICAL_RENDERER
+        // Video has three parts in one Calendar-style configuration page.
+        // Keep/timeout synchronize every displayed part to the applied mode.
+        if(Face==ShellFace.Video){Video.CancelSelection();Video.SelectRow(Row);Part=Row;fieldEditing=true;}
+#endif
+    }
     private void OpenBrowser(IplBrowserKind kind)
     {if(Browser==null){SystemStatus="Storage services unavailable in this build.";return;}Browser.Open(kind);fieldEditing=false;Page=ShellPage.Browser;}
     private void ReturnToCube(){Video.CancelSelection();fieldEditing=false;returnAfterRevert=false;Page=ShellPage.Face;Turn=1;SelectorTime=0;returnLatch=true;}

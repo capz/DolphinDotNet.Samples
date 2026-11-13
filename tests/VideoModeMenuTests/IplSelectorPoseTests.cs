@@ -26,15 +26,15 @@ internal static class IplSelectorPoseTests
         s.Confirm();s.Tick(.18f);Move(s,0,1);s.Back();Check(s.Hour==12&&s.Minute==1,"B stops motion and discards the draft");Flat(IplSelectorPose.For(s,0,66));
         s.TurnTo(ShellFace.Calendar);s.Tick(1);s.Confirm();s.Row=1;s.Confirm();Move(s,1,0);Move(s,1,0);s.Tick(.18f);
         Check(IplSelectorPose.For(s,2,138).Moving,"Year selector can rock independently");Flat(IplSelectorPose.For(s,0,55));Flat(IplSelectorPose.For(s,1,55));
-        s.Back();s.TurnTo(ShellFace.Video);s.Tick(1);s.Confirm();s.Row=1;s.Confirm();s.Tick(.18f);
+        s.Back();s.TurnTo(ShellFace.Video);s.Tick(1);s.Confirm();Move(s,1,0);s.Tick(.18f);
         for(int step=0;step<600;step++){
-            s.Time=step*.1f;var pose=IplSelectorPose.For(s,0,510);
+            s.Time=step*.1f;var pose=IplSelectorPose.For(s,1,510);
             for(int x=-1;x<=1;x+=2)for(int y=-1;y<=1;y+=2){
                 var point=pose.Project(x*255,y*27.5f,320,209.5f);
                 Check(point.X>35&&point.X<605&&point.Y>154&&point.Y<262,"Wide selectors must clear arrows and viewport margins throughout the wobble");
             }
         }
-        Move(s,0,1);s.Confirm();Check(s.Video.Pending,"A still previews the progressive scan mode");Flat(IplSelectorPose.For(s,0,510));s.Back();
+        Move(s,0,1);s.Confirm();Check(s.Video.Pending,"A still previews the progressive scan mode");Flat(IplSelectorPose.For(s,1,510));s.Back();
         Check(!s.Editing&&output.Current.Scan==1,"B rolls back the scan preview and stops selector motion");
         Console.WriteLine("Selector motion: active part, ease-in, idle continuation, A/B, reduced motion, preview suppression and wide-value bounds passed.");
     }

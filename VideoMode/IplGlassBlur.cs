@@ -10,6 +10,14 @@ internal static class IplGlassBlur
         if(level==3)return 3;
         throw new ArgumentOutOfRangeException(nameof(level));
     }
+    // A narrow optical return on the existing cavity silhouette. Perspective
+    // moves its visible contour slightly away from N.Z=0; keep frontal walls
+    // dark and reserve the return for normals approaching that contour.
+    internal static float BoundaryHighlight(float cosine)
+    {
+        float t=Math.Max(0,Math.Min(1,(.34f-Math.Abs(cosine))/.18f));
+        return .55f*t*t*(3-2*t);
+    }
     // A dense nine-sample Gaussian expressed as five bilinear texture fetches.
     // Each adjacent pair retains its weighted position; quantized symmetric
     // weights total 255 exactly. Called only when strength or pixel size changes.

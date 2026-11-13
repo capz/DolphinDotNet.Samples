@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 internal static class IplGlassOpticsTests
 {
@@ -45,10 +46,42 @@ internal static class IplGlassOpticsTests
         }
         IplGlassOptics.WallOffset(0,0,.14f,index,out var normalX,out var normalY);
         if(normalX!=0||normalY!=0)throw new Exception("Normal incidence must not displace the interior image.");
-        var shell=new IplShell(new FakeOutput());shell.TurnTo(ShellFace.Calendar);shell.Tick(.7f);
-        var proof=new IplProof();var renderer=new IplRenderer(proof);renderer.Prepare(shell);renderer.Present(shell);
-        if(proof.OpticalLayers.ToString()!="rear>icon>front")throw new Exception("The centered icon must be captured between the rear and front glass interfaces.");
-        Console.WriteLine("Glass optics: reciprocal interfaces, total internal reflection, bounded internal returns, transmitted-ray Snell symmetry and wall offsets passed.");
+        CheckLayerOrder();
+        Console.WriteLine("Glass optics: reciprocal interfaces, total internal reflection, bounded internal returns, Snell symmetry, wall offsets and blur/icon/front/UI layer ordering passed.");
+    }
+    private sealed class Preferences : IIplPreferencesStore
+    {
+        private readonly int blur;
+        internal Preferences(int blur){this.blur=blur;}
+        public string Status=>"Layer fixture";
+        public bool Load(out IplPreferences value){value=new IplPreferences(new VideoModeSettings(1,1,false),0,false,blur);return true;}
+        public bool Save(IplPreferences value)=>true;
+    }
+    private static void CheckLayerOrder()
+    {
+        // Exercise both material branches and all six centered icon planes.
+        // Front glass must still cover the icon; drawing it last would put the
+        // icon above the outer reflections even with correct 3D coordinates.
+        foreach(int blur in new[]{0,3})for(int style=0;style<6;style++)
+        {
+            var shell=new IplShell(new FakeOutput(),new Preferences(blur));
+            shell.TurnTo((ShellFace)style);shell.Tick(.7f);shell.Time=1.1f;
+            if(shell.GlassBlur!=blur)throw new Exception("The layer fixture must load the requested blur state.");
+            var proof=new IplProof{OmitGlassGeometry=true};var renderer=new IplRenderer(proof);renderer.Prepare(shell);
+            var phases=new List<IplRenderPhase>();proof.SectionSink=phase=>phases.Add(phase);
+            renderer.Present(shell);
+            if(proof.OpticalLayers.ToString()!="rear>blur>icon>front")
+                throw new Exception("The centered icon must follow inner blur and precede front glass (blur="+blur+", face="+(ShellFace)style+").");
+            int icon=phases.IndexOf(IplRenderPhase.Icons),labels=phases.IndexOf(IplRenderPhase.Labels),footer=phases.IndexOf(IplRenderPhase.Footer);
+            if(icon<0||labels<=icon||footer<=labels)
+                throw new Exception("Text and footer UI must be composited above the centered 3D icon.");
+            if(shell.Page==ShellPage.Face)
+            {
+                int capture=phases.IndexOf(IplRenderPhase.Capture),frost=phases.IndexOf(IplRenderPhase.Frost),tint=phases.IndexOf(IplRenderPhase.PanelTint);
+                if(capture<=icon||frost<=capture||tint<=frost||labels<=tint)
+                    throw new Exception("Frosted menu cards and their text must remain UI layers above the icon.");
+            }
+        }
     }
     private static void CheckInterfaces()
     {

@@ -108,7 +108,10 @@ internal static class Program
         shell.TurnTo(ShellFace.Options);shell.Row=1;shell.Tick(1);shell.Time=0;
 #if IPL_RUNNER_DETAIL || IPL_REVIEW_DETAIL
         shell.TurnTo(ShellFace.Video);shell.Row=1;shell.Tick(1);
-        shell.Confirm();shell.Confirm();
+        shell.Confirm();
+#if IPL_HISTORICAL_RENDERER
+        shell.Confirm();
+#endif
 #endif
 #endif
 #endif

@@ -209,6 +209,7 @@ internal sealed partial class GameCubeCanvas : IIplCanvas, IIplBrowserCanvas, ID
     public void EndGlassFace() { }
     public void EndGlass() { }
     public void DrawGlassRear(){draw.End();sealedGlass.DrawRear(device);draw.Begin();}
+    public void DrawGlassBlur(){if(GlassBlur==0)return;draw.End();sealedGlass.DrawBlur(device);draw.Begin();}
     public void DrawGlassFront(){draw.End();sealedGlass.DrawFront(device);draw.Begin();}
     public void BeginPanels(){panelCount=0;}
     public void PanelTriangle(IplPoint a,IplPoint b,IplPoint d)
