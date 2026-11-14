@@ -129,6 +129,18 @@ jobs:
           mkdir -p "$RUNNER_TEMP/ipl-resources-dol"
           cp IplResources/bin/Release/net8.0/IplResources.dol "$RUNNER_TEMP/ipl-resources-dol/IplResources-fixed.dol"
           sha256sum "$RUNNER_TEMP/ipl-resources-dol/IplResources-fixed.dol"
+      - name: Build IPL hardware diagnostic from the published SDK
+        if: matrix.group == 'services'
+        run: python3 tools/ipl-diagnostics/build.py --output "${{ runner.temp }}/ipl-diagnostics"
+      - uses: actions/upload-artifact@v4
+        if: matrix.group == 'services'
+        with:
+          name: ipl-hardware-diagnostic
+          path: |
+            ${{ runner.temp }}/ipl-diagnostics/IplDiagnostics-check01.dol
+            ${{ runner.temp }}/ipl-diagnostics/build.json
+          if-no-files-found: error
+          retention-days: 14
       - uses: actions/upload-artifact@v4
         if: matrix.group == 'services'
         with:
