@@ -154,7 +154,7 @@ internal static class Program
                 }
                 int selected=selection.Selected;var texture=textures[selection.Texture];
                 var device=GraphicsDevice.Default;device.BeginFrame(Background);draw.Begin();
-                text.Draw(draw,"IPL RESOURCES B02",24,24,25,Color32.White);
+                text.Draw(draw,"IPL RESOURCES B03",24,24,25,Color32.White);
                 text.Draw(draw,buildLabel,24,61,12,Muted);
                 draw.DrawRectangle(new RectF(465,22,151,29),Muted);
                 text.Draw(draw,resources?.Revision??"CONSOLE IPL",475,30,12,Muted);

@@ -6,7 +6,7 @@ import re
 import xml.etree.ElementTree as ET
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-VERSION = "0.1.0-preview.339.1"
+VERSION = "0.1.0-preview.343.1"
 sdk = json.loads((ROOT / "global.json").read_text())["msbuild-sdks"]["DolphinDotNet.Sdk"]
 props = ET.parse(ROOT / "Directory.Build.props").getroot()
 version = props.find(".//DndPackageVersion").text
@@ -29,7 +29,7 @@ for path in projects:
     assert not re.search(r"\.\.\\\.\.\\src\\", source), str(sln)
 # The required native matrix must explicitly cover all migrated applications.
 workflow = (ROOT / ".github/workflows/samples.yml").read_text()
-for group in ("basics", "games", "services"):
+for group in ("basics", "games", "services", "ipl"):
     assert group in workflow, group
 for name in sorted(path.stem for path in projects):
     assert name in workflow, f"{name} missing from packaged AOT build matrix"
