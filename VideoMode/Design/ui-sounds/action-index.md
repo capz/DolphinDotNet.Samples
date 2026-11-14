@@ -52,7 +52,11 @@ voices before clips. No ROM, PCM, replacement tone or recording is bundled or
 written to storage.
 
 Each effect has a 2 MiB native preparation-scratch budget and the retained bank
-is capped at 6 MiB of native audio memory. These limits are separate from the
+is capped at 6 MiB of native audio memory. The [budget audit](budget-audit.md)
+bounds every SDK-accepted recipe's scratch charge below 2 MiB; the actual sum
+of all ten clips on a supported ROM remains unqualified here. The retained-bank
+limit is an intentional MEM1 ceiling, with partial clips disposed if exceeded.
+These limits are separate from the
 2 MiB firmware image and SDK-managed extraction data. Reaching `FirmwareImage` makes the SDK
 select an 8 MiB managed heap, replacing this demo's earlier 256 KiB assumption
 in audio-enabled builds. Playback performs no firmware reads or effect
