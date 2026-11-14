@@ -244,7 +244,7 @@ separate Dolphin guest-clock results from the pending physical-console measureme
 
 Native builds enable GX three-sample antialiasing on the visible cube by
 default. Dolphin play/debug profiles use `MSAA = 1`, `SSAA = False` and no
-postprocessing filter, so the DOL provides the same AA on console. Build with
+postprocessing filter. The DOL configures the console's AA directly. Build with
 `-p:IplHardwareAntialiasing=false` to disable native AA; that fallback installs
 the bundled **IplEdgeAA** Dolphin postprocessing shader. The optional shader's
 historical emulator-only cost and comparisons are documented separately:
@@ -286,3 +286,9 @@ default. [Native captures, mode checks and timing limits](Design/native-cube-aa/
 include both original XFB output and complete emulator windows, with the
 conditions and incomplete attempts recorded alongside them. Physical-console
 visual quality and timing still require hardware qualification.
+
+Dolphin 2503 ties coverage sampling to its own MSAA setting, rather than the
+GameCube's sample pattern. With emulator MSAA set to 1, these captures verify
+the native mode, filtered reflections and display-copy output; they cannot
+demonstrate the console's three-sample edge coverage. See Dolphin's
+[EFB implementation](https://github.com/dolphin-emu/dolphin/blob/2503/Source/Core/VideoCommon/FramebufferManager.cpp#L117-L129).

@@ -195,6 +195,9 @@ DNDP v2 reads the resolved output resolution separately from EFB dimensions.
 For example 576p can render through a 640x480 EFB; `native_output_height=576`
 in job metadata, scan=progressive in all rows and the requested scene are checked
 independently. EFB `height` in the CSV is not treated as video-output height.
+The native-AA cube now reports a 242-line EFB at 480i/p output; flat Detail
+pages report 480 lines. Both keep `native_output_height=480`. The bridge accepts
+these dimensions without rescaling or replacing the recorded EFB height.
 The initial v1 transport evidence is retained as historical data.
 
 The v2 native retest confirms 576p output with a 640x480 EFB, scan=progressive,

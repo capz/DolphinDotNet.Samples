@@ -35,8 +35,7 @@ def collect(frames, dol, root, press, release, observation_seconds=30, expected_
     remaining=observation_seconds
     while remaining>0:
         interval=min(30,remaining);time.sleep(interval);remaining-=interval
-    assert frames.request(conn, f'Z0,{frames.address:x},4') == 'OK'
-    frames.request(conn, 'c', 45)
+    frames.pause_at_boundary()
     frames.stable_frame()
     integer = lambda address: int.from_bytes(frames.read_bytes(address, 4), 'big')
     count, ready = integer(symbols['Count']), integer(symbols['Ready'])

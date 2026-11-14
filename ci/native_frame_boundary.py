@@ -109,16 +109,33 @@ class NativeFrames:
         if count<=0:return
         target=self.count+count;deadline=time.monotonic()+90
         while self.count<target:
-            # Never interrupt the guest inside a GX FIFO primitive. Run freely,
-            # then install a breakpoint at the completed presentation boundary.
+            # Run without a breakpoint, then consume the rearm acceptance and
+            # actual stop together. Another Continue after rearming could resume
+            # past an already queued stop and leave later reads unsynchronized.
+            before=self.count
             assert self.request(self.connection,f'z0,{self.address:x},4')=='OK'
             self.send(self.connection,'c')
             time.sleep(min(.3,max(.08,(target-self.count)/60)))
-            assert self.request(self.connection,f'Z0,{self.address:x},4')=='OK'
-            reply=self.request(self.connection,'c',45)
-            if self.parse_stop_pc(reply)!=self.address:raise RuntimeError('Unexpected native presentation stop: '+reply)
-            self.count=self.read_serial()
+            self.pause_at_boundary()
+            if self.count<=before:raise RuntimeError('Native presentation counter did not advance')
             if time.monotonic()>deadline:raise TimeoutError('Application frame counter stalled')
+
+    def pause_at_boundary(self):
+        """Rearm after an uninterrupted run, consuming both OK and its stop.
+
+        The guest is already running. Do not issue another Continue or use the
+        generic request helper, which discards unsolicited stop notifications.
+        """
+        self.send(self.connection,f'Z0,{self.address:x},4')
+        accepted=stopped=False;deadline=time.monotonic()+45
+        while not(accepted and stopped):
+            reply=self.reply(self.connection,deadline)
+            if reply=='OK':accepted=True
+            elif reply.startswith('T05'):
+                if self.parse_stop_pc(reply)!=self.address:raise RuntimeError('Unexpected native presentation stop: '+reply)
+                stopped=True
+            elif reply!='':raise RuntimeError('Unexpected boundary breakpoint reply: '+reply)
+        self.count=self.read_serial()
 
     def read_serial(self):
         for _ in range(4):
@@ -179,7 +196,11 @@ class NativeFrames:
             candidates=[a for a in self.functions if a<=address]
             base=max(candidates) if candidates else 0
             return dict(address=hex(address),symbol=self.functions.get(base,''),offset=address-base)
-        result={'stop':stop,'pc':symbol(self.parse_stop_pc(stop)),'stack':[]}
+        result={'stop':stop,'pc':symbol(self.parse_stop_pc(stop)),'stack':[],
+                'last_boundary_serial':self.count}
+        try:result['stopped_frame_serial']=self.read_serial()
+        except Exception as error:
+            result['counter_error']=str(error);return result
         for name,reg in [('lr','43'),('sp','1')]:
             raw=self.request(self.connection,'p'+reg,8)
             if re.fullmatch('[0-9a-fA-F]{8}',raw):result[name]=int(raw,16)

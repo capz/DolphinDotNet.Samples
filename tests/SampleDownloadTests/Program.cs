@@ -61,7 +61,10 @@ internal static class Program
         try
         {
             using var stream=client.GetStream();using var reader=new StreamReader(stream,Encoding.ASCII,false,1024,true);
-            string request=await reader.ReadLineAsync(token)??"";while(!string.IsNullOrEmpty(await reader.ReadLineAsync(token))){}
+            string? request=await reader.ReadLineAsync(token);
+            // Cancellation can close an accepted connection before its request.
+            if(request==null)return;
+            while(!string.IsNullOrEmpty(await reader.ReadLineAsync(token))){}
             string path=request.Split(' ')[1];byte[] data=path=="/large"?new byte[256*1024+1]:path=="/empty"?Array.Empty<byte>():new byte[]{137,80,78,71,13,10,26,10,0};
             if(path=="/invalid")data[0]=0;
             string header="HTTP/1.1 "+(path=="/error"?"500 Error":"200 OK")+"\r\nContent-Length: "+data.Length+"\r\nConnection: close\r\n\r\n";
