@@ -68,7 +68,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        group: [basics, games, services]
+        group: [ipl, basics, games, services]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -95,7 +95,8 @@ jobs:
           case "$SAMPLE_GROUP" in
             basics) samples="HelloGameCube ManagedGameCube ShaderDemo VideoMode Pong GreenMen" ;;
             games) samples="Fox Kart Snake DiscBrowser StorageIntegrity" ;;
-            services) samples="AsyncNetworking AudioDemo IplResources GoogleLogoAram HttpTexture HardwareDiagnostics" ;;
+            services) samples="AsyncNetworking AudioDemo GoogleLogoAram HttpTexture HardwareDiagnostics" ;;
+            ipl) samples="IplResources" ;;
             *) echo "Unexpected sample group $SAMPLE_GROUP" >&2; exit 1 ;;
           esac
           mkdir -p "$RUNNER_TEMP/dnd-aot"
@@ -120,5 +121,31 @@ jobs:
           path: |
             */bin/Release/net8.0/*.dol
             */bin/Release/net8.0/*.elf
+          if-no-files-found: error
+          retention-days: 14
+      - name: Stage IPL resource demo download
+        if: matrix.group == 'ipl'
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/ipl-resources-dol"
+          cp IplResources/bin/Release/net8.0/IplResources.dol "$RUNNER_TEMP/ipl-resources-dol/IplResources-early-ipl.dol"
+          sha256sum "$RUNNER_TEMP/ipl-resources-dol/IplResources-early-ipl.dol"
+      - name: Build IPL hardware diagnostic from the published SDK
+        if: matrix.group == 'ipl'
+        run: python3 tools/ipl-diagnostics/build.py --output "${{ runner.temp }}/ipl-diagnostics"
+      - uses: actions/upload-artifact@v4
+        if: matrix.group == 'ipl'
+        with:
+          name: ipl-hardware-diagnostic
+          path: |
+            ${{ runner.temp }}/ipl-diagnostics/IplDiagnostics-check01.dol
+            ${{ runner.temp }}/ipl-diagnostics/build.json
+          if-no-files-found: error
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: matrix.group == 'ipl'
+        with:
+          name: ipl-resources-dol
+          path: ${{ runner.temp }}/ipl-resources-dol/IplResources-early-ipl.dol
           if-no-files-found: error
           retention-days: 14

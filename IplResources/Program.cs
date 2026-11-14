@@ -24,6 +24,7 @@ internal sealed class IplAudioResources : IDisposable
             using var image=SystemFirmware.ReadConsole(cancellation);
             result.Catalog=image.CreateCatalog(FirmwareCatalogOptions.IncludeMenuAudio,cancellation);
             if(image.Revision.Contains("Revision 1.2"))result.Revision=image.Revision.Contains("PAL")?"PAL 1.2":"NTSC 1.2";
+            else result.Revision="EARLY IPL";
             for(int i=0;i<result.Sounds.Length;i++)
             {
                 cancellation.ThrowIfCancellationRequested();
@@ -38,7 +39,7 @@ internal sealed class IplAudioResources : IDisposable
                     {
                         var identity=IplSelection.Effects[i-1];
                         if(!result.Catalog.TryGetMenuSoundInfo(identity,out var info)||info==null)
-                        {result.Status[i]="UNAVAILABLE";result.Details[i]="IPL profile unsupported";continue;}
+                        {result.Status[i]="UNAVAILABLE";result.Details[i]="Menu profile unsupported";continue;}
                         // New metadata exposes original instrument IDs, distinct
                         // from the raw WSYS enumeration order.
                         string ids=info.SourceWaveCount==1?"Wave ID ":"Wave IDs ";
@@ -51,7 +52,7 @@ internal sealed class IplAudioResources : IDisposable
                     var sound=result.Sounds[i]!;result.Status[i]="READY";
                     result.Details[i]=(sound.Channels==2?"Stereo":"Mono")+" / "+(sound.SampleRate/1000)+" kHz";
                 }
-                catch(NotSupportedException){result.Status[i]="UNAVAILABLE";result.Details[i]="IPL profile unsupported";}
+                catch(NotSupportedException){result.Status[i]="UNAVAILABLE";result.Details[i]=i==0?"Startup unsupported":"Menu profile unsupported";}
             }
             DebugOverlay.WriteLine("IPL AUDIO PREPARED "+result.Catalog.MenuAudioRetainedBytes);
             return result;
@@ -86,9 +87,10 @@ internal static class Program
         Audio.Initialize();DebugOverlay.TextVisible=false;
         using var draw=new Draw2D(GraphicsDevice.Default,new Draw2DOptions{Width=640,Height=480});
         using var text=new IplText();using var cancellation=new CancellationTokenSource();
+        string buildLabel="SDK "+IplBuildInfo.SdkVersion+(text.Original?" / IPL font":" / sample font");
         var selection=new IplSelection();var textures=new Texture2D?[IplSelection.Textures.Length];
         Task<IplAudioResources>? loading=Task.Run(()=>IplAudioResources.Prepare(cancellation.Token));
-        IplAudioResources? resources=null;SoundChannel? voice=null;string state="LOADING IPL",detail="Reading console resources";
+        IplAudioResources? resources=null;SoundChannel? voice=null;string state="LOADING IPL",detail="Reading console resources",failureDetail="";
         bool exit=false;int playing=-1;bool stickUp=false,stickDown=false;Exception? failure=null;
         var rows=new string[IplSelection.Names.Length];var titles=new string[rows.Length];
         for(int i=0;i<rows.Length;i++)
@@ -125,7 +127,12 @@ internal static class Program
                         }
                     }
                     catch(OperationCanceledException){state="CANCELLED";}
-                    catch(Exception error){state="IPL UNAVAILABLE";detail=Short(error.Message,27);}
+                    catch(Exception error)
+                    {
+                        state="IPL UNAVAILABLE";detail=Short(error.Message,27);
+                        failureDetail=error.Message.Length>27?Short(error.Message.Substring(27),27):"";
+                        DebugOverlay.WriteLine("IPL LOAD FAILED "+error.Message);
+                    }
                     loading=null;
                 }
                 if(exit&&loading==null)break;
@@ -147,8 +154,8 @@ internal static class Program
                 }
                 int selected=selection.Selected;var texture=textures[selection.Texture];
                 var device=GraphicsDevice.Default;device.BeginFrame(Background);draw.Begin();
-                text.Draw(draw,"IPL RESOURCES",24,24,25,Color32.White);
-                text.Draw(draw,text.Original?"Original system font, textures and audio":"System textures and audio - sample font",24,61,12,Muted);
+                text.Draw(draw,"IPL RESOURCES B03",24,24,25,Color32.White);
+                text.Draw(draw,buildLabel,24,61,12,Muted);
                 draw.DrawRectangle(new RectF(465,22,151,29),Muted);
                 text.Draw(draw,resources?.Revision??"CONSOLE IPL",475,30,12,Muted);
                 draw.DrawRectangle(new RectF(24,98,290,286),Muted);
@@ -177,6 +184,8 @@ internal static class Program
                 text.Draw(draw,resources==null?detail:resources.Details[selected],348,328,12,Muted);
                 if(resources!=null&&resources.Sources[selected]!=null)
                     text.Draw(draw,resources.Sources[selected],348,347,10,Muted);
+                else if(resources==null&&failureDetail.Length!=0)
+                    text.Draw(draw,failureDetail,348,347,12,Muted);
                 text.Draw(draw,"A PLAY",348,367,11,Color32.White);
                 draw.DrawLine(new Vector2(24,414),new Vector2(616,414),Muted);
                 text.Draw(draw,"UP DOWN SELECT   A PLAY   B STOP   X TEXTURE   START EXIT",24,436,10,Color32.White);

@@ -8,4 +8,10 @@
   <ItemGroup>
     <PackageReference Include="DolphinDotNet.GameCube" Version="$(DndPackageVersion)" />
   </ItemGroup>
+  <Target Name="GenerateIplBuildInfo" BeforeTargets="CoreCompile">
+    <WriteLinesToFile File="$(IntermediateOutputPath)IplBuildInfo.g.cs"
+                      Lines="internal static class IplBuildInfo { internal const string SdkVersion = &quot;$(DndPackageVersion)&quot;%3B }"
+                      Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <ItemGroup><Compile Include="$(IntermediateOutputPath)IplBuildInfo.g.cs" /></ItemGroup>
+  </Target>
 </Project>

@@ -17,10 +17,27 @@ authored notes and tails. The three movement identities map to
 `OptionMove1`, `OptionMove2` and `OptionMove3` respectively.
 
 `SystemFirmware.ReadConsole` reads the configured console ROM through EXI.
+On a real GameCube, that ROM is built in: no IPL file needs to be installed.
+Build B03 consumes public NuGet SDK/runtime `0.1.0-preview.343.1`, published
+after [SDK PR #180](https://github.com/capz/DolphinDotNet/pull/180).
+The SDK uses continuous DMA for each 1 KiB ROM page, following libogc's ROM
+transfer method. The demo shows the actual published SDK version below the title,
+starts with Startup selected, and displays load errors across two lines.
+The [hardware diagnostic](../tools/ipl-diagnostics/README.md) found identical
+ROM bytes through all five read methods on the reporting PAL console with
+GC Loader / CubiBoot: CRC-32 `6DAC1F2A`, matching the early NTSC 1.0 reference.
+The console's region alone therefore does not select its resource profile.
+The user confirmed Startup and textures working on that console with B02 /
+SDK 339. B03 adds the early firmware's ten menu effects through the existing
+SDK APIs; no sample-side mapping or replacement audio is needed.
 In Dolphin, configure an appropriate original IPL in its regional `GC` user
 directory. The app does not download firmware or probe storage for `ipl.bin`.
-The menu profile supports NTSC 1.2 and PAL 1.2; other firmware can report
-individual resources unavailable. Without an IPL the app shows the failure and
+The menu profiles support early NTSC 1.0, NTSC 1.2 and PAL 1.2. The early
+profile has its own velocity, envelope clock, effects-send settings and
+three-second delay tail. Unknown menu profiles say `Menu profile unsupported`;
+this is separate from an `IPL unavailable` acquisition failure.
+Other firmware can report individual
+resources unavailable. Without an IPL the app shows the failure and
 retains the sample font. No firmware, original textures, samples or recordings
 are bundled, and no generated tone substitutes for an unavailable effect.
 
@@ -43,7 +60,14 @@ The SDK's [API guide](https://github.com/capz/DolphinDotNet/blob/main/docs/syste
 and [audio qualification report](https://github.com/capz/DolphinDotNet/blob/main/docs/system-menu-audio-research.md)
 describe the supported profiles, preparation budgets and measured output
 differences. Menu rendering is deterministic; bit-identical IPL DSP output and
-physical-console playback have not been established.
+physical-console playback of the ten newly enabled early effects have not
+been established. Overlapping short effects can differ in level from the
+running IPL because they start at a deterministic sequence phase.
+
+The `ipl-resources-dol` CI artifact contains `IplResources-early-ipl.dol`.
+Its dedicated native build group makes this download available while the
+other sample builds finish. Confirm `IPL RESOURCES B03` and SDK
+`0.1.0-preview.343.1` on screen when testing it.
 
 ```sh
 dotnet build IplResources/IplResources.sln -c Release

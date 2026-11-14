@@ -1,6 +1,6 @@
 # DolphinDotNet Samples
 
-Run commands from the repository root. These are independent NuGet consumers of [`DolphinDotNet.Sdk`](https://www.nuget.org/packages/DolphinDotNet.Sdk/) and [`DolphinDotNet.GameCube`](https://www.nuget.org/packages/DolphinDotNet.GameCube/). Both are pinned to preview `0.1.0-preview.333.1` in `global.json` and `Directory.Build.props`; the `DolphinDotNet.Core` dependency is resolved transitively. No checkout of the compiler/runtime repository is required. All examples target .NET 8 for compilation;
+Run commands from the repository root. These are independent NuGet consumers of [`DolphinDotNet.Sdk`](https://www.nuget.org/packages/DolphinDotNet.Sdk/) and [`DolphinDotNet.GameCube`](https://www.nuget.org/packages/DolphinDotNet.GameCube/). Both are pinned to preview `0.1.0-preview.343.1` in `global.json` and `Directory.Build.props`; the `DolphinDotNet.Core` dependency is resolved transitively. No checkout of the compiler/runtime repository is required. All examples target .NET 8 for compilation;
 the GameCube runs generated native code, using only the supported AOT API subset.
 
 | Sample | Demonstrates | Setup / result |
