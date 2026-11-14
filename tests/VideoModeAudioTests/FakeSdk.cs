@@ -9,14 +9,14 @@ using System.Threading;
 // same calls against the actual published SDK.
 internal static class AudioFixture
 {
-    internal static int Initialized,Read,ImagesDisposed,CatalogsDisposed,Created,Disposed,FailAt=-1;
+    internal static int Initialized,Read,ImagesDisposed,CatalogsDisposed,Created,Disposed,FailAt=-1,RequiredPreparationBytes;
     internal static bool Unsupported;
     internal static ManualResetEventSlim Entered=new(false),Continue=new(true);
     internal static List<Dolphin.Audio.SoundChannel> Voices=new();
     internal static List<string> DisposalOrder=new();
     internal static void Reset()
     {
-        Initialized=Read=ImagesDisposed=CatalogsDisposed=Created=Disposed=0;FailAt=-1;Unsupported=false;
+        Initialized=Read=ImagesDisposed=CatalogsDisposed=Created=Disposed=RequiredPreparationBytes=0;FailAt=-1;Unsupported=false;
         Entered.Dispose();Continue.Dispose();Entered=new(false);Continue=new(true);
         Voices=new();DisposalOrder=new();Dolphin.Timing.Clock.Timestamp=0;
     }
@@ -108,6 +108,7 @@ namespace Dolphin.System
             CancellationToken token=default,int nativeBudgetBytes=8*1024*1024)
         {
             token.ThrowIfCancellationRequested();
+            if(nativeBudgetBytes<AudioFixture.RequiredPreparationBytes)throw new OutOfMemoryException("Effect scratch budget is too small.");
             if((int)id==AudioFixture.FailAt)throw new IOException("Partial preparation failure.");
             return new((int)id);
         }

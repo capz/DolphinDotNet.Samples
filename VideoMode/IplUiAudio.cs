@@ -14,7 +14,10 @@ internal enum IplUiAudioState { NotStarted,Loading,Ready,Unavailable,Closed }
 // native clips. No firmware bytes or prepared audio are written to storage.
 internal sealed class IplUiAudio
 {
-    private const int EffectCount=10,PreparationBudget=1024*1024,BankBudget=6*1024*1024;
+    // The SDK's maximum accepted recipe, decoded sources, PCM and delay lines
+    // require less than 2 MiB of native scratch. This is separate from the
+    // retained clip-bank limit and the managed firmware-extraction heap.
+    private const int EffectCount=10,PreparationBudget=2*1024*1024,BankBudget=6*1024*1024;
     private readonly CancellationTokenSource cancellation=new CancellationTokenSource();
     private readonly IplUiAudioPolicy policy=new IplUiAudioPolicy();
     private readonly SoundChannel?[] voices=new SoundChannel?[IplUiAudioPolicy.VoiceLimit];

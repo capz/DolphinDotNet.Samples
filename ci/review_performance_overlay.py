@@ -33,6 +33,8 @@ parser.add_argument('--detail-review',action='store_true',help='High blur/icon l
 parser.add_argument('--detail-profile',action='store_true',help='With --detail-review, measure an uninterrupted High-blur Video cube window')
 parser.add_argument('--motion-storage-review',action='store_true',help='Native Disabled/Subtle/Pronounced motion pairs, top Storage actions and light/dark blur boundary')
 parser.add_argument('--motion-storage-profile',action='store_true',help='After motion/storage captures, measure High blur with Pronounced motion on the Video cube')
+parser.add_argument('--ui-sounds-review',action='store_true',help='Native four-row Options, UI Sounds Medium/Off drafts, commit/cancel and Storage actions')
+parser.add_argument('--ui-sounds-profile',action='store_true',help='After UI-sound captures, measure High blur/Subtle motion/Medium UI volume on the normal Video cube')
 parser.add_argument('--inner-blur-review',action='store_true',help='Use real Options input to capture all inner-glass blur levels and cancellation')
 parser.add_argument('--inner-blur-profile',action='store_true',help='With --inner-blur-review, measure each level on the normal interactive Video face')
 parser.add_argument('--inner-blur-profile-only',action='store_true',help='Skip repeated editor/list captures during the full blur profile')
@@ -62,18 +64,21 @@ if args.mockup_single and not args.mockup_review:parser.error('--mockup-single r
 if args.mockup_corners and (not args.mockup_review or args.mockup_single or args.optics_diagnostic):parser.error('--mockup-corners requires an independent --mockup-review')
 if args.mockup_review and not args.native_boundaries:parser.error('--mockup-review requires --native-boundaries')
 if args.library:parser.error('--library is no longer available in the normal shell: the top cube side is Storage. Use an explicit game-library fixture for internal library tests.')
-if sum([args.mockup_review,args.rim_review,args.glass_modes,args.detail_review,args.motion_storage_review,args.calendar,args.widescreen,args.selector_motion,args.selector_scan,args.directional_return,args.system_clock,args.library,args.storage,args.flat_pages,args.dense_storage])>1:parser.error('Choose one review sequence')
+if sum([args.mockup_review,args.rim_review,args.glass_modes,args.detail_review,args.motion_storage_review,args.ui_sounds_review,args.calendar,args.widescreen,args.selector_motion,args.selector_scan,args.directional_return,args.system_clock,args.library,args.storage,args.flat_pages,args.dense_storage])>1:parser.error('Choose one review sequence')
 if args.detail_profile and not args.detail_review:parser.error('--detail-profile requires --detail-review')
 if args.detail_review and not args.native_boundaries:parser.error('--detail-review requires --native-boundaries')
 if args.detail_review and (args.inner_blur_review or args.inner_blur_high):parser.error('--detail-review independently enables High blur; disable the other blur review modes')
 if args.motion_storage_profile and not args.motion_storage_review:parser.error('--motion-storage-profile requires --motion-storage-review')
 if args.motion_storage_review and not args.native_boundaries:parser.error('--motion-storage-review requires --native-boundaries')
 if args.motion_storage_review and (args.inner_blur_review or args.inner_blur_high):parser.error('--motion-storage-review independently enables High blur; disable the other blur review modes')
+if args.ui_sounds_profile and not args.ui_sounds_review:parser.error('--ui-sounds-profile requires --ui-sounds-review')
+if args.ui_sounds_review and not args.native_boundaries:parser.error('--ui-sounds-review requires --native-boundaries')
+if args.ui_sounds_review and (args.inner_blur_review or args.inner_blur_high):parser.error('--ui-sounds-review independently selects blur during profiling; disable the other blur review modes')
 if args.glass_profile_only and not args.rim_profile:parser.error('--glass-profile-only requires --glass-profile')
 if args.inner_blur_profile and (not args.inner_blur_review or args.mockup_review):parser.error('--inner-blur-profile requires --inner-blur-review on a normal DOL')
 if args.inner_blur_profile_only and not args.inner_blur_profile:parser.error('--inner-blur-profile-only requires --inner-blur-profile')
 if args.profile_seconds<30 or args.profile_seconds>180:parser.error('--profile-seconds must be between 30 and 180')
-if args.quick_input and not (args.inner_blur_review or args.glass_modes or args.detail_review or args.motion_storage_review or args.selector_scan or args.flat_pages or args.widescreen):parser.error('--quick-input is supported for blur, motion/storage and detail/video reviews')
+if args.quick_input and not (args.inner_blur_review or args.glass_modes or args.detail_review or args.motion_storage_review or args.ui_sounds_review or args.selector_scan or args.flat_pages or args.widescreen):parser.error('--quick-input is supported for blur, UI sounds, motion/storage and detail/video reviews')
 if args.inner_blur_cubes and not args.inner_blur_review:parser.error('--inner-blur-cubes requires --inner-blur-review')
 if (args.inner_blur_review or args.inner_blur_high) and not args.native_boundaries:parser.error('Inner-glass blur review requires --native-boundaries')
 if args.inner_blur_high and not args.glass_modes:parser.error('--inner-blur-high requires --glass-modes')
@@ -169,10 +174,10 @@ def shot(name):
             info=event['xfb'];expected_scan=2 if name.startswith(('05-','06-','07-')) else 0
             if (info['width'],info['height'],info['vi_scan_bits'])!=(640,480,expected_scan):
                 raise RuntimeError(f'{name}: grouped Video preview/keep/rollback has the wrong native VI mode: {info}')
-        elif args.motion_storage_review:
+        elif args.motion_storage_review or args.ui_sounds_review:
             info=event['xfb']
             if (info['width'],info['height'],info['vi_scan_bits'])!=(640,480,0):
-                raise RuntimeError(f'{name}: motion/storage review must stay in native 640x480 interlaced output: {info}')
+                raise RuntimeError(f'{name}: UI review must stay in native 640x480 interlaced output: {info}')
         if native_frames.stable_frame()!=boundary:raise RuntimeError('Native frame advanced during framebuffer read')
     events.append(event)
     if native_frames is None:p.send_signal(signal.SIGCONT)
@@ -180,11 +185,38 @@ try:
     if native_frames is None:time.sleep(15)
     else:wait_frames(frame_count(),60)
     capture(root/'unused.ppm',True);time.sleep(.3)
-    if args.motion_storage_review:
+    if args.ui_sounds_review:
+        # Normal interactive DOL, default Subtle motion and Medium UI volume.
+        # Use only controller input. A fresh emulator has no attached GC Loader
+        # preferences; unavailable IPL audio is honestly reported by the app.
+        key('x');key('b');key('Left');shot('01-options-cube-medium')
+        key('a');key('Down');key('Down');key('Down');shot('02-options-ui-sounds-row')
+        key('a');shot('03-ui-sounds-medium-editor')
+        key('Down');key('Down');shot('04-ui-sounds-off-draft')
+        key('a');shot('05-ui-sounds-off-confirmed')
+        key('a');key('Up');shot('06-ui-sounds-low-draft')
+        key('b',settle_frames=12);shot('07-ui-sounds-cancel-keeps-off')
+        key('b');key('i');key('a');shot('08-storage-flat-actions')
+        if args.ui_sounds_profile:
+            # Finish captures before diagnostics. Select High blur at row two,
+            # restore the default Medium volume at row three, retain Subtle,
+            # then measure the normal Video cube without further screenshots.
+            key('b',settle_frames=12);key('b');key('Left');key('a')
+            key('Down');key('Down');key('a');key('Down');key('a')
+            key('Down');key('a');key('Up');key('Up');key('a')
+            key('b',settle_frames=12);key('b');key('Right')
+            from profile_interactive_rim import collect
+            profile=root/'profile-high-subtle-medium';profile.mkdir()
+            code=x.XKeysymToKeycode(d,x.XStringToKeysym(b'Y'))
+            def profile_key(down):
+                assert xt.XTestFakeKeyEvent(d,code,down,0)
+                x.XSync(d,0)
+            collect(native_frames,args.dol.resolve(),profile,lambda:profile_key(1),lambda:profile_key(0),args.profile_seconds,expected_heap_bytes=8388608)
+    elif args.motion_storage_review:
         # Establish output and select all values through the ordinary controller
-        # path. The default Motion is Subtle; Options has three settings rows.
+        # path. The default Motion is Subtle; Options has four settings rows.
         key('x');key('b')
-        key('Left');key('a');key('Up');key('a');key('Down');key('a');key('b',settle_frames=12)
+        key('Left');key('a');key('Down');key('Down');key('a');key('Down');key('a');key('b',settle_frames=12)
         key('a');key('Up');key('a');key('Down');key('a');key('b',settle_frames=12)
         shot('01-disabled-a');native_frames.advance(45);shot('02-disabled-b')
         key('a');key('a');key('Up');key('a');key('b',settle_frames=12)
@@ -212,7 +244,7 @@ try:
         # its three Calendar-style parts directly. All changes use controller
         # input, with no native application-state or frame-buffer mutation.
         key('x');key('b') # Establish 480i and a neutral cube using real safe-mode/back input.
-        key('Left');key('a');key('Up');key('a');key('Down');key('a');key('b')
+        key('Left');key('a');key('Down');key('Down');key('a');key('Down');key('a');key('b')
         shot('01-options-high-blur')
         key('b');shot('02-crisp-centered-icon')
         # Inspect the physical frost boundary during a real cube turn. Existing
@@ -227,7 +259,7 @@ try:
         key('Down');key('a');key('b');shot('07-rollback-to-progressive-cube')
         key('x');key('a');shot('08-safe-interlaced-detail')
         key('b');key('b');key('Down',settle_frames=40);key('a');key('Down');key('a');shot('09-calendar-date-detail')
-        key('b');key('b');key('Left');key('a');key('Up');key('a');shot('10-options-blur-value-detail')
+        key('b');key('b');key('Left');key('a');key('Down');key('Down');key('a');shot('10-options-blur-value-detail')
         if args.detail_profile:
             # Complete the product captures before Y enables diagnostic text.
             # B from the value editor returns instantly to its cube side;

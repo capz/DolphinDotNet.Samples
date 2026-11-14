@@ -13,7 +13,11 @@ internal static class Program
     }
     private static async Task ResidentPlayback()
     {
-        AudioFixture.Reset();var audio=new IplUiAudio();
+        AudioFixture.Reset();
+        // A supported effect can require more than 1 MiB of temporary native
+        // scratch even though its retained PCM is much smaller.
+        AudioFixture.RequiredPreparationBytes=1700000;
+        var audio=new IplUiAudio();
         audio.Tick(0);audio.Tick(0);
         Check(AudioFixture.Initialized==0&&AudioFixture.Read==0,"saved Off skips SDK initialization and ROM reads");
         audio.Play(IplUiSound.EnterMenu);audio.Tick(2);await WaitForPreparation(audio);

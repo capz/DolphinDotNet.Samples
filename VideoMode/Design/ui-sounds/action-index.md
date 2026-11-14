@@ -25,8 +25,10 @@ typed operation results distinguish completion from ordinary media probes.
 Formatting retains both explicit confirmations. No separate error or
 memory-card-specific effect is invented: failures reuse `OptionCancel`.
 
-Blocked/busy input, unchanged selections, redraws, focus animation, clock ticks,
+Ignored input, unchanged selections, redraws, focus animation, clock ticks,
 transfer percentages, artwork loads and background storage probes stay silent.
+An explicit refresh on the file grid can restart an in-progress scan and sounds
+once; transfer progress panels reject refresh and remain silent.
 Each accepted held-direction step can sound after the existing 380 ms delay
 and 130 ms repeat interval. Navigation/value effects share a 40 ms limiter;
 open, confirm and cancel effects bypass it. Six tracked voices allow overlap,
@@ -49,9 +51,9 @@ remain resident. Shutdown cancels pending preparation, awaits it, and disposes
 voices before clips. No ROM, PCM, replacement tone or recording is bundled or
 written to storage.
 
-Each effect uses a 1 MiB preparation budget and the retained bank is capped at
-6 MiB of native audio memory. These limits are separate from the 2 MiB firmware
-image and SDK-managed extraction data. Reaching `FirmwareImage` makes the SDK
+Each effect has a 2 MiB native preparation-scratch budget and the retained bank
+is capped at 6 MiB of native audio memory. These limits are separate from the
+2 MiB firmware image and SDK-managed extraction data. Reaching `FirmwareImage` makes the SDK
 select an 8 MiB managed heap, replacing this demo's earlier 256 KiB assumption
 in audio-enabled builds. Playback performs no firmware reads or effect
 preparation in the frame loop; the SDK creates a small channel wrapper per

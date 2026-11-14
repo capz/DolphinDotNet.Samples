@@ -8,7 +8,7 @@ import subprocess
 import time
 
 
-def collect(frames, dol, root, press, release, observation_seconds=30):
+def collect(frames, dol, root, press, release, observation_seconds=30, expected_heap_bytes=262144):
     from profile_videomode import FIELDS
     symbols = {}
     table = subprocess.check_output(['nm', '-a', str(dol.with_suffix('.elf'))], text=True)
@@ -67,7 +67,9 @@ def collect(frames, dol, root, press, release, observation_seconds=30):
     if 'HeapPointer' in symbols:
         heap = integer(symbols['HeapPointer'])
         start, capacity, used, blocks, free_list, collections = struct.unpack('>6I', frames.read_bytes(heap, 24))
-        assert 0 < used <= capacity <= 262144
+        # Keep historical profiles strict; callers using the audio-enabled
+        # runtime explicitly select its larger managed heap.
+        assert capacity == expected_heap_bytes and 0 < used <= capacity
         result['managed_heap'] = {'capacity_bytes': capacity, 'arena_used_bytes': used, 'collections': collections,
                                   'scope': 'post-window arena; not peak or live bytes'}
     (root / 'profile.json').write_text(json.dumps(result, indent=2) + '\n')
