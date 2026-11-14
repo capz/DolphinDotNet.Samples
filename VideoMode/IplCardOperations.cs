@@ -9,6 +9,15 @@ internal interface IIplCardOperations
 }
 internal interface IIplBrowserNotifications { int Version {get;} }
 
+// Terminal operation results are separate from card/catalog revisions: a probe
+// or thumbnail refresh must never announce a completed transfer.
+internal enum IplCardOperationResult { None, Succeeded, Failed, Cancelled }
+internal interface IIplCardOperationNotifications
+{
+    int OperationVersion {get;}
+    IplCardOperationResult OperationResult {get;}
+}
+
 internal interface IIplAnimatedArtwork
 {
     int ArtworkFrames(IplBrowserItem item);int ArtworkDuration(IplBrowserItem item,int frame);bool ArtworkBounces(IplBrowserItem item);

@@ -1,0 +1,51 @@
+{
+  "image": "ghcr.io/extremscorner/libogc2@sha256:13bb658d3f18903816617223f5d7c6f776d3db3ea806aae67f8d35a7a69d4c85",
+  "manifest": [
+    {
+      "Config": "blobs/sha256/ba9cd72a4bd027736197633b7510d269e07a2bf2894ef95018a2f2606d32b859",
+      "RepoTags": null,
+      "Layers": [
+        "blobs/sha256/7cc7fe68eff66f19872441a51938eecc4ad33746d2baa3abc081c1e6fe25988e",
+        "blobs/sha256/d9157044e15d4877d14cf976e8bc76fec765ff674b32c8d517bcb1cadfd1a087",
+        "blobs/sha256/d5b63a5b42a81d048afe05a5b0e7223d741f6ee83532738f2d5d2383cce12022",
+        "blobs/sha256/b0e8c0a6e499cea0ca98fdb006a31ae499a23b8a6be7e62a1659e0c2da1cd915",
+        "blobs/sha256/47ab62783ec05682c10f09fe3168383ad2e13678a4beafe987b6104ba3aefea1"
+      ],
+      "LayerSources": {
+        "sha256:47ab62783ec05682c10f09fe3168383ad2e13678a4beafe987b6104ba3aefea1": {
+          "mediaType": "application/vnd.oci.image.layer.v1.tar",
+          "size": 261555200,
+          "digest": "sha256:47ab62783ec05682c10f09fe3168383ad2e13678a4beafe987b6104ba3aefea1"
+        },
+        "sha256:7cc7fe68eff66f19872441a51938eecc4ad33746d2baa3abc081c1e6fe25988e": {
+          "mediaType": "application/vnd.oci.image.layer.v1.tar",
+          "size": 77875200,
+          "digest": "sha256:7cc7fe68eff66f19872441a51938eecc4ad33746d2baa3abc081c1e6fe25988e"
+        },
+        "sha256:b0e8c0a6e499cea0ca98fdb006a31ae499a23b8a6be7e62a1659e0c2da1cd915": {
+          "mediaType": "application/vnd.oci.image.layer.v1.tar",
+          "size": 959693824,
+          "digest": "sha256:b0e8c0a6e499cea0ca98fdb006a31ae499a23b8a6be7e62a1659e0c2da1cd915"
+        },
+        "sha256:d5b63a5b42a81d048afe05a5b0e7223d741f6ee83532738f2d5d2383cce12022": {
+          "mediaType": "application/vnd.oci.image.layer.v1.tar",
+          "size": 50606592,
+          "digest": "sha256:d5b63a5b42a81d048afe05a5b0e7223d741f6ee83532738f2d5d2383cce12022"
+        },
+        "sha256:d9157044e15d4877d14cf976e8bc76fec765ff674b32c8d517bcb1cadfd1a087": {
+          "mediaType": "application/vnd.oci.image.layer.v1.tar",
+          "size": 769807872,
+          "digest": "sha256:d9157044e15d4877d14cf976e8bc76fec765ff674b32c8d517bcb1cadfd1a087"
+        }
+      }
+    }
+  ],
+  "selected_prefixes": [
+    "opt/devkitpro/devkitPPC",
+    "opt/devkitpro/libogc2",
+    "opt/devkitpro/tools",
+    "opt/devkitpro/portlibs/ppc",
+    "opt/devkitpro/portlibs/gamecube"
+  ],
+  "uncompressed_file_bytes": 728025228
+}

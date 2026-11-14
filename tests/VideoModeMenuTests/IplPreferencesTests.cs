@@ -35,7 +35,7 @@ internal static class IplPreferencesTests
         foreach(int level in new[]{0,1,2}){
             var value=new IplPreferences(new VideoModeSettings(1,2,true),1,level,3);
             byte[] bytes=IplPreferencesCodec.Encode(value,23);
-            Check(bytes[4]==3&&bytes[10]==level&&IplPreferencesCodec.Decode(bytes,out var actual,out uint generation)&&actual.MotionLevel==level&&actual.GlassBlur==3&&generation==23,"Every motion level survives version-three storage");
+            Check(bytes[4]==4&&bytes[10]==level&&IplPreferencesCodec.Decode(bytes,out var actual,out uint generation)&&actual.MotionLevel==level&&actual.GlassBlur==3&&generation==23,"Every motion level survives current storage");
         }
         foreach(int invalid in new[]{-1,3}){
             var value=new IplPreferences(new VideoModeSettings(1,1,false),0,invalid);
@@ -56,7 +56,7 @@ internal static class IplPreferencesTests
             "49504c5303010201010203001700000000000000000000000000000045dc1ee2", // invalid level3
             "49504c53030102030102010017000000000000000000000000000000bbb60e03", // contradictory Disabled bit
             "49504c53030102010102010117000000000000000000000000000000857c6c60", // reserved byte11
-            "49504c53040102010102010017000000000000000000000000000000b180d2d6"})
+            "49504c53050102010103010017000000000000000000000000000000ce651580"})
             Check(!IplPreferencesCodec.Decode(Convert.FromHexString(invalid),out _,out _),"Valid CRC cannot admit invalid motion fields, flags or versions");
 
         var store=new Store{Value=new IplPreferences(new VideoModeSettings(1,1,false),0,1,2)};
@@ -94,18 +94,19 @@ internal static class IplPreferencesTests
         byte[] legacy=Convert.FromHexString("49504c530101020301000000ffffffff000000000000000000000000e5b84949");
         Check(IplPreferencesCodec.Decode(legacy,out var migrated,out uint oldGeneration)&&migrated.GlassBlur==0&&migrated.Video.Widescreen&&migrated.Sound==1&&migrated.ReducedMotion&&oldGeneration==uint.MaxValue,"Old settings load unchanged with blur Off");
         byte[] rewritten=IplPreferencesCodec.Encode(migrated,0);
-        Check(rewritten[4]==3&&IplPreferencesCodec.Decode(rewritten,out var next,out uint nextGeneration)&&next.GlassBlur==0&&next.MotionLevel==0&&nextGeneration==0,"Saving legacy settings migrates to the new format across generation wrap");
+        Check(rewritten[4]==4&&IplPreferencesCodec.Decode(rewritten,out var next,out uint nextGeneration)&&next.GlassBlur==0&&next.MotionLevel==0&&nextGeneration==0,"Saving legacy settings migrates to the new format across generation wrap");
         foreach(string fixture in new[]{
             "49504c530101020301010000ffffffff000000000000000000000000bd38ab9e", // v1 reserved byte
             "49504c530201020301040000ffffffff0000000000000000000000002f1c3ff8", // v2 blur outside 0..3
             "49504c530201020301010100ffffffff0000000000000000000000007427e729", // v2 reserved byte
-            "49504c53040102010102010017000000000000000000000000000000b180d2d6"}) // unknown version
+            "49504c53050102010103010017000000000000000000000000000000ce651580"}) // unknown version
             Check(!IplPreferencesCodec.Decode(Convert.FromHexString(fixture),out _,out _),"Valid CRC does not permit invalid fields or unsupported versions");
 
         var store=new Store{Value=new IplPreferences(new VideoModeSettings(1,1,false),0,false,2)};
         var s=new IplShell(new FakeOutput(),store);Check(s.GlassBlur==2,"Startup restores glass blur");
-        Face(s,ShellFace.Options);Check(s.Rows==3&&s.Label(2)=="Glass Blur"&&s.Value(2)=="Medium","Options retains blur after Storage moves to its own side");
-        Move(s,0,1);s.Tick(.18f);Check(s.Row==2&&s.Focus(2)==1,"Final row wraps and gains focus");
+        Face(s,ShellFace.Options);Check(s.Rows==4&&s.Label(2)=="Glass Blur"&&s.Value(2)=="Medium"&&s.Label(3)=="UI Sounds","Options retains blur alongside the independent UI sound control");
+        Move(s,0,1);s.Tick(.18f);Check(s.Row==3&&s.Focus(3)==1,"Final row wraps and gains focus");
+        Move(s,0,1);s.Tick(.18f);Check(s.Row==2&&s.Focus(2)==1,"Blur remains independently selectable");
         s.Confirm();Move(s,0,1);Check(s.Editing&&s.GlassBlur==3&&s.Value(2)=="High"&&store.Saves==0,"Blur edits preview without saving");
         Move(s,1,0);Check(s.GlassBlur==3,"Horizontal input does not change blur");
         Move(s,0,1);Check(s.GlassBlur==0&&s.Value(2)=="Off","Blur increments wrap to Off");

@@ -2,6 +2,7 @@
 """Socket-level integrity tests for the read-only native XFB capture helper."""
 from contextlib import contextmanager
 import hashlib
+import re
 import socket
 import threading
 import time
@@ -131,6 +132,158 @@ class NativeMemoryPackets(unittest.TestCase):
         for address,length in ((-1,1),(0,-1),(0x100000000,0),(0xffffffff,2),('address',4),(0,1.5)):
             with self.subTest(address=address,length=length):
                 with self.assertRaises(ValueError):frames.read_bytes(address,length)
+
+
+class NativeBoundaryProtocol(unittest.TestCase):
+    """Exercise client/server ordering with real packets, without an emulator."""
+    address=0x80012340
+    serial=0x80300000
+
+    def frames(self,connection):
+        frames=NativeFrames.__new__(NativeFrames)
+        frames.connection=connection;frames.address=self.address;frames.serial=self.serial;frames.count=10
+        frames.commands=[]
+        def send(conn,command):
+            # These are the only controls needed here. In particular, reject
+            # register/memory writes and raw interrupts at the protocol boundary.
+            self.assertIn(command,('c',f'z0,{self.address:x},4',f'Z0,{self.address:x},4',f'm{self.serial:x},4'))
+            frames.commands.append(command);conn.sendall(packet(command.encode('ascii')))
+        frames.send=send
+        frames.reply=lambda conn,deadline:_memory_reply(conn,deadline).decode('ascii')
+        def request(conn,command,seconds=1):
+            send(conn,command)
+            return frames.reply(conn,time.monotonic()+seconds)
+        frames.request=request
+        def parse_stop_pc(reply):
+            match=re.fullmatch(r'T[0-9a-fA-F]{2}40:([0-9a-fA-F]{8});.*',reply)
+            if not match:raise ValueError('Missing PC in test stop reply')
+            return int(match[1],16)
+        frames.parse_stop_pc=parse_stop_pc
+        return frames
+
+    def command(self,peer,expected):
+        self.assertEqual(exact(peer,1),b'$')
+        data=bytearray()
+        while True:
+            byte=exact(peer,1)
+            if byte==b'#':break
+            data.extend(byte)
+        self.assertEqual(exact(peer,2),format(sum(data)&255,'02x').encode('ascii'))
+        self.assertEqual(data.decode('ascii'),expected)
+
+    def reply(self,peer,payload):
+        peer.sendall(b'+'+packet(payload))
+        self.assertEqual(exact(peer,1),b'+')
+
+    def quiet(self,peer):
+        peer.settimeout(.02)
+        try:
+            with self.assertRaises(TimeoutError):peer.recv(1)
+        finally:peer.settimeout(1)
+
+    def run_protocol(self,scenario,action):
+        with sockets() as (local,peer):
+            frames=self.frames(local);errors=[]
+            def serve():
+                try:scenario(peer)
+                except BaseException as error:
+                    errors.append(error)
+                    peer.shutdown(socket.SHUT_RDWR)
+            worker=threading.Thread(target=serve);worker.start()
+            try:action(frames)
+            finally:
+                worker.join(2)
+                if worker.is_alive():
+                    local.shutdown(socket.SHUT_RDWR);worker.join(2)
+            self.assertFalse(worker.is_alive())
+            if errors:raise errors[0]
+            return frames
+
+    def test_pause_consumes_ok_and_stop_in_either_order(self):
+        stop=f'T0540:{self.address:08x};01:81700000;'.encode('ascii')
+        for replies in ((b'OK',stop),(stop,b'OK')):
+            with self.subTest(first=replies[0]):
+                def scenario(peer):
+                    self.command(peer,f'Z0,{self.address:x},4')
+                    self.reply(peer,b'')
+                    self.reply(peer,replies[0])
+                    # Reading the counter after just OK or just T05 would
+                    # falsely claim that rearming and pausing both completed.
+                    self.quiet(peer)
+                    self.reply(peer,replies[1])
+                    self.command(peer,f'm{self.serial:x},4')
+                    self.reply(peer,b'0000002a')
+                    self.quiet(peer)
+                frames=self.run_protocol(scenario,lambda frames:frames.pause_at_boundary())
+                self.assertEqual(frames.count,42)
+                self.assertEqual(frames.commands,[f'Z0,{self.address:x},4',f'm{self.serial:x},4'])
+
+    def test_pause_rejects_wrong_stop_or_breakpoint_error(self):
+        for bad in (f'T0540:{self.address+4:08x};'.encode('ascii'),b'E01',b'T0240:80012340;'):
+            with self.subTest(reply=bad):
+                def scenario(peer):
+                    self.command(peer,f'Z0,{self.address:x},4')
+                    self.reply(peer,bad);self.quiet(peer)
+                def action(frames):
+                    with self.assertRaisesRegex(RuntimeError,'Unexpected'):
+                        frames.pause_at_boundary()
+                    self.assertEqual(frames.count,10)
+                frames=self.run_protocol(scenario,action)
+                self.assertEqual(frames.commands,[f'Z0,{self.address:x},4'])
+
+    def test_pause_requires_both_acceptance_and_stop(self):
+        for only in (b'OK',f'T0540:{self.address:08x};'.encode('ascii')):
+            with self.subTest(only=only):
+                def scenario(peer):
+                    self.command(peer,f'Z0,{self.address:x},4')
+                    self.reply(peer,only);peer.shutdown(socket.SHUT_WR)
+                def action(frames):
+                    with self.assertRaises(ConnectionError):frames.pause_at_boundary()
+                    self.assertEqual(frames.count,10)
+                frames=self.run_protocol(scenario,action)
+                self.assertEqual(frames.commands,[f'Z0,{self.address:x},4'])
+
+    def rearmed_stop(self,peer,address):
+        self.command(peer,f'z0,{self.address:x},4');self.reply(peer,b'OK')
+        self.command(peer,'c')
+        self.command(peer,f'Z0,{self.address:x},4');self.reply(peer,b'OK')
+        self.reply(peer,f'T0540:{address:08x};'.encode('ascii'))
+
+    def test_repeated_advance_rearms_without_resuming_a_queued_stop(self):
+        def scenario(peer):
+            for serial in range(11,15):
+                self.rearmed_stop(peer,self.address)
+                self.command(peer,f'm{self.serial:x},4')
+                self.reply(peer,f'{serial:08x}'.encode('ascii'))
+            self.quiet(peer)
+        def action(frames):
+            frames.advance(0);frames.advance(-1);self.assertEqual(frames.count,10)
+            frames.advance(2);self.assertEqual(frames.count,12)
+            frames.advance(2);self.assertEqual(frames.count,14)
+        frames=self.run_protocol(scenario,action)
+        self.assertEqual(frames.commands,[f'z0,{self.address:x},4','c',f'Z0,{self.address:x},4',f'm{self.serial:x},4']*4)
+
+    def test_advance_rejects_duplicate_and_backwards_serials(self):
+        for bad_serial in (11,10):
+            with self.subTest(serial=bad_serial):
+                def scenario(peer):
+                    for serial in (11,bad_serial):
+                        self.rearmed_stop(peer,self.address)
+                        self.command(peer,f'm{self.serial:x},4')
+                        self.reply(peer,f'{serial:08x}'.encode('ascii'))
+                    self.quiet(peer)
+                def action(frames):
+                    with self.assertRaisesRegex(RuntimeError,'counter did not advance'):frames.advance(2)
+                self.run_protocol(scenario,action)
+
+    def test_advance_rejects_wrong_pc_before_reading_counter(self):
+        def scenario(peer):
+            self.rearmed_stop(peer,self.address+4);self.quiet(peer)
+        def action(frames):
+            with self.assertRaisesRegex(RuntimeError,'Unexpected native presentation stop'):frames.advance(1)
+            self.assertEqual(frames.count,10)
+        frames=self.run_protocol(scenario,action)
+        self.assertEqual(frames.commands,[f'z0,{self.address:x},4','c',f'Z0,{self.address:x},4'])
 
 
 if __name__=='__main__':unittest.main()

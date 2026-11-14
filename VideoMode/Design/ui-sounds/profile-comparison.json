@@ -1,0 +1,14 @@
+{
+  "scope": "Dolphin guest clock, Video cube, High blur, Subtle motion, VSync; current Medium UI volume with unavailable IPL and NoAudioOutput; not hardware",
+  "baseline_source": "../crisp-icons-detail/profile-high",
+  "baseline_dol_sha256": "2942fffaf07bd70a92a9aa3bc75273150e9ee0c690305f0ba3b6044c2e3bbd51",
+  "dol_sha256": "8c41e4909effeda13357c74ad79420001113e26a4ff13a62773321d1d5829e3c",
+  "samples": 96,
+  "warmup": 30,
+  "baseline_frame_ms": 16.68089583333333,
+  "frame_ms": 16.68084375,
+  "baseline_active_ms": 4.507760416666667,
+  "active_ms": 4.51321875,
+  "active_delta_ms": 0.0054583333333330306,
+  "limitation": "The SDK and managed heap changed. This is a quiet/unavailable-audio workload comparison; it does not isolate audio overhead or measure active mixing."
+}

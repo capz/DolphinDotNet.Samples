@@ -4,6 +4,8 @@
 Run inside dnd-cloud-dolphin/Xvfb. Build with IplPerformanceReview=true and
 IplPerformanceReviewScene matching --scene (Options by default), and
 IplPerformanceReviewOverlay matching --overlay (Off by default).
+Native AA is enabled by default. For an archived or explicit AA-off build,
+pass --hardware-aa off to retain the historical Dolphin presentation profile.
 No debugger interrupts, screenshots, frame dumps or file writes during sampling.
 The guest-clock timings are Dolphin measurements, NOT physical GameCube results.
 """
@@ -44,13 +46,18 @@ def run(args):
     shaders.mkdir()
     shutil.copyfile(Path(__file__).parents[1] / 'VideoMode/Assets/IplEdgeAA.glsl', shaders / 'IplEdgeAA.glsl')
     (config / 'Dolphin.ini').write_text('[Core]\nGFXBackend = OGL\nCPUCore = 1\nCPUThread = False\nEmulationSpeed = 1.0\n[DSP]\nBackend = No Audio Output\n[Display]\nRenderWindowXPos = 0\nRenderWindowYPos = 0\nRenderWindowWidth = 640\nRenderWindowHeight = 480\n[Interface]\nOnScreenDisplayMessages = False\n[General]\nGDBPort = 2174\n')
-    (config / 'GFX.ini').write_text('[Settings]\nInternalResolution = 1\nMSAA = 1\nSSAA = False\nAspectRatio = 2\n[Enhancements]\nPostProcessingShader = IplEdgeAA\n[Hacks]\nForceProgressive = True\n')
+    native_aa = args.hardware_aa == 'on'
+    postshader = '' if native_aa else 'IplEdgeAA'
+    force_progressive = 'False' if native_aa else 'True'
+    (config / 'GFX.ini').write_text('[Settings]\nInternalResolution = 1\nMSAA = 1\nSSAA = False\nAspectRatio = 2\n[Enhancements]\nPostProcessingShader = '+postshader+'\n[Hacks]\nForceProgressive = '+force_progressive+'\n')
     dol = args.dol.resolve()
     table = subprocess.run(['nm', '-a', str(dol.with_suffix('.elf'))], check=True, text=True, capture_output=True).stdout
     symbols = {}
     for line in table.splitlines():
         parts = line.split()
         if len(parts) == 3:
+            if parts[2].split('.lto_priv.')[0] == 'mode':
+                symbols['DisplayModePointer'] = int(parts[0], 16)
             if parts[2].split('.lto_priv.')[0] == 'dnd_value_heap':
                 symbols['HeapPointer'] = int(parts[0], 16)
             for name in ('Count', 'Ready', 'Samples', 'Status', 'Summary', 'OverlaySamples', 'OverlaySetupUs'):
@@ -102,8 +109,22 @@ def run(args):
                 raw = b''.join(memory(conn, pointer + 24 + at, min(512, 96 * len(FIELDS) * 4 - at)) for at in range(0, 96 * len(FIELDS) * 4, 512))
                 values = struct.unpack('>' + 'i' * (96 * len(FIELDS)), raw)
                 rows = [dict(zip(FIELDS, values[i:i + len(FIELDS)])) for i in range(0, len(values), len(FIELDS))]
-                if any(r['frame_us'] <= 0 or r['prepare_us'] <= 0 or r['width'] != 640 or r['height'] != 480 for r in rows):
+                expected_aa = native_aa and args.scene != 'Detail'
+                expected_height = 242 if expected_aa else 480
+                if any(r['frame_us'] <= 0 or r['prepare_us'] <= 0 or r['width'] != 640 or r['height'] != expected_height for r in rows):
                     raise ValueError('Invalid frame log')
+                display = None
+                if native_aa:
+                    if 'DisplayModePointer' not in symbols:
+                        raise ValueError('Native-AA profiling requires the actual GX mode symbol')
+                    pointer = int.from_bytes(memory(conn, symbols['DisplayModePointer'], 4), 'big')
+                    mode = memory(conn, pointer, 26)
+                    display = {'width': int.from_bytes(mode[4:6], 'big'),
+                               'efb_height': int.from_bytes(mode[6:8], 'big'),
+                               'xfb_height': int.from_bytes(mode[8:10], 'big'),
+                               'hardware_aa': bool(mode[25]), 'vi_scan_bits': int.from_bytes(mode[:4], 'big') & 3}
+                    if mode[25] not in (0, 1) or (display['width'], display['efb_height'], display['xfb_height'], display['hardware_aa'], display['vi_scan_bits']) != (640, expected_height, 480, expected_aa, 0):
+                        raise ValueError('Native GX mode does not match the requested AA/scene profile: '+repr(display))
                 expected_face,expected_editing={'Options':(3,0),'Oblique':(3,0),'Cube':(0,0),'Detail':(1,1)}[args.scene]
                 if any(r['face']!=expected_face or r['editing']!=expected_editing for r in rows):
                     raise ValueError('Native scene does not match --scene '+args.scene)
@@ -116,6 +137,10 @@ def run(args):
                           'clock': 'native guest monotonic microseconds; emulated CPU/GPU timing does not establish hardware performance',
                           'method': '30 warmup + 96 recorded frames, fixed '+args.scene+' pose, no interrupts or dumps during measurement; Y logger uses the same buffer',
                           'scene': args.scene,
+                          'hardware_aa_build': native_aa,
+                          'native_display': display,
+                          'emulator_postprocessing': postshader,
+                          'emulator_force_progressive': force_progressive == 'True',
                           'overlay_mode': args.overlay,
                           'dol_sha256': hashlib.sha256(dol.read_bytes()).hexdigest(), 'frames': len(rows), 'summary': summarize(rows)}
                 if 'HeapPointer' in symbols:
@@ -180,6 +205,7 @@ if __name__ == '__main__':
     parser.add_argument('--variant', required=True)
     parser.add_argument('--scene',choices=('Options','Oblique','Cube','Detail'),default='Options')
     parser.add_argument('--overlay',choices=('Off','Timers','Full'),default='Off',help='Must match IplPerformanceReviewOverlay')
+    parser.add_argument('--hardware-aa', choices=('on','off'), default='on', help='Must match IplHardwareAntialiasing; off preserves the archived IplEdgeAA/forced-progressive presentation')
     parser.add_argument('--wait', type=float, default=45)
     parser.add_argument('--allow-legacy-export-stall', action='store_true', help='Only for archived baseline DOLs: samples finish, but legacy absent-SD probing then stalls; record status and PC without accepting this behavior in current builds')
     run(parser.parse_args())

@@ -17,10 +17,10 @@ internal sealed class SealedGlassShell : IDisposable
     private readonly NativeBuffer viewOffsets=NativeBuffer.Allocate(128*128*4),offsetTexture=NativeBuffer.Allocate(32),positionMatrix=NativeBuffer.Allocate(48);
     private readonly float[] positionTransform=new float[12];
     private readonly NativeBuffer indirectMatrix=NativeBuffer.Allocate(32);
-    private const int ReflectionSize=256;
-    private readonly NativeBuffer environment=NativeBuffer.Allocate(ReflectionSize*ReflectionSize*4),texture=NativeBuffer.Allocate(32);
-    private readonly NativeBuffer rearEnvironment=NativeBuffer.Allocate(ReflectionSize*ReflectionSize*4);
-    private readonly NativeBuffer innerEnvironment=NativeBuffer.Allocate(ReflectionSize*ReflectionSize*4);
+    private const int ReflectionSize=IplEnvironmentMipmaps.BaseSize;
+    private readonly NativeBuffer environment=NativeBuffer.Allocate(IplEnvironmentMipmaps.ChainBytes),texture=NativeBuffer.Allocate(32);
+    private readonly NativeBuffer rearEnvironment=NativeBuffer.Allocate(IplEnvironmentMipmaps.ChainBytes);
+    private readonly NativeBuffer innerEnvironment=NativeBuffer.Allocate(IplEnvironmentMipmaps.ChainBytes);
     private readonly NativeBuffer normalMatrix=NativeBuffer.Allocate(48);
     private readonly NativeBuffer projectionBuffer=NativeBuffer.Allocate(64),modelBuffer=NativeBuffer.Allocate(48),textureMatrix=NativeBuffer.Allocate(48);
     private readonly float[] projection=new float[16],model=new float[12],texMatrix=new float[12];
@@ -92,7 +92,34 @@ internal sealed class SealedGlassShell : IDisposable
             }
             (bank==0?rearEnvironment:bank==1?environment:innerEnvironment).Write(tile,0,(ty*(ReflectionSize/4)+tx)*64);
         }
+        // Keep LOD0 exactly as authored. Build the smaller levels once in the
+        // same native banks, using only four source tiles and one output tile.
+        var sourceTiles=new byte[256];
+        BuildEnvironmentMipmaps(rearEnvironment,sourceTiles,tile);
+        BuildEnvironmentMipmaps(environment,sourceTiles,tile);
+        BuildEnvironmentMipmaps(innerEnvironment,sourceTiles,tile);
         environment.Flush();rearEnvironment.Flush();innerEnvironment.Flush();
+    }
+    private static void BuildEnvironmentMipmaps(NativeBuffer image,byte[] sourceTiles,byte[] tile)
+    {
+        for(int level=1;level<IplEnvironmentMipmaps.Levels;level++)
+        {
+            int sourceSize=IplEnvironmentMipmaps.LevelSize(level-1),size=sourceSize/2;
+            int sourceAcross=(sourceSize+3)/4,across=(size+3)/4;
+            int sourceOffset=IplEnvironmentMipmaps.LevelOffset(level-1),targetOffset=IplEnvironmentMipmaps.LevelOffset(level);
+            for(int y=0;y<across;y++)for(int x=0;x<across;x++)
+            {
+                int at=sourceOffset+(y*2*sourceAcross+x*2)*IplEnvironmentMipmaps.TileBytes;
+                if(sourceSize>=8)
+                {
+                    image.Read(sourceTiles,at,0,128);
+                    image.Read(sourceTiles,at+sourceAcross*IplEnvironmentMipmaps.TileBytes,128,128);
+                }
+                else image.Read(sourceTiles,at,0,IplEnvironmentMipmaps.TileBytes);
+                IplEnvironmentMipmaps.DownsampleTile(sourceTiles,sourceSize,tile);
+                image.Write(tile,0,targetOffset+(y*across+x)*IplEnvironmentMipmaps.TileBytes);
+            }
+        }
     }
     private void BuildField()
     {
@@ -252,8 +279,8 @@ internal sealed class SealedGlassShell : IDisposable
         GX.GX_SetArray(GX_VA_POS,vertices.Address,24);GX.GX_SetArray(GX_VA_NRM,vertices.Address.Add(12),24);
         GX.GX_LoadTexMtxImm(textureMatrix.Address,GX_TEXMTX0,GX_MTX2x4);
         GX.GX_SetNumChans(0);GX.GX_SetNumTexGens(6);GX.GX_SetTexCoordGen(GX_TEXCOORD0,GX_TG_MTX2x4,GX_TG_NRM,GX_TEXMTX0);
-        GX.GX_InitTexObj(texture.Address,(front?innerEnvironment:rearEnvironment).Address,ReflectionSize,ReflectionSize,GX_TF_RGBA8,GX_CLAMP,GX_CLAMP,0);
-        GX.GX_InitTexObjFilterMode(texture.Address,GX_LINEAR,GX_LINEAR);GX.GX_LoadTexObj(texture.Address,GX_TEXMAP0);
+        GX.GX_InitTexObj(texture.Address,(front?innerEnvironment:rearEnvironment).Address,ReflectionSize,ReflectionSize,GX_TF_RGBA8,GX_CLAMP,GX_CLAMP,1);
+        GX.GX_InitTexObjLOD(texture.Address,GX_LIN_MIP_LIN,GX_LINEAR,0,8,0,GX_DISABLE,GX_DISABLE,GX_ANISO_1);GX.GX_LoadTexObj(texture.Address,GX_TEXMAP0);
         GX.GX_LoadTexMtxImm(positionMatrix.Address,GX_TEXMTX1,GX_MTX2x4);
         GX.GX_SetTexCoordGen(GX_TEXCOORD1,GX_TG_MTX2x4,GX_TG_POS,GX_TEXMTX1);
         GX.GX_LoadTexMtxImm(reflectionPositionMatrix.Address,GX_TEXMTX5,GX_MTX2x4);
@@ -334,8 +361,8 @@ internal sealed class SealedGlassShell : IDisposable
         }
         GX.GX_LoadTexMtxImm(textureMatrix.Address,GX_TEXMTX0,GX_MTX2x4);
         GX.GX_LoadTexMtxImm(fresnelMatrix.Address,GX_TEXMTX2,GX_MTX2x4);
-        GX.GX_InitTexObj(texture.Address,environment.Address,ReflectionSize,ReflectionSize,GX_TF_RGBA8,GX_CLAMP,GX_CLAMP,0);
-        GX.GX_InitTexObjFilterMode(texture.Address,GX_LINEAR,GX_LINEAR);GX.GX_LoadTexObj(texture.Address,GX_TEXMAP0);
+        GX.GX_InitTexObj(texture.Address,environment.Address,ReflectionSize,ReflectionSize,GX_TF_RGBA8,GX_CLAMP,GX_CLAMP,1);
+        GX.GX_InitTexObjLOD(texture.Address,GX_LIN_MIP_LIN,GX_LINEAR,0,8,0,GX_DISABLE,GX_DISABLE,GX_ANISO_1);GX.GX_LoadTexObj(texture.Address,GX_TEXMAP0);
         long copyStart=IplFrameProfiler.Active?Clock.Timestamp:0;
         GX.GX_SetTexCopySrc(0,0,(ushort)copyWidth,(ushort)copyHeight);GX.GX_SetTexCopyDst((ushort)copyWidth,(ushort)copyHeight,GX_TF_RGBA8,0);
         GX.GX_CopyTex(rearImage.Address,0);GX.GX_PixModeSync();GX.GX_InvalidateTexAll();

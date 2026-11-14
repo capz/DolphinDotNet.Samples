@@ -35,7 +35,7 @@ internal static class IplMenuLayoutTests
     }
     private static void Cube()
     {
-        foreach(var face in new[]{ShellFace.Options,ShellFace.Memory})for(int selected=0;selected<(face==ShellFace.Options?3:2);selected++){
+        foreach(var face in new[]{ShellFace.Options,ShellFace.Memory})for(int selected=0;selected<(face==ShellFace.Options?4:2);selected++){
             var shell=new IplShell(new FakeOutput(),new Preferences());shell.TurnTo(face);shell.Tick(1);shell.Time=0;shell.Row=selected;
             var panels=new List<Bounds>();var ink=new List<Ink>();
             var canvas=new IplProof{
@@ -63,9 +63,9 @@ internal static class IplMenuLayoutTests
     {
         var rowShape=typeof(IplRenderer).GetMethod("FlatRowShape",BindingFlags.Instance|BindingFlags.NonPublic)!;
         var cacheStyle=typeof(IplRenderer).GetMethod("FlatStyle",BindingFlags.Static|BindingFlags.NonPublic)!;
-        int settingsStyle=(int)cacheStyle.Invoke(null,new object[]{3})!,storageStyle=(int)cacheStyle.Invoke(null,new object[]{2})!;
+        int settingsStyle=(int)cacheStyle.Invoke(null,new object[]{4})!,storageStyle=(int)cacheStyle.Invoke(null,new object[]{2})!;
         Check(settingsStyle!=storageStyle&&settingsStyle>1&&settingsStyle!=5&&storageStyle>1&&storageStyle!=5,"Settings/storage menu caches must not alias each other, game or file-browser cards");
-        foreach(var face in new[]{ShellFace.Options,ShellFace.Memory})for(int selected=0;selected<(face==ShellFace.Options?3:2);selected++){
+        foreach(var face in new[]{ShellFace.Options,ShellFace.Memory})for(int selected=0;selected<(face==ShellFace.Options?4:2);selected++){
             var shell=new IplShell(new FakeOutput(),new Preferences());shell.TurnTo(face);shell.Tick(1);shell.Confirm();shell.Row=selected;shell.Tick(.18f);
             var ink=new List<Ink>();var canvas=new IplProof{TextSink=(text,x,y,size)=>ink.Add(new Ink(text,x,y,size))};
             var renderer=new IplRenderer(canvas);renderer.Prepare(shell);renderer.Present(shell);
@@ -83,5 +83,5 @@ internal static class IplMenuLayoutTests
             }
         }
     }
-    internal static void Run(){Cube();Flat();Console.WriteLine("Settings/storage layout: three Options rows, two top-Storage actions, selected text growth, wall/footer margins and cache isolation passed.");}
+    internal static void Run(){Cube();Flat();Console.WriteLine("Settings/storage layout: four Options rows, two top-Storage actions, selected text growth, wall/footer margins and cache isolation passed.");}
 }

@@ -3,6 +3,7 @@
     <IplEmulatorAntialiasing Condition="'$(IplEmulatorAntialiasing)' == ''">true</IplEmulatorAntialiasing>
     <IplEmulatorSamples Condition="'$(IplEmulatorSamples)' == ''">1</IplEmulatorSamples>
     <IplEmulatorSupersampling Condition="'$(IplEmulatorSupersampling)' == ''">false</IplEmulatorSupersampling>
+    <IplEmulatorPostProcessing Condition="'$(IplEmulatorPostProcessing)' == '' and '$(IplHardwareAntialiasing)' == 'true'">None</IplEmulatorPostProcessing>
     <IplEmulatorPostProcessing Condition="'$(IplEmulatorPostProcessing)' == ''">IplEdgeAA</IplEmulatorPostProcessing>
   </PropertyGroup>
   <UsingTask TaskName="IplSetDolphinAntialiasing" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)/Microsoft.Build.Tasks.Core.dll">

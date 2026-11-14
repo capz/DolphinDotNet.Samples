@@ -33,6 +33,12 @@ parser.add_argument('--detail-review',action='store_true',help='High blur/icon l
 parser.add_argument('--detail-profile',action='store_true',help='With --detail-review, measure an uninterrupted High-blur Video cube window')
 parser.add_argument('--motion-storage-review',action='store_true',help='Native Disabled/Subtle/Pronounced motion pairs, top Storage actions and light/dark blur boundary')
 parser.add_argument('--motion-storage-profile',action='store_true',help='After motion/storage captures, measure High blur with Pronounced motion on the Video cube')
+parser.add_argument('--ui-sounds-review',action='store_true',help='Native four-row Options, UI Sounds Medium/Off drafts, commit/cancel and Storage actions')
+parser.add_argument('--ui-sounds-profile',action='store_true',help='After UI-sound captures, measure High blur/Subtle motion/Medium UI volume on the normal Video cube')
+parser.add_argument('--native-aa-review',action='store_true',help='Native cube/High-blur/flat UI and 240p/480i/p/576i/p AA acceptance without emulator AA')
+parser.add_argument('--native-aa-profile',action='store_true',help='After native-AA acceptance, measure uninterrupted High-blur/Subtle/Medium Video timing')
+parser.add_argument('--native-aa-mode-check-only',action='store_true',help='Replay native-AA inputs and read mode metadata without screenshots or framebuffer dumps')
+parser.add_argument('--aa-expected',choices=['on','off'],help='Expected GameCube hardware AA in 240/480 output; 576 always requires AA off')
 parser.add_argument('--inner-blur-review',action='store_true',help='Use real Options input to capture all inner-glass blur levels and cancellation')
 parser.add_argument('--inner-blur-profile',action='store_true',help='With --inner-blur-review, measure each level on the normal interactive Video face')
 parser.add_argument('--inner-blur-profile-only',action='store_true',help='Skip repeated editor/list captures during the full blur profile')
@@ -57,23 +63,31 @@ parser.add_argument('--card-user',type=Path)
 parser.add_argument('--library',action='store_true',help='Obsolete normal-DOL game-library route; the top cube side is now Storage')
 parser.add_argument('--system-clock',action='store_true',help='Adjust isolated clock, inspect SRAM and Dolphin restart policy, then decrement')
 args=parser.parse_args()
+if args.native_aa_mode_check_only and not args.native_aa_review:parser.error('--native-aa-mode-check-only requires --native-aa-review')
 if args.optics_diagnostic and not args.mockup_review:parser.error('--optics-diagnostic requires --mockup-review')
 if args.mockup_single and not args.mockup_review:parser.error('--mockup-single requires --mockup-review')
 if args.mockup_corners and (not args.mockup_review or args.mockup_single or args.optics_diagnostic):parser.error('--mockup-corners requires an independent --mockup-review')
 if args.mockup_review and not args.native_boundaries:parser.error('--mockup-review requires --native-boundaries')
 if args.library:parser.error('--library is no longer available in the normal shell: the top cube side is Storage. Use an explicit game-library fixture for internal library tests.')
-if sum([args.mockup_review,args.rim_review,args.glass_modes,args.detail_review,args.motion_storage_review,args.calendar,args.widescreen,args.selector_motion,args.selector_scan,args.directional_return,args.system_clock,args.library,args.storage,args.flat_pages,args.dense_storage])>1:parser.error('Choose one review sequence')
+if sum([args.mockup_review,args.rim_review,args.glass_modes,args.detail_review,args.motion_storage_review,args.ui_sounds_review,args.native_aa_review,args.calendar,args.widescreen,args.selector_motion,args.selector_scan,args.directional_return,args.system_clock,args.library,args.storage,args.flat_pages,args.dense_storage])>1:parser.error('Choose one review sequence')
 if args.detail_profile and not args.detail_review:parser.error('--detail-profile requires --detail-review')
 if args.detail_review and not args.native_boundaries:parser.error('--detail-review requires --native-boundaries')
 if args.detail_review and (args.inner_blur_review or args.inner_blur_high):parser.error('--detail-review independently enables High blur; disable the other blur review modes')
 if args.motion_storage_profile and not args.motion_storage_review:parser.error('--motion-storage-profile requires --motion-storage-review')
 if args.motion_storage_review and not args.native_boundaries:parser.error('--motion-storage-review requires --native-boundaries')
 if args.motion_storage_review and (args.inner_blur_review or args.inner_blur_high):parser.error('--motion-storage-review independently enables High blur; disable the other blur review modes')
+if args.ui_sounds_profile and not args.ui_sounds_review:parser.error('--ui-sounds-profile requires --ui-sounds-review')
+if args.ui_sounds_review and not args.native_boundaries:parser.error('--ui-sounds-review requires --native-boundaries')
+if args.ui_sounds_review and (args.inner_blur_review or args.inner_blur_high):parser.error('--ui-sounds-review independently selects blur during profiling; disable the other blur review modes')
+if args.native_aa_profile and not args.native_aa_review:parser.error('--native-aa-profile requires --native-aa-review')
+if args.native_aa_review and (not args.native_boundaries or args.aa_expected is None):parser.error('--native-aa-review requires --native-boundaries and --aa-expected on/off')
+if args.aa_expected is not None and not args.native_aa_review:parser.error('--aa-expected requires --native-aa-review')
+if args.native_aa_review and (args.inner_blur_review or args.inner_blur_high):parser.error('--native-aa-review independently enables High blur; disable the other blur review modes')
 if args.glass_profile_only and not args.rim_profile:parser.error('--glass-profile-only requires --glass-profile')
 if args.inner_blur_profile and (not args.inner_blur_review or args.mockup_review):parser.error('--inner-blur-profile requires --inner-blur-review on a normal DOL')
 if args.inner_blur_profile_only and not args.inner_blur_profile:parser.error('--inner-blur-profile-only requires --inner-blur-profile')
 if args.profile_seconds<30 or args.profile_seconds>180:parser.error('--profile-seconds must be between 30 and 180')
-if args.quick_input and not (args.inner_blur_review or args.glass_modes or args.detail_review or args.motion_storage_review or args.selector_scan or args.flat_pages or args.widescreen):parser.error('--quick-input is supported for blur, motion/storage and detail/video reviews')
+if args.quick_input and not (args.inner_blur_review or args.glass_modes or args.detail_review or args.motion_storage_review or args.ui_sounds_review or args.native_aa_review or args.selector_scan or args.flat_pages or args.widescreen):parser.error('--quick-input is supported for blur, native AA, UI sounds, motion/storage and detail/video reviews')
 if args.inner_blur_cubes and not args.inner_blur_review:parser.error('--inner-blur-cubes requires --inner-blur-review')
 if (args.inner_blur_review or args.inner_blur_high) and not args.native_boundaries:parser.error('Inner-glass blur review requires --native-boundaries')
 if args.inner_blur_high and not args.glass_modes:parser.error('--inner-blur-high requires --glass-modes')
@@ -87,13 +101,19 @@ if root.exists() and any(root.iterdir()):raise ValueError('Use a fresh capture d
 root.mkdir(parents=True,exist_ok=True)
 config=root/'user/Config';config.mkdir(parents=True)
 (config/'Dolphin.ini').write_text('[Core]\nGFXBackend = OGL\nCPUCore = 1\nCPUThread = False\nSIDevice0 = 6\n[DSP]\nBackend = No Audio Output\n[Display]\nRenderWindowXPos = 0\nRenderWindowYPos = 0\nRenderWindowWidth = 640\nRenderWindowHeight = 480\n[Interface]\nOnScreenDisplayMessages = False\n[Movie]\nDumpFrames = True\nDumpFramesSilent = True\n')
+if args.native_aa_review:
+    # Pinned libogc AESND's 8d527c50 microcode is unknown to Dolphin 2503 HLE.
+    # Use its bundled free DSP ROM with LLE instead of forcing unrelated AX.
+    with (config/'Dolphin.ini').open('a') as f:f.write('[Core]\nDSPHLE = False\n[DSP]\nEnableJIT = True\nDSPThread = False\n')
 if args.storage or args.flat_pages or args.dense_storage:
     with (config/'Dolphin.ini').open('a') as f:f.write('[Core]\nSlotA = 1\nSlotB = 1\n'+('DefaultISO = '+str(args.disc.resolve())+'\n' if args.disc else ''))
     if args.card_user:
         shutil.copytree(args.card_user/'GC',root/'user/GC')
 if args.native_boundaries:
     with (config/'Dolphin.ini').open('a') as f:f.write('[General]\nGDBPort = 2174\n[Interface]\nDebugModeEnabled = True\n[Movie]\nDumpFrames = False\n')
-(config/'GFX.ini').write_text('[Settings]\nDumpFramesAsImages = True\nInternalResolution = 1\nMSAA = 1\nSSAA = False\nAspectRatio = 2\n[Enhancements]\nPostProcessingShader = IplEdgeAA\n[Hacks]\nForceProgressive = True\n')
+postshader='' if args.native_aa_review else 'IplEdgeAA'
+force_progressive='False' if args.native_aa_review else 'True'
+(config/'GFX.ini').write_text('[Settings]\nDumpFramesAsImages = True\nInternalResolution = 1\nMSAA = 1\nSSAA = False\nAspectRatio = 2\n[Enhancements]\nPostProcessingShader = '+postshader+'\n[Hacks]\nForceProgressive = '+force_progressive+'\n')
 if args.native_boundaries:
     with (config/'GFX.ini').open('a') as f:f.write('[Hacks]\nXFBToTextureEnable = False\nDeferEFBCopies = False\n')
 (config/'GCPadNew.ini').write_text('[GCPad1]\nDevice = XInput2/0/Virtual core pointer\nButtons/Z = Z\nButtons/A = A\nButtons/B = B\nButtons/X = X\nButtons/Y = Y\nTriggers/L = Q\nTriggers/R = W\nD-Pad/Left = Left\nD-Pad/Right = Right\nD-Pad/Up = Up\nD-Pad/Down = Down\nMain Stick/Up = I\nMain Stick/Down = K\nMain Stick/Left = J\nMain Stick/Right = L\nC-Stick/Up = U\n')
@@ -141,10 +161,11 @@ def shot(name):
     if p.poll() is not None:raise RuntimeError('Dolphin exited')
     boundary=native_frames.stable_frame() if native_frames is not None else None
     if native_frames is None:p.send_signal(signal.SIGSTOP)
-    time.sleep(.3)
-    capture(root/(name+'.ppm'))
+    if not args.native_aa_mode_check_only:
+        time.sleep(.3)
+        capture(root/(name+'.ppm'))
     if native_frames is not None and native_frames.stable_frame()!=boundary:raise RuntimeError('Native frame advanced during screenshot')
-    frames=sorted((root/'user/Dump/Frames').glob('*.png'),key=lambda a:a.stat().st_mtime_ns)
+    frames=[] if args.native_aa_mode_check_only else sorted((root/'user/Dump/Frames').glob('*.png'),key=lambda a:a.stat().st_mtime_ns)
     event={'capture':name,'completed_frames':len(frames),'input':'XTest -> Dolphin GameCube controller -> SDK Controller.GetState(0)'}
     # SIGSTOP may interrupt the movie writer. Keep the newest complete PNG,
     # rather than a zero-byte or truncated file from the in-flight frame.
@@ -156,8 +177,25 @@ def shot(name):
             break
     if native_frames is not None:event.update(capture_source='Complete X11 client, guest paused at VIDEO_WaitVSync after GX_CopyDisp/GX_DrawDone',native_boundaries=boundary)
     if native_frames is not None:
-        event['xfb']=native_frames.capture_xfb(root/(name+'-xfb.yuv'))
-        if args.glass_modes:
+        event['xfb']=native_frames.describe_xfb() if args.native_aa_mode_check_only else native_frames.capture_xfb(root/(name+'-xfb.yuv'))
+        if args.native_aa_mode_check_only:event['capture_source']='Read-only native mode metadata at completed presentation; no image captured'
+        if args.native_aa_review:
+            modes={
+                '07-576p-preview-high':(640,576,2),'09-video-576p-high':(640,576,2),
+                '10-video-576i-high':(640,576,0),'11-video-240p-high':(320,240,1),
+                '06-video-480p-high':(640,480,2),'08-rollback-480p-high':(640,480,2)}
+            expected=modes.get(name,(640,480,0));info=event['xfb']
+            if (info['width'],info['height'],info['vi_scan_bits'])!=expected:
+                raise RuntimeError(f'{name}: native-AA VI dimensions/scan mismatch: {info}, expected {expected}')
+            # Flat UI retains full EFB height; only visible cube pages use AA.
+            flat=name in ('02-options-flat','07-576p-preview-high','13-video-detail-crisp')
+            aa=args.aa_expected=='on' and expected[1]!=576 and not flat
+            if info['hardware_aa']!=aa:
+                raise RuntimeError(f'{name}: native hardware AA state mismatch: {info}, expected {aa}')
+            efb=info['efb_height']
+            valid=efb==242 if aa and expected[1]==480 else efb==(480 if expected[1]==576 else expected[1])
+            if not valid:raise RuntimeError(f'{name}: native-AA EFB height mismatch: {info}')
+        elif args.glass_modes:
             expected_height=576 if name.startswith('05-') else 240 if name.startswith('06-') else 480
             info=event['xfb'];expected_width=320 if expected_height==240 else 640
             if (info['width'],info['height'])!=(expected_width,expected_height):
@@ -169,10 +207,10 @@ def shot(name):
             info=event['xfb'];expected_scan=2 if name.startswith(('05-','06-','07-')) else 0
             if (info['width'],info['height'],info['vi_scan_bits'])!=(640,480,expected_scan):
                 raise RuntimeError(f'{name}: grouped Video preview/keep/rollback has the wrong native VI mode: {info}')
-        elif args.motion_storage_review:
+        elif args.motion_storage_review or args.ui_sounds_review:
             info=event['xfb']
             if (info['width'],info['height'],info['vi_scan_bits'])!=(640,480,0):
-                raise RuntimeError(f'{name}: motion/storage review must stay in native 640x480 interlaced output: {info}')
+                raise RuntimeError(f'{name}: UI review must stay in native 640x480 interlaced output: {info}')
         if native_frames.stable_frame()!=boundary:raise RuntimeError('Native frame advanced during framebuffer read')
     events.append(event)
     if native_frames is None:p.send_signal(signal.SIGCONT)
@@ -180,11 +218,79 @@ try:
     if native_frames is None:time.sleep(15)
     else:wait_frames(frame_count(),60)
     capture(root/'unused.ppm',True);time.sleep(.3)
-    if args.motion_storage_review:
+    if args.native_aa_review:
+        # Paired on/off normal DOLs use identical real controller operations.
+        # Their only emulator presentation is native VI output: no host AA or
+        # progressive field workaround can mask the GameCube AA setting.
+        key('x');key('b');key('Left')
+        # Disable idle motion for matched front silhouettes. This also disables
+        # turn animation, so temporarily restore Subtle for the angled probe.
+        key('a');key('Down');key('a');key('Down');key('a');key('b',settle_frames=12);key('b');key('Left')
+        shot('01-options-cube-blur-off')
+        key('a');shot('02-options-flat')
+        key('Down');key('Down');key('a');key('Down');key('a');key('b',settle_frames=12)
+        shot('03-options-cube-blur-high')
+        key('a');key('Up');key('a');key('Up');key('a');key('b',settle_frames=12);key('b')
+        code=x.XKeysymToKeycode(d,x.XStringToKeysym(b'Right'))
+        assert xt.XTestFakeKeyEvent(d,code,1,0);x.XSync(d,0);native_frames.advance(4)
+        assert xt.XTestFakeKeyEvent(d,code,0,0);x.XSync(d,0)
+        shot('04-rotating-corner-high');native_frames.advance(45)
+        key('b');key('Left');key('a');key('Down');key('a');key('Down');key('a')
+        key('b',settle_frames=12);key('b');key('Right');shot('05-video-480i-high')
+        key('a');key('Right',settle_frames=12);key('Up');key('a');key('a');key('b',settle_frames=12)
+        shot('06-video-480p-high')
+        key('a');key('Left',settle_frames=12);key('Up');key('a');shot('07-576p-preview-high')
+        key('b',settle_frames=12);shot('08-rollback-480p-high')
+        key('a');key('Up');key('a');key('a');key('b',settle_frames=12);shot('09-video-576p-high')
+        key('a');key('Right',settle_frames=12);key('Down');key('a');key('a');key('b',settle_frames=12)
+        shot('10-video-576i-high')
+        # Set progressive before requesting 240: 240i is correctly unsupported.
+        key('a');key('Up');key('Left',settle_frames=12);key('Down');key('Down');key('a');key('a');key('b',settle_frames=12)
+        shot('11-video-240p-high');key('x');shot('12-safe-480i-high')
+        key('a');shot('13-video-detail-crisp');key('b',settle_frames=12)
+        if args.native_aa_profile:
+            # Match the normal interactive workload's original Subtle motion.
+            key('b');key('Left');key('a');key('Down');key('a');key('Up');key('a')
+            key('b',settle_frames=12);key('b');key('Right')
+            from profile_interactive_rim import collect
+            profile=root/'profile-high-subtle-medium';profile.mkdir()
+            code=x.XKeysymToKeycode(d,x.XStringToKeysym(b'Y'))
+            def profile_key(down):
+                assert xt.XTestFakeKeyEvent(d,code,down,0)
+                x.XSync(d,0)
+            collect(native_frames,args.dol.resolve(),profile,lambda:profile_key(1),lambda:profile_key(0),args.profile_seconds,expected_heap_bytes=8388608)
+    elif args.ui_sounds_review:
+        # Normal interactive DOL, default Subtle motion and Medium UI volume.
+        # Use only controller input. A fresh emulator has no attached GC Loader
+        # preferences; unavailable IPL audio is honestly reported by the app.
+        key('x');key('b');key('Left');shot('01-options-cube-medium')
+        key('a');key('Down');key('Down');key('Down');shot('02-options-ui-sounds-row')
+        key('a');shot('03-ui-sounds-medium-editor')
+        key('Down');key('Down');shot('04-ui-sounds-off-draft')
+        key('a');shot('05-ui-sounds-off-confirmed')
+        key('a');key('Up');shot('06-ui-sounds-low-draft')
+        key('b',settle_frames=12);shot('07-ui-sounds-cancel-keeps-off')
+        key('b');key('i');key('a');shot('08-storage-flat-actions')
+        if args.ui_sounds_profile:
+            # Finish captures before diagnostics. Select High blur at row two,
+            # restore the default Medium volume at row three, retain Subtle,
+            # then measure the normal Video cube without further screenshots.
+            key('b',settle_frames=12);key('b');key('Left');key('a')
+            key('Down');key('Down');key('a');key('Down');key('a')
+            key('Down');key('a');key('Up');key('Up');key('a')
+            key('b',settle_frames=12);key('b');key('Right')
+            from profile_interactive_rim import collect
+            profile=root/'profile-high-subtle-medium';profile.mkdir()
+            code=x.XKeysymToKeycode(d,x.XStringToKeysym(b'Y'))
+            def profile_key(down):
+                assert xt.XTestFakeKeyEvent(d,code,down,0)
+                x.XSync(d,0)
+            collect(native_frames,args.dol.resolve(),profile,lambda:profile_key(1),lambda:profile_key(0),args.profile_seconds,expected_heap_bytes=8388608)
+    elif args.motion_storage_review:
         # Establish output and select all values through the ordinary controller
-        # path. The default Motion is Subtle; Options has three settings rows.
+        # path. The default Motion is Subtle; Options has four settings rows.
         key('x');key('b')
-        key('Left');key('a');key('Up');key('a');key('Down');key('a');key('b',settle_frames=12)
+        key('Left');key('a');key('Down');key('Down');key('a');key('Down');key('a');key('b',settle_frames=12)
         key('a');key('Up');key('a');key('Down');key('a');key('b',settle_frames=12)
         shot('01-disabled-a');native_frames.advance(45);shot('02-disabled-b')
         key('a');key('a');key('Up');key('a');key('b',settle_frames=12)
@@ -212,7 +318,7 @@ try:
         # its three Calendar-style parts directly. All changes use controller
         # input, with no native application-state or frame-buffer mutation.
         key('x');key('b') # Establish 480i and a neutral cube using real safe-mode/back input.
-        key('Left');key('a');key('Up');key('a');key('Down');key('a');key('b')
+        key('Left');key('a');key('Down');key('Down');key('a');key('Down');key('a');key('b')
         shot('01-options-high-blur')
         key('b');shot('02-crisp-centered-icon')
         # Inspect the physical frost boundary during a real cube turn. Existing
@@ -227,7 +333,7 @@ try:
         key('Down');key('a');key('b');shot('07-rollback-to-progressive-cube')
         key('x');key('a');shot('08-safe-interlaced-detail')
         key('b');key('b');key('Down',settle_frames=40);key('a');key('Down');key('a');shot('09-calendar-date-detail')
-        key('b');key('b');key('Left');key('a');key('Up');key('a');shot('10-options-blur-value-detail')
+        key('b');key('b');key('Left');key('a');key('Down');key('Down');key('a');shot('10-options-blur-value-detail')
         if args.detail_profile:
             # Complete the product captures before Y enables diagnostic text.
             # B from the value editor returns instantly to its cube side;
@@ -455,6 +561,11 @@ try:
             key('z');shot('08-widescreen-hidden')
             key('x');shot('09-safe-mode')
     (root/'events.json').write_text(json.dumps(events,indent=2)+'\n')
+except Exception:
+    if native_frames is not None:
+        try:(root/'native-failure.json').write_text(json.dumps(native_frames.failure_snapshot(),indent=2)+'\n')
+        except Exception as diagnostic_error:(root/'native-failure.txt').write_text(str(diagnostic_error)+'\n')
+    raise
 finally:
     # Preserve completed capture metadata even if a later profile is incomplete.
     if events:(root/'events.json').write_text(json.dumps(events,indent=2)+'\n')

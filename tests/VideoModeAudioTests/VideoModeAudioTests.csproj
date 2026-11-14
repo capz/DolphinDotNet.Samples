@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <DefineConstants>$(DefineConstants);IPL_SYSTEM_AUDIO</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../VideoMode/IplUiAudio.cs" Link="IplUiAudio.cs" />
+    <Compile Include="../../VideoMode/IplUiAudioPolicy.cs" Link="IplUiAudioPolicy.cs" />
+    <Compile Include="../../VideoMode/IplUiSounds.cs" Link="IplUiSounds.cs" />
+  </ItemGroup>
+</Project>

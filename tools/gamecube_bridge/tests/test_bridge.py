@@ -265,6 +265,20 @@ class ProtocolTests(unittest.TestCase):
         finally:
             a.close();b.close()
 
+    def test_480_output_accepts_aa_cube_and_full_height_flat_efbs(self):
+        for video in ('480i','480p'):
+            for scene,height in (('Options',242),('Cube',242),('Detail',480)):
+                with self.subTest(video=video,scene=scene,efb_height=height):
+                    a,b=socket.socketpair()
+                    try:
+                        a.sendall(packet(scene=scene,video=video,efb_height=height))
+                        _,rows,_,output_height=protocol.telemetry(b)
+                        self.assertEqual(output_height,480)
+                        self.assertEqual({row['height'] for row in rows},{height})
+                        self.assertEqual({row['scan'] for row in rows},{service.VIDEOS[video][1]})
+                    finally:
+                        a.close();b.close()
+
 
 class BridgeTests(unittest.TestCase):
     def setUp(self):
@@ -313,7 +327,7 @@ class BridgeTests(unittest.TestCase):
         def callback():
             with socket.create_connection(('127.0.0.1', self.bridge.settings['callback_port'])) as stream:
                 stream.settimeout(3)
-                stream.sendall(packet(token))
+                stream.sendall(packet(token,efb_height=242))
                 self.assertEqual(protocol.exact(stream, 4), b'OKAY')
         self.receiver.on_commit = callback
         image = elf(token)
@@ -328,11 +342,13 @@ class BridgeTests(unittest.TestCase):
             time.sleep(.01)
         self.assertEqual(result['state'], 'completed', result)
         self.assertEqual(result['result']['measurement_origin'], 'simulated-target-not-hardware')
+        self.assertEqual(result['result']['native_output_height'],480)
         self.assertTrue(result['result']['receiver_ready_after_run'])
         self.assertNotIn('callback_token', result)
         status, csv = self.request('GET', '/v1/jobs/' + identifier + '/frames.csv')
         self.assertEqual(status, 200)
         self.assertEqual(len(csv.splitlines()), 97)
+        self.assertEqual({line.split(',')[13] for line in csv.decode().splitlines()[1:]},{'242'})
         self.assertEqual(self.request('POST', '/v1/jobs/' + identifier + '/image', image)[0], 409)
         self.assertEqual(self.receiver.commits, 1)
 

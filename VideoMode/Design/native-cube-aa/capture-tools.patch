@@ -1,0 +1,51 @@
+diff --git a/ci/native_frame_boundary.py b/ci/native_frame_boundary.py
+index 194eae8..d09ba78 100644
+--- a/ci/native_frame_boundary.py
++++ b/ci/native_frame_boundary.py
+@@ -112,2 +112,4 @@ class NativeFrames:
+-            # Never interrupt the guest inside a GX FIFO primitive. Run freely,
+-            # then install a breakpoint at the completed presentation boundary.
++            # Run without a breakpoint, then consume the rearm acceptance and
++            # actual stop together. Another Continue after rearming could resume
++            # past an already queued stop and leave later reads unsynchronized.
++            before=self.count
+@@ -117,4 +119,2 @@ class NativeFrames:
+-            assert self.request(self.connection,f'Z0,{self.address:x},4')=='OK'
+-            reply=self.request(self.connection,'c',45)
+-            if self.parse_stop_pc(reply)!=self.address:raise RuntimeError('Unexpected native presentation stop: '+reply)
+-            self.count=self.read_serial()
++            self.pause_at_boundary()
++            if self.count<=before:raise RuntimeError('Native presentation counter did not advance')
+@@ -122,0 +123,17 @@ class NativeFrames:
++    def pause_at_boundary(self):
++        """Rearm after an uninterrupted run, consuming both OK and its stop.
++
++        The guest is already running. Do not issue another Continue or use the
++        generic request helper, which discards unsolicited stop notifications.
++        """
++        self.send(self.connection,f'Z0,{self.address:x},4')
++        accepted=stopped=False;deadline=time.monotonic()+45
++        while not(accepted and stopped):
++            reply=self.reply(self.connection,deadline)
++            if reply=='OK':accepted=True
++            elif reply.startswith('T05'):
++                if self.parse_stop_pc(reply)!=self.address:raise RuntimeError('Unexpected native presentation stop: '+reply)
++                stopped=True
++            elif reply!='':raise RuntimeError('Unexpected boundary breakpoint reply: '+reply)
++        self.count=self.read_serial()
++
+@@ -182 +199,5 @@ class NativeFrames:
+-        result={'stop':stop,'pc':symbol(self.parse_stop_pc(stop)),'stack':[]}
++        result={'stop':stop,'pc':symbol(self.parse_stop_pc(stop)),'stack':[],
++                'last_boundary_serial':self.count}
++        try:result['stopped_frame_serial']=self.read_serial()
++        except Exception as error:
++            result['counter_error']=str(error);return result
+diff --git a/ci/profile_interactive_rim.py b/ci/profile_interactive_rim.py
+index 5472ec6..86b68cc 100644
+--- a/ci/profile_interactive_rim.py
++++ b/ci/profile_interactive_rim.py
+@@ -38,2 +38 @@ def collect(frames, dol, root, press, release, observation_seconds=30, expected_
+-    assert frames.request(conn, f'Z0,{frames.address:x},4') == 'OK'
+-    frames.request(conn, 'c', 45)
++    frames.pause_at_boundary()

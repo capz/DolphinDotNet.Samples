@@ -452,7 +452,11 @@ internal sealed partial class IplRenderer
             if(status=="UNSUPPORTED MODE OR CABLE"||status=="NOT ENOUGH MEMORY FOR MODE")Banner(status=="UNSUPPORTED MODE OR CABLE"?"Unsupported mode or cable.":"Not enough memory for this mode.",true);
             else Center("Left/Right selects. Up/Down changes. A previews. B returns to the cube.",320,350,13,White);
         }
-        else if(s.Face==ShellFace.Options)Center("A confirms. B discards changes and returns to the cube.",320,351,14,0xc4c9deff);
+        else if(s.Face==ShellFace.Options)
+        {
+            if(s.Row==3&&s.UiAudioStatus.Length>0)Center(s.UiAudioStatus,320,322,13,0xc4c9deff);
+            Center("A confirms. B discards changes and returns to the cube.",320,351,14,0xc4c9deff);
+        }
     }
     private void Selectors(IplShell s,bool preparing)
     {
