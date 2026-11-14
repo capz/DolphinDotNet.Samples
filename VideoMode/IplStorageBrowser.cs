@@ -3,7 +3,7 @@ using System.IO;
 using Dolphin.Storage;
 using Store=Dolphin.Storage.Storage;
 using FsFile=Dolphin.IO.File;
-internal sealed class IplStorageBrowser : IIplBrowserSource,IIplCardOperations,IIplBrowserNotifications,IIplAnimatedArtwork,IIplBrowserPageSize,IIplBrowserCatalog
+internal sealed class IplStorageBrowser : IIplBrowserSource,IIplCardOperations,IIplBrowserNotifications,IIplCardOperationNotifications,IIplAnimatedArtwork,IIplBrowserPageSize,IIplBrowserCatalog
 {
     private readonly StorageDevice fileDevice;
     private IIplBrowserSource? active;private int pageSize=6;
@@ -11,6 +11,8 @@ internal sealed class IplStorageBrowser : IIplBrowserSource,IIplCardOperations,I
     internal IplStorageBrowser(StorageDevice fileDevice=StorageDevice.GcLoader){this.fileDevice=fileDevice;}
     public int Total=>active?.Total??0;public bool Busy=>active?.Busy??false;public string Status=>active?.Status??"";public bool LaunchRequested=>active?.LaunchRequested??false;
     public int Version=>(active as IIplBrowserNotifications)?.Version??0;
+    public int OperationVersion=>(active as IIplCardOperationNotifications)?.OperationVersion??0;
+    public IplCardOperationResult OperationResult=>(active as IIplCardOperationNotifications)?.OperationResult??IplCardOperationResult.None;
     public void Begin(IplBrowserKind kind,string path,int slot,bool rescan){active?.Dispose();active=kind==IplBrowserKind.Games?new IplNativeBrowser():kind==IplBrowserKind.Sd?new IplNativeFiles(fileDevice):new IplNativeCards();(active as IIplBrowserPageSize)?.SetPageSize(pageSize);active.Begin(kind,path,slot,rescan);}
     public int ReadCatalogPage(int start,int maximum)=>(active as IIplBrowserCatalog)?.ReadCatalogPage(start,maximum)??0;
     public IplBrowserItem? CatalogItem(int index)=>(active as IIplBrowserCatalog)?.CatalogItem(index);

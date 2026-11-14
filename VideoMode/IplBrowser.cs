@@ -28,6 +28,9 @@ internal interface IIplBrowserCanvas
 internal sealed class IplBrowser : IDisposable
 {
     private readonly IIplBrowserSource source;
+    private readonly IIplUiSoundSink? sounds;
+    private bool awaitingCardOperation;
+    private int observedOperationVersion;
     internal IplBrowserItem?[] Items {get;private set;}=new IplBrowserItem?[6];
     private bool sdList,cardList;
     internal bool Compact=>Kind!=IplBrowserKind.Games;
@@ -62,70 +65,107 @@ internal sealed class IplBrowser : IDisposable
     internal string SlotCaption(int slot)=>(source as IIplCardOperations)?.SlotCaption(slot)??"Unavailable";
     internal bool CanCopy=>Selected!=null&&(source as IIplCardOperations)?.CanCopy(Selected)==true;
     internal bool CanMove=>Selected!=null&&(source as IIplCardOperations)?.CanMove(Selected)==true;
-    internal void SwitchSlot(int slot){if(Kind==IplBrowserKind.MemoryCards&&Panel==IplBrowserPanel.Grid&&!Busy)Open(Kind,"",slot);}
+    internal void SwitchSlot(int slot){if(Kind==IplBrowserKind.MemoryCards&&Panel==IplBrowserPanel.Grid&&!Busy)OpenAt(Kind,"",slot,slot==Slot?IplUiSound.None:IplUiSound.ChangeField);}
     private int SourceVersion=>(source as IIplBrowserNotifications)?.Version??0;
     private readonly float[] focus=new float[IplStorageLayout.Capacity];
     internal float Focus(int item)=>focus[item];
-    internal IplBrowser(IIplBrowserSource source){this.source=source;}
+    internal IplBrowser(IIplBrowserSource source,IIplUiSoundSink? sounds=null){this.source=source;this.sounds=sounds;}
     internal void Open(IplBrowserKind kind,string path="",int slot=0)
-    {Kind=kind;ResizePage();Path=path;Slot=slot;PageStart=Selection=0;Panel=IplBrowserPanel.Grid;Active=true;error="";Array.Clear(Items,0,Items.Length);Count=0;Revision++;ContentRevision++;try{source.Begin(kind,path,slot,false);observedVersion=SourceVersion;if(!source.Busy)Load();}catch(Exception e){error=e.Message??"Storage operation failed. Check the device.";}}
+    {OpenAt(kind,path,slot,IplUiSound.EnterMenu);}
+    private void Emit(IplUiSound cue){if(cue!=IplUiSound.None)sounds?.Emit(cue);}
+    private void OpenAt(IplBrowserKind kind,string path,int slot,IplUiSound cue)
+    {
+        Kind=kind;ResizePage();Path=path;Slot=slot;PageStart=Selection=0;Panel=IplBrowserPanel.Grid;Active=true;awaitingCardOperation=false;error="";Array.Clear(Items,0,Items.Length);Count=0;Revision++;ContentRevision++;
+        try{source.Begin(kind,path,slot,false);observedVersion=SourceVersion;Emit(source.Busy||Load()?cue:IplUiSound.CancelEdit);}
+        catch(Exception e){error=e.Message??"Storage operation failed. Check the device.";Emit(IplUiSound.CancelEdit);}
+    }
     private void ResizePage(){if(Items.Length!=PageSize)Items=new IplBrowserItem?[PageSize];(source as IIplBrowserPageSize)?.SetPageSize(PageSize);}
-    internal void ToggleView(){if(!Compact||Panel!=IplBrowserPanel.Grid||Busy)return;int absolute=PageStart+Selection;if(Kind==IplBrowserKind.Sd)sdList=!sdList;else cardList=!cardList;ResizePage();PageStart=absolute/PageSize*PageSize;Selection=absolute%PageSize;Load();}
+    internal void ToggleView(){if(!Compact||Panel!=IplBrowserPanel.Grid||Busy)return;int absolute=PageStart+Selection;if(Kind==IplBrowserKind.Sd)sdList=!sdList;else cardList=!cardList;ResizePage();PageStart=absolute/PageSize*PageSize;Selection=absolute%PageSize;Emit(Load()?IplUiSound.ChangeField:IplUiSound.CancelEdit);}
     private IIplBrowserCatalog? Catalog=>Compact?source as IIplBrowserCatalog:null;
     internal IplItemKind ItemKind(int index)=>Items[index]?.Kind??Catalog?.CatalogKind(index)??IplItemKind.File;
     private IplBrowserItem? Item(int index)=>Items[index]??Catalog?.CatalogItem(index);
     private void SelectItem(){if(Catalog!=null&&!ListView&&Count>0){Array.Clear(Items,0,Items.Length);Items[Selection]=Catalog.CatalogItem(Selection);}}
-    private void Load(){error="";if(PageStart>=Total&&Total>0)PageStart=(Total-1)/PageSize*PageSize;Count=0;Array.Clear(Items,0,Items.Length);Revision++;
+    private bool Load(){error="";if(PageStart>=Total&&Total>0)PageStart=(Total-1)/PageSize*PageSize;Count=0;Array.Clear(Items,0,Items.Length);Revision++;
         try{var catalog=Catalog;Count=catalog!=null?catalog.ReadCatalogPage(PageStart,PageSize):source.ReadPage(PageStart,Items);if(Count<0||Count>PageSize)throw new InvalidOperationException("Invalid browser page.");
             if(!source.Busy)Selection=Math.Min(Selection,Math.Max(0,Count-1));
             if(catalog!=null){if(ListView){for(int i=0;i<Count;i++)Items[i]=catalog.CatalogItem(i);}else SelectItem();}
             observedVersion=SourceVersion;
-        }catch(Exception e){error=e.Message??"Storage operation failed. Check the device.";Count=0;Array.Clear(Items,0,Items.Length);}}
-    internal void Tick(float dt,bool reducedMotion=false){if(!Active)return;ReducedMotion=reducedMotion;AnimationTime+=dt;for(int i=0;i<Items.Length;i++){float target=i==Selection?1:0;float step=dt/.18f;if(reducedMotion){focus[i]=target;continue;}focus[i]=target>focus[i]?Math.Min(target,focus[i]+step):Math.Max(target,focus[i]-step);}bool busy=source.Busy;try{source.Tick();if((busy&&!source.Busy)||SourceVersion!=observedVersion){if(SourceVersion!=observedVersion)ContentRevision++;if(Kind==IplBrowserKind.MemoryCards)Panel=IplBrowserPanel.Grid;Load();}}catch(Exception e){error=e.Message??"Storage operation failed. Check the device.";}}
+            return true;
+        }catch(Exception e){error=e.Message??"Storage operation failed. Check the device.";Count=0;Array.Clear(Items,0,Items.Length);return false;}}
+    internal void Tick(float dt,bool reducedMotion=false)
+    {
+        if(!Active)return;ReducedMotion=reducedMotion;AnimationTime+=dt;
+        for(int i=0;i<Items.Length;i++){float target=i==Selection?1:0;float step=dt/.18f;if(reducedMotion){focus[i]=target;continue;}focus[i]=target>focus[i]?Math.Min(target,focus[i]+step):Math.Max(target,focus[i]-step);}
+        bool busy=source.Busy;
+        try{
+            source.Tick();IplUiSound cue=IplUiSound.None;
+            bool completed=awaitingCardOperation&&!source.Busy;
+            if(completed){
+                awaitingCardOperation=false;
+                if(source is IIplCardOperationNotifications result&&result.OperationVersion!=observedOperationVersion)
+                    cue=result.OperationResult==IplCardOperationResult.Succeeded?IplUiSound.ConfirmEdit:result.OperationResult==IplCardOperationResult.None?IplUiSound.None:IplUiSound.CancelEdit;
+            }
+            if((busy&&!source.Busy)||SourceVersion!=observedVersion){
+                if(SourceVersion!=observedVersion)ContentRevision++;if(Kind==IplBrowserKind.MemoryCards)Panel=IplBrowserPanel.Grid;
+                if(!Load()&&completed)cue=IplUiSound.CancelEdit;
+            }
+            Emit(cue);
+        }catch(Exception e){error=e.Message??"Storage operation failed. Check the device.";if(awaitingCardOperation){awaitingCardOperation=false;Emit(IplUiSound.CancelEdit);}}
+    }
     internal void Direction(int x,int y)
     {
-        if(Busy)return;
-        if(Panel==IplBrowserPanel.Launch||Panel==IplBrowserPanel.CardConfirm){if(x!=0||y!=0)Choice=x!=0?(x>0?1:0):(y<0?1:0);return;}
-        if(Panel==IplBrowserPanel.CardActions){int choice=Choice+(x!=0?x:-y);Choice=choice<0?3:choice>3?0:choice;return;}
+        if(Busy||(x==0&&y==0))return;
+        if(Panel==IplBrowserPanel.Launch||Panel==IplBrowserPanel.CardConfirm){int before=Choice;Choice=x!=0?(x>0?1:0):(y<0?1:0);if(Choice!=before)Emit(IplUiSound.ChangeRow);return;}
+        if(Panel==IplBrowserPanel.CardActions){int before=Choice,choice=Choice+(x!=0?x:-y);Choice=choice<0?3:choice>3?0:choice;if(Choice!=before)Emit(IplUiSound.ChangeRow);return;}
         if(Panel!=IplBrowserPanel.Grid||Total==0)return;
         int next=PageStart+Selection+(x!=0?x:-y*Columns);if(next<0)next=Total-1;if(next>=Total)next=0;
-        int page=next/PageSize*PageSize;Selection=next%PageSize;if(page!=PageStart){PageStart=page;Load();}else try{SelectItem();}catch(Exception e){error=e.Message??"Could not read this entry. Refresh storage.";}
+        if(next==PageStart+Selection)return;
+        int page=next/PageSize*PageSize;Selection=next%PageSize;bool loaded=true;if(page!=PageStart){PageStart=page;loaded=Load();}else try{SelectItem();}catch(Exception e){error=e.Message??"Could not read this entry. Refresh storage.";loaded=false;}
+        Emit(loaded?IplUiSound.ChangeRow:IplUiSound.CancelEdit);
     }
     internal void Confirm(VideoModeSettings video)
     {
         if(Busy)return;
         if(Panel==IplBrowserPanel.CardActions){
-            if(Choice==0){Panel=IplBrowserPanel.Grid;return;}
-            if(Choice==1&&!CanCopy){error="This saved file is copy protected.";return;}
-            if(Choice==2&&!CanMove){error="This saved file is move protected.";return;}
-            CardAction=Choice==1?IplCardAction.Copy:Choice==2?IplCardAction.Move:IplCardAction.Delete;Choice=0;Panel=IplBrowserPanel.CardConfirm;return;
+            if(Choice==0){Panel=IplBrowserPanel.Grid;Emit(IplUiSound.CancelEdit);return;}
+            if(Choice==1&&!CanCopy){error="This saved file is copy protected.";Emit(IplUiSound.CancelEdit);return;}
+            if(Choice==2&&!CanMove){error="This saved file is move protected.";Emit(IplUiSound.CancelEdit);return;}
+            CardAction=Choice==1?IplCardAction.Copy:Choice==2?IplCardAction.Move:IplCardAction.Delete;Choice=0;Panel=IplBrowserPanel.CardConfirm;Emit(IplUiSound.OpenEditor);return;
         }
         if(Panel==IplBrowserPanel.CardConfirm){
-            if(Choice==0){Panel=IplBrowserPanel.Grid;return;}
-            if(CardAction==IplCardAction.Format&&FormatStage==1){FormatStage=2;Choice=0;return;}
-            try{if(source is IIplCardOperations cards)cards.Execute(CardAction,Selected);else throw new InvalidOperationException("Card service unavailable.");error="";Panel=source.Busy?IplBrowserPanel.Progress:IplBrowserPanel.Grid;if(!source.Busy)Load();}
-            catch(Exception e){error=e.Message??"Memory-card operation failed. Refresh the slot.";Panel=IplBrowserPanel.Grid;}
+            if(Choice==0){Panel=IplBrowserPanel.Grid;Emit(IplUiSound.CancelEdit);return;}
+            if(CardAction==IplCardAction.Format&&FormatStage==1){FormatStage=2;Choice=0;Emit(IplUiSound.ConfirmEdit);return;}
+            try{
+                observedOperationVersion=(source as IIplCardOperationNotifications)?.OperationVersion??0;
+                if(source is IIplCardOperations cards)cards.Execute(CardAction,Selected);else throw new InvalidOperationException("Card service unavailable.");
+                error="";awaitingCardOperation=source.Busy;Panel=source.Busy?IplBrowserPanel.Progress:IplBrowserPanel.Grid;
+                IplUiSound cue=IplUiSound.ConfirmEdit;
+                if(source is IIplCardOperationNotifications result&&result.OperationVersion!=observedOperationVersion&&(result.OperationResult==IplCardOperationResult.Failed||result.OperationResult==IplCardOperationResult.Cancelled))cue=IplUiSound.CancelEdit;
+                if(!source.Busy&&!Load())cue=IplUiSound.CancelEdit;
+                Emit(cue);
+            }
+            catch(Exception e){error=e.Message??"Memory-card operation failed. Refresh the slot.";awaitingCardOperation=false;Panel=IplBrowserPanel.Grid;Emit(IplUiSound.CancelEdit);}
             return;
         }
-        if(Panel==IplBrowserPanel.Info){Panel=IplBrowserPanel.Grid;return;}
-        if(Panel==IplBrowserPanel.Launch){if(Choice==0){Panel=IplBrowserPanel.Grid;return;}if(Selected!=null)try{source.Open(Selected,video);error="";}catch(Exception e){error=e.Message??"Storage operation failed. Check the device.";}return;}
+        if(Panel==IplBrowserPanel.Info){Panel=IplBrowserPanel.Grid;Emit(IplUiSound.Back);return;}
+        if(Panel==IplBrowserPanel.Launch){if(Choice==0){Panel=IplBrowserPanel.Grid;Emit(IplUiSound.CancelEdit);return;}if(Selected!=null)try{source.Open(Selected,video);error="";Emit(IplUiSound.ConfirmEdit);}catch(Exception e){error=e.Message??"Storage operation failed. Check the device.";Emit(IplUiSound.CancelEdit);}return;}
         var item=Selected;if(item==null)return;
-        if(item.Kind==IplItemKind.Save){try{Information=source.Describe(item);Choice=0;Panel=IplBrowserPanel.CardActions;}catch(Exception e){error=e.Message??"Could not read this save.";}return;}
-        if(item.Kind==IplItemKind.CardFormat){CardAction=IplCardAction.Format;FormatStage=1;Choice=0;Panel=IplBrowserPanel.CardConfirm;return;}
+        if(item.Kind==IplItemKind.Save){try{Information=source.Describe(item);Choice=0;Panel=IplBrowserPanel.CardActions;Emit(IplUiSound.OpenEditor);}catch(Exception e){error=e.Message??"Could not read this save.";Emit(IplUiSound.CancelEdit);}return;}
+        if(item.Kind==IplItemKind.CardFormat){CardAction=IplCardAction.Format;FormatStage=1;Choice=0;Panel=IplBrowserPanel.CardConfirm;Emit(IplUiSound.OpenEditor);return;}
         if(item.Kind==IplItemKind.Directory){Open(Kind,Path.Length==0?item.Path:Path+"/"+item.Path,Slot);return;}
-        if(item.Kind==IplItemKind.Game||item.Kind==IplItemKind.Dol){Panel=IplBrowserPanel.Launch;Choice=0;return;}
-        try{Information=source.Describe(item);Panel=IplBrowserPanel.Info;}catch(Exception e){error=e.Message??"Storage operation failed. Check the device.";}
+        if(item.Kind==IplItemKind.Game||item.Kind==IplItemKind.Dol){Panel=IplBrowserPanel.Launch;Choice=0;Emit(IplUiSound.OpenEditor);return;}
+        try{Information=source.Describe(item);Panel=IplBrowserPanel.Info;Emit(IplUiSound.EnterMenu);}catch(Exception e){error=e.Message??"Storage operation failed. Check the device.";Emit(IplUiSound.CancelEdit);}
     }
     // B leaves the entire flat flow. Folder navigation has its own L action.
-    internal void ParentDirectory(){if(Kind==IplBrowserKind.Sd&&Panel==IplBrowserPanel.Grid&&!Busy&&Path.Length>0)Open(Kind,IplPaths.Parent(Path),Slot);}
+    internal void ParentDirectory(){if(Kind==IplBrowserKind.Sd&&Panel==IplBrowserPanel.Grid&&!Busy&&Path.Length>0)OpenAt(Kind,IplPaths.Parent(Path),Slot,IplUiSound.Back);}
     internal string Exit()
     {
-        string status="";
+        if(!Active)return "";string status="";bool cancelTransfer=Kind==IplBrowserKind.MemoryCards&&Busy;
         if(Active&&Kind==IplBrowserKind.MemoryCards&&Busy)try{(source as IIplCardOperations)?.Cancel();}catch(Exception e){status=e.Message??"Transfer stopped. Check the destination card.";}
         try{source.Dispose();}catch(Exception e){status=e.Message??"Storage could not close cleanly. Check the device.";}
-        Active=false;Panel=IplBrowserPanel.Grid;Count=0;Array.Clear(Items,0,Items.Length);Revision++;return status;
+        Active=false;awaitingCardOperation=false;Panel=IplBrowserPanel.Grid;Count=0;Array.Clear(Items,0,Items.Length);Revision++;Emit(status.Length>0||cancelTransfer?IplUiSound.CancelEdit:IplUiSound.Back);return status;
     }
-    internal void Refresh(){if(Panel!=IplBrowserPanel.Grid)return;error="";PageStart=Selection=Count=0;Array.Clear(Items,0,Items.Length);Revision++;ContentRevision++;try{source.Begin(Kind,Path,Slot,true);if(!Busy)Load();}catch(Exception e){error=e.Message??"Storage operation failed. Check the device.";}}
+    internal void Refresh(){if(Panel!=IplBrowserPanel.Grid)return;error="";PageStart=Selection=Count=0;Array.Clear(Items,0,Items.Length);Revision++;ContentRevision++;try{source.Begin(Kind,Path,Slot,true);Emit(Busy||Load()?IplUiSound.ChangeField:IplUiSound.CancelEdit);}catch(Exception e){error=e.Message??"Storage operation failed. Check the device.";Emit(IplUiSound.CancelEdit);}}
     internal int ArtworkFrames(int index)=>Item(index)!=null?Math.Max(0,Math.Min(8,(source as IIplAnimatedArtwork)?.ArtworkFrames(Item(index)!)??1)):0;
     internal int ArtworkDuration(int index,int frame)=>Math.Max(1,(source as IIplAnimatedArtwork)?.ArtworkDuration(Items[index]!,frame)??4);
     internal bool ArtworkBounces(int index)=>(source as IIplAnimatedArtwork)?.ArtworkBounces(Items[index]!)??false;

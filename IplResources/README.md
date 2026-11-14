@@ -18,8 +18,9 @@ authored notes and tails. The three movement identities map to
 
 `SystemFirmware.ReadConsole` reads the configured console ROM through EXI.
 On a real GameCube, that ROM is built in: no IPL file needs to be installed.
-Build B03 consumes public NuGet SDK/runtime `0.1.0-preview.343.1`, published
-after [SDK PR #180](https://github.com/capz/DolphinDotNet/pull/180).
+Build B03 introduced public NuGet SDK/runtime `0.1.0-preview.343.1`, published
+after [SDK PR #180](https://github.com/capz/DolphinDotNet/pull/180). The repository
+now consumes `0.1.0-preview.347.1`.
 The SDK uses continuous DMA for each 1 KiB ROM page, following libogc's ROM
 transfer method. The demo shows the actual published SDK version below the title,
 starts with Startup selected, and displays load errors across two lines.
@@ -67,7 +68,7 @@ running IPL because they start at a deterministic sequence phase.
 The `ipl-resources-dol` CI artifact contains `IplResources-early-ipl.dol`.
 Its dedicated native build group makes this download available while the
 other sample builds finish. Confirm `IPL RESOURCES B03` and SDK
-`0.1.0-preview.343.1` on screen when testing it.
+the repository's pinned SDK version on screen when testing it.
 
 ```sh
 dotnet build IplResources/IplResources.sln -c Release

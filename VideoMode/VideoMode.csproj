@@ -22,6 +22,11 @@
     <DefineConstants Condition="'$(IplBatchedBlur)' == 'true'">$(DefineConstants);IPL_BATCHED_BLUR</DefineConstants>
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
+    <!-- Keep deterministic and historical performance captures free of audio
+         preparation. Normal interactive builds use the console's IPL sounds. -->
+    <IplSystemAudio Condition="'$(IplSystemAudio)' == '' and ('$(IplHardwareRunner)' == 'true' or '$(IplPerformanceReview)' == 'true' or '$(IplVisualReview)' == 'true' or '$(IplMockupReview)' == 'true' or '$(IplVideoModeReview)' == 'true')">false</IplSystemAudio>
+    <IplSystemAudio Condition="'$(IplSystemAudio)' == ''">true</IplSystemAudio>
+    <DefineConstants Condition="'$(IplSystemAudio)' == 'true'">$(DefineConstants);IPL_SYSTEM_AUDIO</DefineConstants>
     <IplRunnerScene Condition="'$(IplRunnerScene)' == ''">Options</IplRunnerScene>
     <IplRunnerVideo Condition="'$(IplRunnerVideo)' == ''">480i</IplRunnerVideo>
     <IplRunnerPort Condition="'$(IplRunnerPort)' == ''">6281</IplRunnerPort>
@@ -65,6 +70,7 @@
     <PackageReference Include="DolphinDotNet.GameCube" Version="$(DndPackageVersion)" />
   </ItemGroup>
   <Target Name="ValidateIplReviewModes" BeforeTargets="CoreCompile">
+    <Error Condition="'$(IplSystemAudio)' == 'true' and '$(IplHardwareRunner)' == 'true'" Text="Hardware instrumentation requires IplSystemAudio=false so audio preparation cannot enter its measurement window." />
     <Error Condition="'$(IplOpticsDiagnostic)' == 'true' and '$(IplMockupReview)' != 'true'"
            Text="IplOpticsDiagnostic requires the independent IplMockupReview build; normal and other review builds must disable it." />
     <Error Condition="'$(IplMockupReview)' == 'true' and ('$(IplVisualReview)' == 'true' or '$(IplPerformanceReview)' == 'true' or '$(IplVideoModeReview)' == 'true' or '$(IplHardwareRunner)' == 'true' or '$(IplStorageReview)' == 'true' or '$(IplBrowserReview)' == 'true')"

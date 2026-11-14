@@ -27,6 +27,13 @@ angular sway and vertical float with a smooth secondary wiggle. Disabled keeps
 the cube stationary and retains the reduced-motion behavior for UI animation.
 Open the setting with A, change its draft with Up/Down, then A saves or B discards.
 
+Options > UI Sounds offers Off, Low, Medium (default) and Full, independently
+of the existing Sound > Stereo/Mono console preference. Volume changes preview
+while editing; A commits them and B restores the previous level. Navigation,
+menus, value changes, confirmations and cancellations use the console's original
+IPL effects through published SDK `0.1.0-preview.347.1`. Up to six effects can
+overlap; there is no startup jingle. See the [action index and audio limits](Design/ui-sounds/action-index.md).
+
 The native frost is a real backdrop operation: after the cube and icon are
 drawn, GX captures the EFB at half resolution. A dense 9×9 Gaussian-weighted kernel samples that
 snapshot inside projected rounded row meshes, then tint and crisp
@@ -75,7 +82,7 @@ on first use and retained until shutdown (about 361 KiB native memory).
 - Outside memory-card/SD browsers, Z toggles a live performance overlay (off at startup). Outside browsers, Y records the
   bounded frame-time sample independently.
 - Storage opens Memory Card and SD Storage; R is a shortcut to the same top side.
-- Options contains Sound, Motion and Glass Blur.
+- Options contains Sound, Motion, Glass Blur and UI Sounds.
 
 Video settings use real `GraphicsDevice.ConfigureDisplay` calls between frames.
 A starts a 12-second hardware preview; A again keeps it, B or the timeout reverts
@@ -102,22 +109,23 @@ to include the fix in the DOL. [Native scan-mode evidence, package provenance an
 limitations](Design/scan-mode-review.md) cover both resolution sequences and retain
 the earlier failure for comparison. Physical console/cable/display testing remains open.
 
-Confirmed video settings, sound, Motion and Glass Blur are stored in alternating
+Confirmed video settings, sound, Motion, Glass Blur and UI Sounds are stored in alternating
 32-byte checksummed records on GC Loader SD (`videomode/settings-a.bin` and
 `settings-b.bin`). Startup loads the newest valid record and applies its video
 mode, with a boot-output fallback on unsupported modes. Hold X during startup to
 bypass saved video. Preview drafts and reverted modes are never saved. A read-only
 or missing card is reported without changing another storage device. Version-one
-and version-two settings remain readable: Full maps to Subtle and Reduced maps
-to Disabled. Version one also loads Glass Blur as Off. Confirmed writes use
-version three. Motion and blur drafts are not saved.
+through version-three settings remain readable: Full maps to Subtle and Reduced
+maps to Disabled; earlier settings adopt Medium UI sound volume. Version one
+also loads Glass Blur as Off. Confirmed writes use version four. Motion, blur
+and UI sound volume drafts are not saved.
 
 Source builds with `IplConsoleServices=true` use the SDK console-services APIs to
 read the real local console calendar and write IPL SRAM clock bias and sound.
 A confirms Time/Date; B discards. Time edits preserve the current date/seconds;
 date edits preserve the current time. The clock refreshes once a second and uses
-an independent monotonic animation timer. Builds using the older published SDK
-show these services as unavailable. [Native validation and limits](Design/console-settings/README.md).
+an independent monotonic animation timer. Builds without console services show
+them as unavailable. [Native validation and limits](Design/console-settings/README.md).
 
 Storage replaces the former top Game Play entry. The earlier GC Loader library
 and Swiss launch integration remains in the source as an internal path;
@@ -135,6 +143,15 @@ The repository's native CI also AOT-compiles and links this sample into DOL/ELF
 using the compiler and native support in the SDK version pinned in `global.json`.
 Hardware/TV acceptance and visual comparison inside Dolphin remain separate
 from successful compilation; do not treat host visual proofs as emulator captures.
+
+Normal builds enable system menu audio. Preparation reads the console IPL once
+in the background and retains the resulting native clips; it does not read
+firmware or synthesize effects on each input. Without a supported IPL the demo
+remains usable and the UI Sounds editor reports audio unavailable. In Dolphin,
+an original IPL must already be configured for successful playback. No ROM or
+prepared PCM is bundled. `-p:IplSystemAudio=false` excludes this backend;
+deterministic visual/performance and hardware-runner builds default to that
+setting to keep background preparation outside their measurement windows.
 
 To inspect deterministic visual proofs from the exact shared C# scene renderer:
 

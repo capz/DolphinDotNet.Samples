@@ -42,6 +42,18 @@ internal static class Program
         return result;
     }
     private static int RunFrames()
+#elif IPL_SYSTEM_AUDIO
+    private static async System.Threading.Tasks.Task<int> Main()
+    {
+        var audio=new IplUiAudio();int result=0;System.Exception? failure=null;
+        try{result=RunFrames(audio);}catch(System.Exception error){failure=error;}
+        // Await cancellation outside finally: the GameCube AOT subset does not
+        // implement ExceptionDispatchInfo used by an awaited finally block.
+        await audio.Close();
+        if(failure!=null)throw failure;
+        return result;
+    }
+    private static int RunFrames(IplUiAudio uiAudio)
 #else
     private static int Main()
 #endif
@@ -83,21 +95,26 @@ internal static class Program
 #else
         const bool hardwareAntialiasing=false;
 #endif
-#if IPL_STORAGE_REVIEW
-        using var browser=new IplBrowser(new IplStorageBrowser(Dolphin.Storage.StorageDevice.DvdDrive));
-#elif IPL_BROWSER_REVIEW
-        using var browser=new IplBrowser(new IplBrowserFixture());
+#if IPL_SYSTEM_AUDIO
+        var uiSounds=new IplUiSoundQueue();
 #else
-        using var browser=new IplBrowser(new IplStorageBrowser());
+        IIplUiSoundSink? uiSounds=null;
+#endif
+#if IPL_STORAGE_REVIEW
+        using var browser=new IplBrowser(new IplStorageBrowser(Dolphin.Storage.StorageDevice.DvdDrive),uiSounds);
+#elif IPL_BROWSER_REVIEW
+        using var browser=new IplBrowser(new IplBrowserFixture(),uiSounds);
+#else
+        using var browser=new IplBrowser(new IplStorageBrowser(),uiSounds);
 #endif
         var output=new VideoModeOutput(device,hardwareAntialiasing);
 #if IPL_MOCKUP_REVIEW || IPL_VISUAL_REVIEW || IPL_PERFORMANCE_REVIEW || IPL_VIDEO_MODE_REVIEW || IPL_HARDWARE_RUNNER
         var shell=new IplShell(output);
 #elif IPL_STORAGE_REVIEW
-        var shell=new IplShell(output,browser:browser);
+        var shell=new IplShell(output,browser:browser,uiSounds:uiSounds);
 #else
         Controller.Update();bool restoreVideo=!Controller.GetState(0).X.IsHeld;
-        var shell=new IplShell(output,new IplPreferencesStore(),new IplConsoleCalendar(),restoreVideo,new IplConsoleSound(),browser);
+        var shell=new IplShell(output,new IplPreferencesStore(),new IplConsoleCalendar(),restoreVideo,new IplConsoleSound(),browser,uiSounds);
 #endif
 #if IPL_VIDEO_MODE_REVIEW
         var scanReview=new VideoModeScanReview(shell,output,reviewResolution);
@@ -187,6 +204,14 @@ internal static class Program
                 if(stick){x=pad.Stick.X>.55f?1:pad.Stick.X<-.55f?-1:0;y=pad.Stick.Y>.55f?1:pad.Stick.Y<-.55f?-1:0;}
                 shell.Direction(x,y,dt,stick);
             }
+#endif
+#if IPL_SYSTEM_AUDIO
+            // Resource preparation is background-only. Publish completed clips
+            // and dispatch one semantic cue between GX frames, never in a draw.
+            uiAudio.Tick(shell.UiSoundVolume);
+            uiAudio.Play(uiSounds.Consume());
+            shell.UiAudioStatus=uiAudio.State==IplUiAudioState.Loading?"Loading menu sounds...":
+                uiAudio.State==IplUiAudioState.Unavailable?"Menu sounds unavailable on this system.":"";
 #endif
             if(browser.LaunchRequested)return 0;
             IplPerformanceOverlay.BeginFrame();

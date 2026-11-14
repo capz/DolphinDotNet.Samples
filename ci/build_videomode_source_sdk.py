@@ -33,6 +33,7 @@ def main():
     parser.add_argument('--memory-cards',action='store_true')
     parser.add_argument('--browser-review',action='store_true')
     parser.add_argument('--console-services', action='store_true')
+    parser.add_argument('--system-audio', action='store_true',help='Enable interactive IPL sound preparation; requires a current SDK and console IPL')
     parser.add_argument('--hypercube', type=Path,
                         help='Link OrderedMeshPasses from this engine checkout with its native backend')
     args = parser.parse_args()
@@ -75,6 +76,7 @@ def main():
         'IplMemoryCardServices': str(args.memory_cards).lower(),
         'IplBrowserReview': str(args.browser_review).lower(),
         'IplConsoleServices': str(args.console_services).lower(),
+        'IplSystemAudio': str(args.system_audio).lower(),
         'IplNextSdk': 'true', 'DndSampleControls': 'true', 'DndBuildBackend': 'Docker',
     }
     for key, value in settings.items():

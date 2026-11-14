@@ -1,7 +1,7 @@
 using System;
 using Dolphin.Storage;
 using Dolphin.Timing;
-internal sealed class IplNativeCards : IIplBrowserSource,IIplCardOperations,IIplBrowserNotifications,IIplAnimatedArtwork,IIplBrowserCatalog
+internal sealed class IplNativeCards : IIplBrowserSource,IIplCardOperations,IIplBrowserNotifications,IIplCardOperationNotifications,IIplAnimatedArtwork,IIplBrowserCatalog
 {
 #if IPL_MEMORY_CARD_SERVICES
     private readonly MemoryCardManager?[] cards=new MemoryCardManager?[2];
@@ -31,6 +31,9 @@ internal sealed class IplNativeCards : IIplBrowserSource,IIplCardOperations,IIpl
     public int Total {get;private set;}
     public bool Busy {get;private set;}
     public int Progress {get;private set;}
+    public int OperationVersion {get;private set;}
+    public IplCardOperationResult OperationResult {get;private set;}
+    private void ReportOperation(IplCardOperationResult result){OperationResult=result;OperationVersion++;}
     public bool LaunchRequested=>false;
     public string Status {get;private set;}="Insert a memory card.";
     public string SlotCaption(int index){
@@ -72,8 +75,9 @@ internal sealed class IplNativeCards : IIplBrowserSource,IIplCardOperations,IIpl
     public void Tick()
     {
 #if IPL_MEMORY_CARD_SERVICES
-        if(transfer!=null){try{transfer.Step();Progress=transfer.Progress;Status="Transfer: "+Progress.ToString()+"%";if(transfer.Complete){transfer.Dispose();transfer=null;Busy=false;Status="Transfer verified and complete.";RefreshCards();}}
-            catch(Exception e){bool completed=transfer?.Complete==true;try{transfer?.Dispose();}catch(Exception){}transfer=null;Busy=false;if(completed)Progress=100;Status=completed?"Transfer completed. Refresh the slots before another action.":e.Message??"Card transfer failed. Check both slots.";RefreshCards();}return;}
+        if(transfer!=null){bool completed=false;
+            try{transfer.Step();Progress=transfer.Progress;Status="Transfer: "+Progress.ToString()+"%";if(transfer.Complete){completed=true;transfer.Dispose();transfer=null;Busy=false;Status="Transfer verified and complete.";RefreshCards();ReportOperation(IplCardOperationResult.Succeeded);}}
+            catch(Exception e){completed|=transfer?.Complete==true;try{transfer?.Dispose();}catch(Exception){}transfer=null;Busy=false;if(completed)Progress=100;Status=completed?"Transfer completed. Refresh the slots before another action.":e.Message??"Card transfer failed. Check both slots.";ReportOperation(completed?IplCardOperationResult.Succeeded:IplCardOperationResult.Failed);RefreshCards();}return;}
         if(Clock.Timestamp>=nextProbe){nextProbe=Clock.Timestamp+500000;Probe(0);Probe(1);UpdateTotal();}
 #endif
     }
@@ -146,19 +150,23 @@ internal sealed class IplNativeCards : IIplBrowserSource,IIplCardOperations,IIpl
     public void Execute(IplCardAction action,IplBrowserItem? item)
     {
 #if IPL_MEMORY_CARD_SERVICES
+        OperationResult=IplCardOperationResult.None;
+        try{
         var card=cards[slot];if(card==null)throw new InvalidOperationException("Reinsert the card and select again.");
-        if(action==IplCardAction.Format){if(!format[slot])throw new InvalidOperationException("Card status changed. Select it again.");try{card.Format();Status="Memory card formatted.";}catch(MemoryCardCommittedException e){Status=e.Message??"Operation completed. Refresh the slot before another action.";}RefreshCards();return;}
+        if(action==IplCardAction.Format){if(!format[slot])throw new InvalidOperationException("Card status changed. Select it again.");try{card.Format();Status="Memory card formatted.";}catch(MemoryCardCommittedException e){Status=e.Message??"Operation completed. Refresh the slot before another action.";}RefreshCards();ReportOperation(IplCardOperationResult.Succeeded);return;}
         if(item==null)throw new InvalidOperationException("Select a saved file again.");var save=Resolve(item);
-        if(action==IplCardAction.Delete){try{card.Delete(save);Status="Saved file deleted.";}catch(MemoryCardCommittedException e){Status=e.Message??"Operation completed. Refresh the slot before another action.";}RefreshCards();return;}
+        if(action==IplCardAction.Delete){try{card.Delete(save);Status="Saved file deleted.";}catch(MemoryCardCommittedException e){Status=e.Message??"Operation completed. Refresh the slot before another action.";}RefreshCards();ReportOperation(IplCardOperationResult.Succeeded);return;}
         Probe(1-slot);var destination=cards[1-slot];if(destination==null||!ready[1-slot])throw new InvalidOperationException("The other slot needs a ready memory card.");
         transfer=card.BeginCopy(save,destination,action==IplCardAction.Move);Busy=true;Progress=0;Status="Copying and verifying the saved file...";
+        }catch{ReportOperation(IplCardOperationResult.Failed);throw;}
 #else
+        ReportOperation(IplCardOperationResult.Failed);
         throw new InvalidOperationException("Card services are unavailable in this build.");
 #endif
     }
     public void Cancel(){
 #if IPL_MEMORY_CARD_SERVICES
-        if(transfer!=null){try{transfer.Cancel();Status="Transfer cancelled. Source kept.";}finally{transfer=null;Busy=false;RefreshCards();}}
+        if(transfer!=null){try{transfer.Cancel();Status="Transfer cancelled. Source kept.";ReportOperation(IplCardOperationResult.Cancelled);}catch{ReportOperation(IplCardOperationResult.Failed);throw;}finally{transfer=null;Busy=false;RefreshCards();}}
 #endif
     }
     public void Dispose(){

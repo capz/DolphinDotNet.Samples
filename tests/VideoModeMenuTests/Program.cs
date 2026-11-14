@@ -29,6 +29,11 @@ internal static class Program
         IplNumberCacheStateTests.Run();
         IplSelectorPoseTests.Run();
         IplPreferencesTests.Run();
+        IplUiSoundPreferencesTests.Run();
+        IplUiSoundQueueTests.Run();
+        IplUiAudioPolicyTests.Run();
+        IplShellSoundTests.Run();
+        IplBrowserSoundTests.Run();
         IplMenuLayoutTests.Run();
         IplDetailLayoutTests.Run();
         IplLibraryTests.Run();
