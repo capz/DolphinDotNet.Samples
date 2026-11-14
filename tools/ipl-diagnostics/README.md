@@ -12,8 +12,9 @@ screen. The title must say **IPL CHECK 01**. The program performs these checks:
   complete keystream fingerprint, and restores it to zero on a second pass.
   It also auto-detects a scrambled, generated image and extracts two Yay0
   records through the public `FirmwareImage` and catalog APIs.
-- `SDK32` reads the ROM using the package's production immediate reader, with
-  the same 4 KiB calls used by `SystemFirmware.ReadConsole`.
+- `SDK32` reads the ROM using the package's production reader at 32 MHz, with
+  the same 4 KiB calls used by `SystemFirmware.ReadConsole`. In SDK 335 this
+  used immediate transfers; the updated SDK uses continuous page DMA.
 - `DMA32` uses bounded 1 KiB DMA reads, following libogc's ROM access method.
 - `IMM16` and `DMA16` compare immediate and DMA transfers at 16 MHz.
 - `AGAIN` repeats the production read to reveal unstable results.

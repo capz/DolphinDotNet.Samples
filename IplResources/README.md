@@ -18,15 +18,21 @@ authored notes and tails. The three movement identities map to
 
 `SystemFirmware.ReadConsole` reads the configured console ROM through EXI.
 On a real GameCube, that ROM is built in: no IPL file needs to be installed.
-SDK preview 335 confines each transaction to a 1 KiB ROM page, matching libogc.
-A PAL console launched through GC Loader / CubiBoot still reports the encoding
-failure after that change; physical-console compatibility remains under
-investigation. The [hardware diagnostic](../tools/ipl-diagnostics/README.md)
-compares read methods and checks decoding without distributing any firmware.
+Build B02 uses continuous DMA for each 1 KiB ROM page, following libogc's ROM
+transfer method. It shows the actual published SDK version below the title,
+starts with Startup selected, and displays load errors across two lines.
+The [hardware diagnostic](../tools/ipl-diagnostics/README.md) found identical
+ROM bytes through all five read methods on the reporting PAL console with
+GC Loader / CubiBoot: CRC-32 `6DAC1F2A`, matching the early NTSC 1.0 reference.
+The console's region alone therefore does not select its resource profile.
+The revised transport still needs confirmation in that console's explorer.
 In Dolphin, configure an appropriate original IPL in its regional `GC` user
 directory. The app does not download firmware or probe storage for `ipl.bin`.
-The menu profile supports NTSC 1.2 and PAL 1.2; other firmware can report
-individual resources unavailable. Without an IPL the app shows the failure and
+The menu profile supports NTSC 1.2 and PAL 1.2. The early reference supports
+Startup and all six textures, while its different menu DSP setup remains
+unqualified; those rows say `Menu profile unsupported`. This is separate from
+an `IPL unavailable` acquisition failure. Other firmware can report individual
+resources unavailable. Without an IPL the app shows the failure and
 retains the sample font. No firmware, original textures, samples or recordings
 are bundled, and no generated tone substitutes for an unavailable effect.
 

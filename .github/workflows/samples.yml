@@ -127,8 +127,8 @@ jobs:
         shell: bash
         run: |
           mkdir -p "$RUNNER_TEMP/ipl-resources-dol"
-          cp IplResources/bin/Release/net8.0/IplResources.dol "$RUNNER_TEMP/ipl-resources-dol/IplResources-fixed.dol"
-          sha256sum "$RUNNER_TEMP/ipl-resources-dol/IplResources-fixed.dol"
+          cp IplResources/bin/Release/net8.0/IplResources.dol "$RUNNER_TEMP/ipl-resources-dol/IplResources-dma.dol"
+          sha256sum "$RUNNER_TEMP/ipl-resources-dol/IplResources-dma.dol"
       - name: Build IPL hardware diagnostic from the published SDK
         if: matrix.group == 'services'
         run: python3 tools/ipl-diagnostics/build.py --output "${{ runner.temp }}/ipl-diagnostics"
@@ -145,6 +145,6 @@ jobs:
         if: matrix.group == 'services'
         with:
           name: ipl-resources-dol
-          path: ${{ runner.temp }}/ipl-resources-dol/IplResources-fixed.dol
+          path: ${{ runner.temp }}/ipl-resources-dol/IplResources-dma.dol
           if-no-files-found: error
           retention-days: 14
