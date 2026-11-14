@@ -34,6 +34,7 @@ def main():
     parser.add_argument('--browser-review',action='store_true')
     parser.add_argument('--console-services', action='store_true')
     parser.add_argument('--system-audio', action='store_true',help='Enable interactive IPL sound preparation; requires a current SDK and console IPL')
+    parser.add_argument('--hardware-aa', action='store_true',help='Enable cube-page native AA; requires the SDK framebuffer-copy bounds fix')
     parser.add_argument('--hypercube', type=Path,
                         help='Link OrderedMeshPasses from this engine checkout with its native backend')
     args = parser.parse_args()
@@ -44,6 +45,11 @@ def main():
     if args.mockup_review and (args.storage_review or args.browser_review or args.scene != 'Options'):
         parser.error('The mockup review requires the independent Options scene, without storage/browser fixtures.')
     sdk, samples, out = args.sdk.resolve(), args.samples.resolve(), args.output.resolve()
+    if args.hardware_aa:
+        helper=sdk/'include/dnd_framebuffer_gx.inc'
+        if not helper.is_file() or any('allocate_display_framebuffer' not in (sdk/path).read_text()
+                for path in ('source/graphics_gx.c','include/dnd_display_gx.inc')):
+            parser.error('Native AA requires the framebuffer-copy bounds fix in SDK PR #182.')
     out.mkdir(parents=True, exist_ok=True)
     if out == samples / 'VideoMode':
         parser.error('Use an output directory outside the sample project.')
@@ -77,6 +83,8 @@ def main():
         'IplBrowserReview': str(args.browser_review).lower(),
         'IplConsoleServices': str(args.console_services).lower(),
         'IplSystemAudio': str(args.system_audio).lower(),
+        'IplHardwareAntialiasing': str(args.hardware_aa).lower(),
+        'IplAaCopyBoundsValidated': str(args.hardware_aa).lower(),
         'IplNextSdk': 'true', 'DndSampleControls': 'true', 'DndBuildBackend': 'Docker',
     }
     for key, value in settings.items():

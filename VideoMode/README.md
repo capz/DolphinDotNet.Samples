@@ -31,7 +31,7 @@ Options > UI Sounds offers Off, Low, Medium (default) and Full, independently
 of the existing Sound > Stereo/Mono console preference. Volume changes preview
 while editing; A commits them and B restores the previous level. Navigation,
 menus, value changes, confirmations and cancellations use the console's original
-IPL effects through published SDK `0.1.0-preview.347.1`. Up to six effects can
+IPL effects through published SDK `0.1.0-preview.349.1`. Up to six effects can
 overlap; there is no startup jingle. See the [action index and audio limits](Design/ui-sounds/action-index.md).
 
 The native frost is a real backdrop operation: after the cube and icon are
@@ -216,6 +216,11 @@ The source build helper enables them explicitly with
 For an uninterrupted native benchmark, build with `IplPerformanceReview=true`
 and `IplPerformanceReviewScene=Options`, `Oblique`, `Cube` or `Detail`, then run
 `ci/profile_videomode.py --scene` with the same scene. The default is Options.
+The extractor defaults to native AA: cube scenes use a 242-line EFB with
+640×480 VI output; the flat Detail scene keeps 480 EFB lines. It verifies the
+actual GX mode and disables Dolphin postprocessing/forced progressive output.
+For archived or explicit `IplHardwareAntialiasing=false` builds, also pass
+`--hardware-aa off` to retain their historical IplEdgeAA presentation profile.
 Each run retains 30 warmup and 96 measured frames with the live overlay hidden.
 For overlay controls, set `IplPerformanceReviewOverlay=Off`, `Timers` (collect without
 drawing), or `Full`, and pass the matching `--overlay` option to the extractor.
@@ -237,12 +242,13 @@ storage I/O during measurement. [Incremental optimizations, accepted/rejected
 experiments, raw native logs and hardware instructions](Design/performance-review.md)
 separate Dolphin guest-clock results from the pending physical-console measurements.
 
-Native builds install the bundled **IplEdgeAA** postprocessing shader in the
-isolated Dolphin play/debug profiles. It smooths staircase edges while preserving
-bright text/highlight cores, at the full native render size. The selected profile
-uses `MSAA = 1`, `SSAA = False`; this is postprocessing AA, not multisampling.
-Measured median cloud throughput cost is about 7%, compared with about 30% for 4× MSAA.
-[Native comparisons, raw repeated timings and limitations](Design/aa-performance-review.md).
+Native builds enable GX three-sample antialiasing on the visible cube by
+default. Dolphin play/debug profiles use `MSAA = 1`, `SSAA = False` and no
+postprocessing filter, so the DOL provides the same AA on console. Build with
+`-p:IplHardwareAntialiasing=false` to disable native AA; that fallback installs
+the bundled **IplEdgeAA** Dolphin postprocessing shader. The optional shader's
+historical emulator-only cost and comparisons are documented separately:
+[raw repeated timings and limitations](Design/aa-performance-review.md).
 
 Other graphics and controller preferences are preserved. Build with
 `-p:IplEmulatorAntialiasing=false` to stop enforcing these keys and manage AA in
@@ -253,16 +259,30 @@ only choose sample counts supported by the renderer. Unsupported counts can
 silently disable AA in Dolphin. Set postprocessing to `None` to disable the
 bundled edge filter, or use another installed shader's name.
 
-The SDK's real GX framebuffer AA is implemented for explicit review/benchmark
-builds with `-p:IplHardwareAntialiasing=true`. It applies to 240/480 modes and is automatically
-disabled for 576 output, which the SDK does not support with hardware AA. At 480,
-it uses a 242-line EFB and RGB565/Z16, so text is softer. The live blur capture
-crops two EFB lines to retain GX alignment and compensates its UVs. A boot-time
-AA allocation failure keeps the boot mode and disables hardware AA for the session.
+Native GX three-sample AA is available for the visible cube at 240/480 output.
+Flat settings and storage pages switch back to the full EFB height so their
+text stays sharp. At 480, AA uses a 242-line EFB and RGB565/Z16; attached cube
+labels and the cube footer consequently remain softer. AA is disabled for
+576 output, which the SDK does not support with hardware AA. A failed quality
+allocation preserves the current output and disables further automatic quality
+requests for the session. Preview, rollback and safe mode retain their guards.
 
-Hardware AA is blocked in normal interactive builds: cloud Dolphin 2503 produced
-a valid raw EFB dump but a magenta displayed window, and an AA-enabled transition
-from 480p to 576p stalled. That candidate was rejected despite its faster frame counter.
-Explicit `IplVisualReview` or `IplVideoModeReview` builds retain the diagnostic
-for reproduction. Physical console/cable/display
-performance remains unmeasured. Display preview/revert and safe mode are retained.
+The three glass environment maps now have box-filtered 256-to-1 mip chains and
+trilinear minification. Resolved highlights keep the original base image;
+subpixel reflections use filtered levels. This adds 262,464 native bytes and
+320 bytes of startup scratch without adding draws or per-frame mip generation.
+Fresnel, cavity-boundary and refraction lookup textures retain their filters.
+
+The pinned published SDK `0.1.0-preview.349.1` includes
+[SDK PR #182](https://github.com/capz/DolphinDotNet/pull/182), which sizes both
+initial and replacement framebuffers for the quantized GX display-copy extent.
+Its GPU canary verifies the actual copy bounds; SDK 347.1 underallocated
+480-line AA copies by 3,840 bytes with the pinned toolchain. Source SDK builds
+can opt in with `ci/build_videomode_source_sdk.py --hardware-aa`; the helper
+checks that this copy-bounds fix is present.
+
+Native-AA Dolphin profiles disable the additional presentation filter by
+default. [Native captures, mode checks and timing limits](Design/native-cube-aa/README.md)
+include both original XFB output and complete emulator windows, with the
+conditions and incomplete attempts recorded alongside them. Physical-console
+visual quality and timing still require hardware qualification.

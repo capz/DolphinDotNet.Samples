@@ -6,12 +6,12 @@ using Dolphin.Timing;
 internal sealed class VideoModeOutput : IVideoModeOutput
 {
     private readonly GraphicsDevice device;
-    private readonly bool hardwareAntialiasing;
+    private readonly IplAntialiasingPolicy antialiasing;
     internal VideoModeOutput(GraphicsDevice device,bool hardwareAntialiasing)
     {
-        this.device=device;this.hardwareAntialiasing=hardwareAntialiasing;
-        try { device.ConfigureDisplay(new DisplayOptions {Antialiasing=hardwareAntialiasing&&Read().Resolution!=2,Widescreen=device.Display.Widescreen}); }
-        catch(System.OutOfMemoryException) { this.hardwareAntialiasing=false; } // Keep the boot mode and its quality policy for this session.
+        this.device=device;antialiasing=new IplAntialiasingPolicy(hardwareAntialiasing);
+        try { device.ConfigureDisplay(new DisplayOptions {Antialiasing=antialiasing.Wanted(Read()),Widescreen=device.Display.Widescreen}); }
+        catch(System.OutOfMemoryException) { antialiasing.Disable(); } // Preserve the current mode and avoid repeated allocation attempts.
     }
     public VideoModeSettings Read()
     {
@@ -25,8 +25,17 @@ internal sealed class VideoModeOutput : IVideoModeOutput
         device.ConfigureDisplay(new DisplayOptions {
             Resolution=renderingOnly?GraphicsResolution.Auto:settings.Resolution==0?GraphicsResolution.R320x240:settings.Resolution==2?GraphicsResolution.R640x576:GraphicsResolution.R640x480,
             Scan=renderingOnly?ScanMode.Auto:(ScanMode)settings.Scan,Widescreen=settings.Widescreen,
-            Antialiasing=renderingOnly?device.Display.Antialiasing:hardwareAntialiasing&&settings.Resolution!=2
+            Antialiasing=antialiasing.Wanted(settings)
         });
+    }
+    internal bool AntialiasingWanted=>antialiasing.Wanted(Read());
+    internal void SetCubeVisible(bool visible)
+    {
+        if(!antialiasing.SetCubeVisible(visible)||!antialiasing.Enabled)return;
+        var current=Read();bool wanted=antialiasing.Wanted(current);
+        if(device.Display.Antialiasing==wanted)return;
+        try {device.ConfigureDisplay(new DisplayOptions {Antialiasing=wanted,Widescreen=current.Widescreen});}
+        catch(System.OutOfMemoryException){antialiasing.Disable();}
     }
 }
 internal static class Program
@@ -165,7 +174,6 @@ internal static class Program
 #endif
 #if IPL_VIDEO_MODE_REVIEW
             scanReview.Tick();
-            scanReview.CheckAntialiasing(device.Display.Antialiasing,hardwareAntialiasing&&shell.Video.Applied.Resolution!=2);
 #elif !IPL_HARDWARE_RUNNER
             if(pad.Z.WasPressed)
             {
@@ -204,6 +212,12 @@ internal static class Program
                 if(stick){x=pad.Stick.X>.55f?1:pad.Stick.X<-.55f?-1:0;y=pad.Stick.Y>.55f?1:pad.Stick.Y<-.55f?-1:0;}
                 shell.Direction(x,y,dt,stick);
             }
+#endif
+            // The cube uses native coverage AA; flat editors and browsers keep
+            // their full vertical rendering resolution. Work only on page flips.
+            output.SetCubeVisible(shell.Page==ShellPage.Cube||shell.Page==ShellPage.Face);
+#if IPL_VIDEO_MODE_REVIEW
+            scanReview.CheckAntialiasing(device.Display.Antialiasing,output.AntialiasingWanted);
 #endif
 #if IPL_SYSTEM_AUDIO
             // Resource preparation is background-only. Publish completed clips

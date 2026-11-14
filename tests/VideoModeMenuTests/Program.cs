@@ -32,6 +32,8 @@ internal static class Program
         IplUiSoundPreferencesTests.Run();
         IplUiSoundQueueTests.Run();
         IplUiAudioPolicyTests.Run();
+        IplAntialiasingPolicyTests.Run();
+        IplEnvironmentMipmapsTests.Run();
         IplShellSoundTests.Run();
         IplBrowserSoundTests.Run();
         IplMenuLayoutTests.Run();

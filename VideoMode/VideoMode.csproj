@@ -50,7 +50,7 @@
     <DefineConstants Condition="'$(IplPerformanceReview)' == 'true' and '$(IplPerformanceReviewScene)' == 'Cube'">$(DefineConstants);IPL_REVIEW_CUBE</DefineConstants>
     <DefineConstants Condition="'$(IplPerformanceReview)' == 'true' and '$(IplPerformanceReviewScene)' == 'Detail'">$(DefineConstants);IPL_REVIEW_DETAIL</DefineConstants>
     <DefineConstants Condition="'$(IplPerformanceReview)' == 'true' and '$(IplPerformanceReviewScene)' == 'Oblique'">$(DefineConstants);IPL_VISUAL_REVIEW_ANGLE</DefineConstants>
-    <IplHardwareAntialiasing Condition="'$(IplHardwareAntialiasing)' == ''">false</IplHardwareAntialiasing>
+    <IplHardwareAntialiasing Condition="'$(IplHardwareAntialiasing)' == ''">true</IplHardwareAntialiasing>
     <DefineConstants Condition="'$(IplHardwareAntialiasing)' == 'true'">$(DefineConstants);IPL_HARDWARE_AA</DefineConstants>
     <DefineConstants Condition="'$(IplAntialiasingBenchmark)' == 'true'">$(DefineConstants);IPL_AA_BENCHMARK</DefineConstants>
     <DefineConstants Condition="'$(IplVideoModeReview)' == 'true' and '$(IplVideoModeReviewResolution)' == '576'">$(DefineConstants);IPL_VIDEO_MODE_REVIEW_PAL</DefineConstants>
@@ -95,8 +95,6 @@
            Text="Choose one deterministic review: performance, visual or scan." />
     <Error Condition="'$(IplPerformanceReview)' == 'true' and '$(IplPerformanceReviewScene)' != 'Options' and '$(IplPerformanceReviewScene)' != 'Oblique' and '$(IplPerformanceReviewScene)' != 'Cube' and '$(IplPerformanceReviewScene)' != 'Detail'"
            Text="IplPerformanceReviewScene must be Options, Oblique, Cube or Detail." />
-    <Error Condition="'$(IplHardwareAntialiasing)' == 'true' and '$(IplVisualReview)' != 'true' and '$(IplVideoModeReview)' != 'true'"
-           Text="Hardware AA remains experimental after a native transition stall. Use an explicit visual/scan review build; normal builds use the measured Dolphin edge-AA profile." />
     <Error Condition="'$(IplAntialiasingBenchmark)' == 'true' and '$(IplVisualReview)' != 'true'"
            Text="IplAntialiasingBenchmark requires the deterministic IplVisualReview scene." />
     <Error Condition="'$(IplVideoModeReview)' == 'true' and '$(IplVisualReview)' == 'true'"
