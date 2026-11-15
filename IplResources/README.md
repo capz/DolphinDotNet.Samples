@@ -1,80 +1,63 @@
 # IPL resource explorer
 
-Run a single demo of the console's original font, six firmware textures, the
-startup sound and ten complete menu effects. It uses the published
-`DolphinDotNet.GameCube` NuGet package through `DolphinDotNet.Sdk`; no SDK source
-checkout is needed.
+Build B04 uses public SDK/runtime `0.1.0-preview.353.1` to explore the console's
+original font, six textures, three stereo startup variants, ten complete menu
+effects, and twelve source samples. No SDK source checkout is required.
 
-- Up/down on the main stick or D-pad selects a sound.
-- A plays the selection; B stops the current voice.
+- L/R switches categories; Up/down selects a sound in the scrolling list.
+- A plays; B stops. Embedded sample loops repeat automatically.
 - X cycles Logo top/left/right, Environment, Tiles and Wordmark textures.
-- Start cancels loading and exits; Z toggles the shared statistics panel.
+- Z toggles shared statistics. Start cancels loading and exits.
 
-The list includes the existing Turn side, Turn center and Enter menu sounds,
-plus Back, Cancel edit, Confirm edit, Change value, Change field, Change row and
-Open editor. Each selection plays the complete prepared effect, including its
-authored notes and tails. The three movement identities map to
-`OptionMove1`, `OptionMove2` and `OptionMove3` respectively.
+Startup includes Normal, One controller Z and Four controller Z. Menu includes
+Turn side, Turn center, Enter menu, Back, Cancel edit, Confirm edit, Change value,
+Change field, Change row and Open editor. Samples displays original wave IDs,
+format/rate and read-only automatic-loop status. Cards and Ambience are reserved
+for the next SDK session milestone; their controls are not enabled in this
+checkpoint. Startup clips contain the original paired samples; the persistent
+score's envelopes and automatic ambience handover belong to that later API.
 
-`SystemFirmware.ReadConsole` reads the configured console ROM through EXI.
-On a real GameCube, that ROM is built in: no IPL file needs to be installed.
-Build B03 introduced public NuGet SDK/runtime `0.1.0-preview.343.1`, published
-after [SDK PR #180](https://github.com/capz/DolphinDotNet/pull/180). The repository
-now consumes `0.1.0-preview.349.1`.
-The SDK uses continuous DMA for each 1 KiB ROM page, following libogc's ROM
-transfer method. The demo shows the actual published SDK version below the title,
-starts with Startup selected, and displays load errors across two lines.
-The [hardware diagnostic](../tools/ipl-diagnostics/README.md) found identical
-ROM bytes through all five read methods on the reporting PAL console with
-GC Loader / CubiBoot: CRC-32 `6DAC1F2A`, matching the early NTSC 1.0 reference.
-The console's region alone therefore does not select its resource profile.
-The user confirmed Startup and textures working on that console with B02 /
-SDK 339. B03 adds the early firmware's ten menu effects through the existing
-SDK APIs; no sample-side mapping or replacement audio is needed.
-In Dolphin, configure an appropriate original IPL in its regional `GC` user
-directory. The app does not download firmware or probe storage for `ipl.bin`.
-The menu profiles support early NTSC 1.0, NTSC 1.2 and PAL 1.2. The early
-profile has its own velocity, envelope clock, effects-send settings and
-three-second delay tail. Unknown menu profiles say `Menu profile unsupported`;
-this is separate from an `IPL unavailable` acquisition failure.
-Other firmware can report individual
-resources unavailable. Without an IPL the app shows the failure and
-retains the sample font. No firmware, original textures, samples or recordings
-are bundled, and no generated tone substitutes for an unavailable effect.
+`SystemFirmware.ReadConsole` reads the built-in ROM through EXI on a GameCube.
+No IPL file needs to be installed on a console. In Dolphin, configure an
+appropriate original IPL in its regional `GC` user directory. The app does not
+download firmware or probe storage for `ipl.bin`. The reporting PAL console
+with GC Loader / CubiBoot returned CRC-32 `6DAC1F2A`, matching the early reference
+profile; region alone therefore does not select the resource profile.
 
-Audio preparation runs on `Task.Run` while the screen remains responsive.
-`CreateMenuSound` produces ordinary caller-owned `Sound` resources;
-`TryGetMenuSoundInfo`, `SourceWaveCount` and `GetSourceWaveId` report the prepared
-effect and original instrument IDs, shown in the selected sound's panel and
-debug log. These IDs differ from flat WSYS indices.
-Textures and the `SystemFont` are published on the graphics executor between
-frames. The input image and catalog are disposed before interactive playback;
-each texture and sound owns its data. The demo retains eleven clips, below the
-sixteen-slot audio limit, and one playback channel at a time.
+`IncludeSystemAudio` retains the complete compressed bank. Startup uses
+`TryGetStartupSoundInfo` and `CreateStartupVariantSound`; menu uses the existing
+`CreateMenuSound`. All thirteen clips are prepared in the background. Source
+samples are created lazily with `CreateAudioSampleAsync`, then played with
+parameterless `SystemAudioSample.Play()`. The API handles the intro and authored
+repeat section. No loop flag, endpoints or repeat scheduler is needed.
 
-Start cancels pending preparation. Failure and partial loading dispose prepared
-sounds, and shutdown disposes the voice before sounds, textures and fonts.
-Continuous IPL ambience and alternate startup variants are not represented by
-the finite menu-effect list.
+The input image is disposed after preparation. The owned compressed catalog
+remains alive for lazy source extraction. Each prepared resource is independent
+of it, and only one raw sample is cached: at most fourteen clips and one playing
+channel. Stop cancels pending autoplay, and shutdown cancels/waits for work,
+stops playback, then disposes all owned resources. Textures and the system font
+are published on the graphics executor between frames.
 
-The SDK's [API guide](https://github.com/capz/DolphinDotNet/blob/main/docs/system-firmware-resources.md)
-and [audio qualification report](https://github.com/capz/DolphinDotNet/blob/main/docs/system-menu-audio-research.md)
-describe the supported profiles, preparation budgets and measured output
-differences. Menu rendering is deterministic; bit-identical IPL DSP output and
-physical-console playback of the ten newly enabled early effects have not
-been established. Overlapping short effects can differ in level from the
-running IPL because they start at a deterministic sequence phase.
+Unknown resources fail explicitly and retain the fallback font. No firmware,
+original textures, samples, recordings or substitute tones are bundled. Menu
+profiles include early NTSC 1.0, NTSC 1.2 and PAL 1.2. Physical-console playback
+of the newly added effects and startup variants remains to be confirmed.
+
+Native acceptance used the installed Dolphin emulator with DSP LLE and public
+NuGet packages: all three startups, all ten menu cues, six textures, a source
+loop beyond its original duration, Stop and exit cleanup passed. Exit left zero
+native clips and voices. This is emulator evidence, separate from hardware
+confirmation and original-score fidelity qualification.
 
 The `ipl-resources-dol` CI artifact contains `IplResources-early-ipl.dol`.
-Its dedicated native build group makes this download available while the
-other sample builds finish. Confirm `IPL RESOURCES B03` and SDK
-the repository's pinned SDK version on screen when testing it.
+Confirm `IPL RESOURCES B04` and the pinned SDK version on screen.
 
 ```sh
 dotnet build IplResources/IplResources.sln -c Release
 dotnet run --project IplResources -c Release --no-build
 ```
 
-The [approved mockup](Design/approved-mockup.png) is a design reference, not an
-emulator screenshot. The implementation reuses the sample palette and fallback
-font, and loads original visual resources locally through the SDK.
+The [approved revised mockup](Design/approved-complete-audio.png) is a design
+reference, not an emulator screenshot. It extends the existing navy palette
+and compact typography. The SDK [API guide](https://github.com/capz/DolphinDotNet/blob/main/docs/system-firmware-resources.md)
+describes extraction, profile qualification and native budgets.
