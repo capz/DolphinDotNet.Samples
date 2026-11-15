@@ -1,5 +1,9 @@
 # IPL UI audio preparation budget audit
 
+This audit applies to the finite-clip fallback. Current VideoMode builds prefer
+the owned sequenced session used by IplResources when the profile supports it;
+that path does not retain this ten-clip PCM bank.
+
 SDK: published `0.1.0-preview.347.1`, source
 `8f5870f68ec7f5eb1e8103c13af42ce082a3516f`.
 

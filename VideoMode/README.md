@@ -145,8 +145,10 @@ Hardware/TV acceptance and visual comparison inside Dolphin remain separate
 from successful compilation; do not treat host visual proofs as emulator captures.
 
 Normal builds enable system menu audio. Preparation reads the console IPL once
-in the background and retains the resulting native clips; it does not read
-firmware or synthesize effects on each input. Without a supported IPL the demo
+in the background and uses the same sequenced audio session as IplResources.
+Older qualified profiles fall back to retained finite clips. The audio-enabled
+frame loop yields to the SDK scheduler after each frame. Input plays resident
+cues without rereading firmware or preparing effects. Without a supported IPL the demo
 remains usable and the UI Sounds editor reports audio unavailable. In Dolphin,
 an original IPL must already be configured for successful playback. No ROM or
 prepared PCM is bundled. `-p:IplSystemAudio=false` excludes this backend;

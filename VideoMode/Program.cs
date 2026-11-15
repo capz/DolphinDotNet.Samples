@@ -55,14 +55,14 @@ internal static class Program
     private static async System.Threading.Tasks.Task<int> Main()
     {
         var audio=new IplUiAudio();int result=0;System.Exception? failure=null;
-        try{result=RunFrames(audio);}catch(System.Exception error){failure=error;}
+        try{result=await RunFrames(audio);}catch(System.Exception error){failure=error;}
         // Await cancellation outside finally: the GameCube AOT subset does not
         // implement ExceptionDispatchInfo used by an awaited finally block.
         await audio.Close();
         if(failure!=null)throw failure;
         return result;
     }
-    private static int RunFrames(IplUiAudio uiAudio)
+    private static async System.Threading.Tasks.Task<int> RunFrames(IplUiAudio uiAudio)
 #else
     private static int Main()
 #endif
@@ -272,6 +272,11 @@ internal static class Program
 #endif
             phaseStart=timing?Clock.Timestamp:0;
             device.EndFrame();
+#if IPL_SYSTEM_AUDIO
+            // Match the IPL explorer: let the application/service scheduler
+            // advance preparation and native audio between completed frames.
+            await System.Threading.Tasks.Task.Delay(1);
+#endif
             int end=timing?IplFrameProfiler.Since(phaseStart):0;
             IplPerformanceOverlay.CompleteFrame(frameStart,prepare,submit,end);
             if(IplFrameProfiler.Active)
