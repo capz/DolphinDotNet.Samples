@@ -1,6 +1,6 @@
 # DolphinDotNet Samples
 
-Run commands from the repository root. These are independent NuGet consumers of [`DolphinDotNet.Sdk`](https://www.nuget.org/packages/DolphinDotNet.Sdk/) and [`DolphinDotNet.GameCube`](https://www.nuget.org/packages/DolphinDotNet.GameCube/). Both are pinned to preview `0.1.0-preview.353.1` in `global.json` and `Directory.Build.props`; the `DolphinDotNet.Core` dependency is resolved transitively. No checkout of the compiler/runtime repository is required. All examples target .NET 8 for compilation;
+Run commands from the repository root. These are independent NuGet consumers of [`DolphinDotNet.Sdk`](https://www.nuget.org/packages/DolphinDotNet.Sdk/) and [`DolphinDotNet.GameCube`](https://www.nuget.org/packages/DolphinDotNet.GameCube/). Both are pinned to preview `0.1.0-preview.361.1` in `global.json` and `Directory.Build.props`; the `DolphinDotNet.Core` dependency is resolved transitively. No checkout of the compiler/runtime repository is required. All examples target .NET 8 for compilation;
 the GameCube runs generated native code, using only the supported AOT API subset.
 
 | Sample | Demonstrates | Setup / result |
@@ -19,7 +19,7 @@ the GameCube runs generated native code, using only the supported AOT API subset
 | [Snake](Snake/README.md) | Classic Snake with Continue/New Game title menu, checked native memory-card saves and two-minute autosave | GameCube memory card A or B recommended; works without card but cannot persist |
 | [Pong](Pong/README.md) | Complete two-player Pong: controller input, delta-time physics, 2D rectangles, generated PCM8 sounds | Self-contained GameCube DOL; two controllers, no storage/asset files |
 | [AudioDemo](AudioDemo/Program.cs) | AESND WAV effects and looping PCM music with async loading | Mount an SD device containing `audio/laser.wav` and `audio/theme.wav` (PCM WAV) |
-| [IplResources](IplResources/README.md) | Original IPL font/textures, three startup variants, ten prepared menu effects and twelve automatically looping source samples | Configured console IPL; L/R category, Up/down selects, A plays, B stops, X changes texture, Start exits |
+| [IplResources](IplResources/README.md) | Original IPL font/textures, three startup scores, nineteen cues, continuous ambience and twelve source samples | Configured console IPL; L/R category, Up/down selects, A plays, B stops, X texture, Y ambience, Z stats, Start exits |
 | [GoogleLogoAram](GoogleLogoAram/README.md) | Streamed HTTP to `AramStream` with standard `Stream.CopyToAsync`; partial-read-safe PNG signature verification | Run the PC relay and configure its LAN address; returns 0 on success, otherwise 1 |
 
 ## Shared controls
