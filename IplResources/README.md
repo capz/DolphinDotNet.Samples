@@ -1,80 +1,74 @@
 # IPL resource explorer
 
-Run a single demo of the console's original font, six firmware textures, the
-startup sound and ten complete menu effects. It uses the published
-`DolphinDotNet.GameCube` NuGet package through `DolphinDotNet.Sdk`; no SDK source
-checkout is needed.
+Build B05 consumes the published SDK/runtime `0.1.0-preview.361.1`. It explores
+the console's original font, six textures, all three startup score paths,
+twelve menu/error cues, seven card cues, continuous ambience and twelve source
+samples. No SDK source checkout or private package feed is required.
 
-- Up/down on the main stick or D-pad selects a sound.
-- A plays the selection; B stops the current voice.
+- L/R switches categories; Up/down selects an entry in the scrolling list.
+- A plays or restarts the selection; B stops all session playback.
 - X cycles Logo top/left/right, Environment, Tiles and Wordmark textures.
-- Start cancels loading and exits; Z toggles the shared statistics panel.
+- Y enables or mutes ambience. Z shows native memory, voices, queue and health
+  alongside the shared SDK statistics. Start cancels loading and exits.
 
-The list includes the existing Turn side, Turn center and Enter menu sounds,
-plus Back, Cancel edit, Confirm edit, Change value, Change field, Change row and
-Open editor. Each selection plays the complete prepared effect, including its
-authored notes and tails. The three movement identities map to
-`OptionMove1`, `OptionMove2` and `OptionMove3` respectively.
+Startup contains Normal, One controller Z and Four controller Z. Each plays the
+original score and automatically hands over to idle ambience. Y can disable
+that handover's ambience without interrupting the startup. Ambience has the
+original lead-in of about four seconds; `STARTING AMBIENCE` reports this delay.
 
-`SystemFirmware.ReadConsole` reads the configured console ROM through EXI.
-On a real GameCube, that ROM is built in: no IPL file needs to be installed.
-Build B03 introduced public NuGet SDK/runtime `0.1.0-preview.343.1`, published
-after [SDK PR #180](https://github.com/capz/DolphinDotNet/pull/180). The repository
-now consumes `0.1.0-preview.349.1`.
-The SDK uses continuous DMA for each 1 KiB ROM page, following libogc's ROM
-transfer method. The demo shows the actual published SDK version below the title,
-starts with Startup selected, and displays load errors across two lines.
-The [hardware diagnostic](../tools/ipl-diagnostics/README.md) found identical
-ROM bytes through all five read methods on the reporting PAL console with
-GC Loader / CubiBoot: CRC-32 `6DAC1F2A`, matching the early NTSC 1.0 reference.
-The console's region alone therefore does not select its resource profile.
-The user confirmed Startup and textures working on that console with B02 /
-SDK 339. B03 adds the early firmware's ten menu effects through the existing
-SDK APIs; no sample-side mapping or replacement audio is needed.
-In Dolphin, configure an appropriate original IPL in its regional `GC` user
-directory. The app does not download firmware or probe storage for `ipl.bin`.
-The menu profiles support early NTSC 1.0, NTSC 1.2 and PAL 1.2. The early
-profile has its own velocity, envelope clock, effects-send settings and
-three-second delay tail. Unknown menu profiles say `Menu profile unsupported`;
-this is separate from an `IPL unavailable` acquisition failure.
-Other firmware can report individual
-resources unavailable. Without an IPL the app shows the failure and
-retains the sample font. No firmware, original textures, samples or recordings
-are bundled, and no generated tone substitutes for an unavailable effect.
+Menu contains the ten existing actions plus Press Start and Error. Cards adds
+erase/move completion, copy/format completion, repeating transfer from A/B,
+copy-transfer completion and move-to-A/B completion. A replaces the previous
+audition; the two progress cues repeat until B or the next audition. These are
+audio auditions: the demo performs no memory-card operations.
 
-Audio preparation runs on `Task.Run` while the screen remains responsive.
-`CreateMenuSound` produces ordinary caller-owned `Sound` resources;
-`TryGetMenuSoundInfo`, `SourceWaveCount` and `GetSourceWaveId` report the prepared
-effect and original instrument IDs, shown in the selected sound's panel and
-debug log. These IDs differ from flat WSYS indices.
-Textures and the `SystemFont` are published on the graphics executor between
-frames. The input image and catalog are disposed before interactive playback;
-each texture and sound owns its data. The demo retains eleven clips, below the
-sixteen-slot audio limit, and one playback channel at a time.
+Ambience exposes idle ambience, animated cube/submenu motion and session-local
+stereo/mono output. Samples shows each original wave ID, codec/rate and read-only
+repeat status. The three looping sources play their intro and then repeat their
+authored section automatically. Neither the app nor its caller supplies loop
+flags, endpoints or a repeat scheduler.
 
-Start cancels pending preparation. Failure and partial loading dispose prepared
-sounds, and shutdown disposes the voice before sounds, textures and fonts.
-Continuous IPL ambience and alternate startup variants are not represented by
-the finite menu-effect list.
+`SystemFirmware.ReadConsole` reads the built-in ROM through EXI on a GameCube.
+No IPL file needs to be installed on a console. In Dolphin, configure an original
+IPL in its regional `GC` user directory. The app does not download firmware or
+probe storage for `ipl.bin`. The reporting PAL console with GC Loader / CubiBoot
+returned CRC-32 `6DAC1F2A`, matching the early reference profile; region alone does
+not select the resource profile.
 
-The SDK's [API guide](https://github.com/capz/DolphinDotNet/blob/main/docs/system-firmware-resources.md)
-and [audio qualification report](https://github.com/capz/DolphinDotNet/blob/main/docs/system-menu-audio-research.md)
-describe the supported profiles, preparation budgets and measured output
-differences. Menu rendering is deterministic; bit-identical IPL DSP output and
-physical-console playback of the ten newly enabled early effects have not
-been established. Overlapping short effects can differ in level from the
-running IPL because they start at a deterministic sequence phase.
+Preparation runs in the background using `IncludeSystemAudio`,
+`FirmwareCatalog.SupportsAudioSession` and `SystemResources.CreateAudioSession`.
+A prepared session initially remains stopped. The demo uses `PlayStartup`,
+`PlayCue`, `PlaySample`, `SetControl`, `OutputMode` and `GetStatistics` directly.
+`GetAudioCues` supplies read-only repeat metadata. Sample descriptors come from
+`session.GetSample`, so their ownership matches `session.PlaySample`.
 
-The `ipl-resources-dol` CI artifact contains `IplResources-early-ipl.dol`.
-Its dedicated native build group makes this download available while the
-other sample builds finish. Confirm `IPL RESOURCES B03` and SDK
-the repository's pinned SDK version on screen when testing it.
+The input image is disposed after preparation. Textures are published between
+frames on the graphics executor, then the full-session path also disposes the
+catalog. Its session owns an independent decoded cache. Stop releases the
+current playback handle and clears session voices/tails while keeping the cache
+prepared. Shutdown cancels and waits for pending preparation, stops playback,
+then disposes the session, textures and font.
+
+Partial profiles preserve the existing qualified startup/menu factories and
+lazy `CreateAudioSampleAsync` / parameterless `SystemAudioSample.Play()` path.
+The catalog stays alive for that lazy extraction and only one standalone raw
+sample is cached. Unsupported resources report their availability independently.
+A failed complete-session preparation is reported explicitly. No firmware,
+original textures, samples, recordings or substitute tones are bundled.
+
+Complete audio profiles cover early NTSC 1.0, NTSC 1.2 and PAL 1.2. The SDK's
+original-score fidelity and sustained-playback qualification is recorded in its
+[qualification ledger](https://github.com/capz/DolphinDotNet/blob/main/docs/ipl-complete-audio-progress.md).
+New session playback on physical hardware remains to be confirmed.
+
+The `ipl-resources-dol` CI artifact contains `IplResources.dol`. Confirm
+`IPL RESOURCES B05` and SDK `0.1.0-preview.361.1` on screen.
 
 ```sh
 dotnet build IplResources/IplResources.sln -c Release
 dotnet run --project IplResources -c Release --no-build
 ```
 
-The [approved mockup](Design/approved-mockup.png) is a design reference, not an
-emulator screenshot. The implementation reuses the sample palette and fallback
-font, and loads original visual resources locally through the SDK.
+The [approved revised mockup](Design/approved-complete-audio.png) is a design
+reference, not an emulator screenshot. The SDK [API guide](https://github.com/capz/DolphinDotNet/blob/main/docs/system-firmware-resources.md)
+describes extraction, profile qualification, ownership and native budgets.

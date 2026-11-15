@@ -13,9 +13,17 @@ def check(name: str, configuration: str, generated_c: Path) -> None:
         raise RuntimeError(f"{name}: AOT C is missing the managed entry point")
     if name == "IplResources":
         for api in ("SystemFirmware_ReadConsole", "SystemResources_CreateMenuSound",
-                    "SystemResources_CreateStartupSound", "SystemResources_CreateTexture",
+                    "SystemResources_CreateStartupSound", "SystemResources_CreateStartupVariantSound", "FirmwareCatalog_TryGetStartupSoundInfo", "SystemResources_CreateTexture",
                     "SystemFont_Load", "SystemMenuSoundInfo_get_SourceWaveCount",
-                    "SystemMenuSoundInfo_GetSourceWaveId"):
+                    "SystemMenuSoundInfo_GetSourceWaveId", "SystemResources_CreateAudioSampleAsync",
+                    "SystemAudioSample_Play", "FirmwareCatalog_GetAudioSamples",
+                    "FirmwareAudioSampleInfo_get_HasLoop", "SystemResources_CreateAudioSession",
+                    "FirmwareCatalog_get_SupportsAudioSession", "FirmwareCatalog_GetAudioCues",
+                    "SystemAudioSession_GetSample", "SystemAudioSession_PlaySample",
+                    "SystemAudioSession_PlayCue", "SystemAudioSession_PlayStartup",
+                    "SystemAudioSession_SetControl", "SystemAudioSession_GetStatistics",
+                    "SystemAudioSession_get_IsStartupPlaying", "SystemAudioSession_set_OutputMode",
+                    "SystemAudioCueInfo_get_RepeatsUntilStopped", "SystemAudioPlayback_Dispose"):
             if api not in c:
                 raise RuntimeError(f"IplResources: published firmware API is not reachable: {api}")
     if name == "VideoMode":
