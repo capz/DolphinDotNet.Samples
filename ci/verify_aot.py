@@ -27,6 +27,16 @@ def check(name: str, configuration: str, generated_c: Path) -> None:
             if api not in c:
                 raise RuntimeError(f"IplResources: published firmware API is not reachable: {api}")
     if name == "VideoMode":
+        # Audio-disabled measurement builds deliberately omit this backend.
+        if "IplUiAudio" in c:
+            for api in ("FirmwareCatalog_get_SupportsAudioSession", "SystemResources_CreateAudioSession",
+                        "SystemAudioSession_PlayCue", "SystemAudioSession_SetControl",
+                        "SystemAudioSession_set_Volume", "SystemAudioPlayback_Dispose"):
+                if api not in c:
+                    raise RuntimeError(f"VideoMode: IPL session API is not reachable: {api}")
+            frames = re.search(r"intptr_t dnd_value_VideoMode_Program__RunFrames[^(]*MoveNext[^(]*\([^;]+?\) \{(.*?)\n\}", c, re.S)
+            if frames is None or "Time_DelayAsync" not in frames.group(1):
+                raise RuntimeError("VideoMode: audio-enabled frame loop must yield to the SDK scheduler")
         def glass_body(method):
             match=re.search(r"intptr_t dnd_value_VideoMode_SealedGlassShell_"+method+r"_[^(]+\([^;]+?\) \{(.*?)\n\}",c,re.S)
             return match.group(1) if match else None

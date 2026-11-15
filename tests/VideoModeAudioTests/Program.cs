@@ -70,7 +70,33 @@ internal static class Program
     }
     private static async Task Main()
     {
-        await ResidentPlayback();await PreparationFailures();await CancelPreparation();
-        Console.WriteLine("UI audio lifecycle: saved Off, one-time loading, native ownership, bounded voices, live volume/mute, partial failures, unsupported profiles and cancellation passed.");
+        await ResidentPlayback();await PreparationFailures();await CancelPreparation();await SessionPlayback();
+        Console.WriteLine("UI audio lifecycle: sequenced cues and legacy clips, saved Off, one-time loading, native ownership, bounded voices, live volume/mute, partial failures, unsupported profiles and cancellation passed.");
+    }
+    private static async Task SessionPlayback()
+    {
+        AudioFixture.Reset();AudioFixture.SupportsSession=true;
+        var audio=new IplUiAudio();audio.Tick(2);await WaitForPreparation(audio);
+        Check(audio.State==IplUiAudioState.Ready&&audio.LoadedCount==10&&audio.NativeBytes==900000,"complete profile publishes one owned sequenced session");
+        Check(AudioFixture.SessionsCreated==1&&AudioFixture.Created==0&&AudioFixture.ImagesDisposed==1&&AudioFixture.CatalogsDisposed==1,"complete session uses no legacy PCM bank and survives catalog disposal");
+        for(int i=0;i<10;i++){Dolphin.Timing.Clock.Timestamp=i*50000;audio.Play((IplUiSound)(i+1));Check((int)AudioFixture.Cues[i].Cue==i,"all ten semantic actions reach their original sequenced cue");}
+        Check(audio.PlayedCount==10&&audio.StolenCount==4&&AudioFixture.Cues.FindAll(c=>c.IsPlaying).Count==6,"session overlap obeys the six-cue policy");
+        audio.Tick(1);Check(AudioFixture.SessionVolume==.25f,"volume applies to the complete sequenced output");
+        audio.Tick(0);Check(AudioFixture.Cues.TrueForAll(c=>!c.IsPlaying)&&AudioFixture.SessionStops==1,"mute releases handles and clears sequenced delay tails");
+        audio.Tick(2);audio.Play(IplUiSound.ConfirmEdit);Check(audio.PlayedCount==11&&AudioFixture.SessionsCreated==1,"unmute reuses the session and suppresses ambience before restarting");
+        await audio.Close();Check(AudioFixture.SessionsDisposed==1&&AudioFixture.DisposalOrder[^1]=="session","shutdown releases cues before their session");
+        AudioFixture.Reset();AudioFixture.SupportsSession=true;AudioFixture.Continue.Reset();audio=new();audio.Tick(2);
+        Check(AudioFixture.Entered.Wait(2000),"session preparation reaches firmware cancellation point");await audio.Close();
+        Check(AudioFixture.SessionsCreated==0&&audio.State==IplUiAudioState.Closed,"cancellation never leaks a prepared session");
+
+        AudioFixture.Reset();AudioFixture.SupportsSession=true;audio=new();audio.Tick(2);await WaitForPreparation(audio);
+        audio.Play(IplUiSound.ConfirmEdit);AudioFixture.SessionFaulted=true;audio.Tick(2);
+        Check(audio.State==IplUiAudioState.Unavailable&&AudioFixture.SessionsDisposed==1&&AudioFixture.Cues.TrueForAll(c=>!c.IsPlaying),"sequencer faults release cues before the session and keep navigation usable");
+        await audio.Close();Check(AudioFixture.SessionsDisposed==1,"fault cleanup is not repeated at shutdown");
+
+        AudioFixture.Reset();AudioFixture.SupportsSession=true;audio=new();audio.Tick(2);
+        for(int i=0;i<2000&&AudioFixture.CatalogsDisposed==0;i++)await Task.Delay(1);
+        Check(AudioFixture.SessionsCreated==1,"background session prepared without being published to a frame");
+        await audio.Close();Check(AudioFixture.SessionsDisposed==1,"shutdown disposes a completed session even before Tick adopts it");
     }
 }
