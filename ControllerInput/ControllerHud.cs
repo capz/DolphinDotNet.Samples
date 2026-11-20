@@ -6,6 +6,8 @@ using Dolphin.Graphics;
 // update two small preallocated meshes; no frame-owned text or shape arrays.
 internal sealed class ControllerHud : IDisposable
 {
+    private static readonly float[] PortCenters={467.8f,509.2f,548.7f,588.7f};
+    private static readonly string[] PortDigits={"1","2","3","4"};
     private static readonly Color32 White=new Color32(238,235,247),Dim=new Color32(151,143,176),
         Mint=new Color32(103,227,166),Line=new Color32(104,94,136),Purple=new Color32(139,108,242);
     private readonly Texture2D atlas=Texture2D.FromPng(IplFontData.Png,true);
@@ -21,21 +23,14 @@ internal sealed class ControllerHud : IDisposable
     internal ControllerHud()
     {
         glyphMaterial=new Material{Texture=atlas,Blend=BlendMode.Alpha,Cull=CullMode.None,DepthTest=false,DepthWrite=false};
+        // The approved plate owns the title, labels, panel, grid and shell.
+        // Only live values and port state are drawn over its cleared fields.
         var labels=new TextBuilder();
-        labels.Text("Controller",38,23,23,White);
-        labels.Text("LIVE INPUT / HOTPLUG",38,47,9.5f,Dim);
-        labels.Text("MAIN STICK",52,378,10,White);labels.Text("X/Y",52,396,9.5f,Dim);
-        labels.Text("C STICK",201,378,10,White);labels.Text("X/Y",201,396,9.5f,Dim);
-        labels.Text("TRIGGERS",350,378,10,White);
-        labels.Text("L",350,395,9,Dim);labels.Text("R",350,409,9,Dim);
-        for(int i=0;i<4;i++)labels.Center((i+1).ToString(),465+i*40,29,12,White);
-        labels.Text("Hold START + Z (2s): exit",470,436,7,Dim);
+        labels.Text("Hold START + Z (2s): exit",470,459,7,Dim);
         text=labels.Build();
         var border=new ShapeBuilder();
-        border.Rounded(36,371,568,53,10,Line);border.Rounded(36.7f,371.7f,566.6f,51.6f,9.4f,new Color32(22,17,40));
-        for(int i=0;i<4;i++){border.Rounded(448+i*40,27,34,19,9,Line);border.Rounded(448.7f+i*40,27.7f,32.6f,17.6f,8.4f,new Color32(18,13,31));}
-        border.Rect(187,380,.6f,35,Line);border.Rect(337,380,.6f,35,Line);border.Rect(511,380,.6f,35,Line);
-        border.Rounded(365,398,96,4.5f,2,new Color32(56,47,76));border.Rounded(365,412,96,4.5f,2,new Color32(56,47,76));
+        border.Rounded(368,394,94,7.7f,3.8f,new Color32(56,47,76));
+        border.Rounded(368,408,94,7.7f,3.8f,new Color32(56,47,76));
         chrome=border.Build();
         dynamicText=DynamicMesh.Create(glyphs,QuadIndices(glyphs.Length));
         // Shape primitives are unindexed triangles, so unused capacity is
@@ -53,16 +48,20 @@ internal sealed class ControllerHud : IDisposable
         oldMainX=x;oldMainY=y;oldCX=cx;oldCY=cy;oldL=l;oldR=r;oldPorts=ports;oldSelected=session.SelectedPort;oldExit=exit;
         oldButtons=session.ButtonsText;oldEvent=session.LastEventText;oldStatus=session.StatusText;
         glyphCount=shapeCount=0;
-        Number(x,83,395,10.5f);Number(y,128,395,10.5f);Number(cx,232,395,10.5f);Number(cy,277,395,10.5f);
-        Integer(l,476,392,9);Integer(r,476,406,9);
-        DynamicText(session.StatusText,608-Measure(session.StatusText,9),51,9,ports==0?Dim:Mint);
-        DynamicText(session.ButtonsText,523,380,8.5f,White,76);
-        DynamicText(session.LastEventText,38,436,8,Dim,415);
-        if(session.SelectedPort>=0)Rounded(449.4f+session.SelectedPort*40,28.4f,31.2f,16.2f,7.8f,new Color32(76,52,140));
-        for(int i=0;i<4;i++)if(session.IsConnected(i))Rounded(475+i*40,33,4,4,2,Mint);
-        if(l>0)Rounded(365,398,96*l/100f,4.5f,Math.Min(2,48*l/100f),Purple);
-        if(r>0)Rounded(365,412,96*r/100f,4.5f,Math.Min(2,48*r/100f),Purple);
-        if(exit>0)Rect(38,447,566*exit/100f,1.5f,Mint);
+        Number(x,83,395,10.5f);Number(y,124,395,10.5f);Number(cx,237,395,10.5f);Number(cy,277,395,10.5f);
+        Integer(l,480,391,9);Integer(r,480,405,9);
+        DynamicText(session.StatusText,605-Measure(session.StatusText,9),51,9,ports==0?Dim:Mint);
+        DynamicText(session.ButtonsText=="NONE"?"No buttons held":session.ButtonsText,521,392,9,White,75);
+        float[] centers=PortCenters;
+        if(session.SelectedPort>=0)Rounded(centers[session.SelectedPort]-15.7f,30.1f,31.4f,16.2f,7.8f,new Color32(76,52,140));
+        for(int i=0;i<4;i++){
+            float px=centers[i];
+            DynamicText(PortDigits[i],px-5.5f,30.5f,12,session.IsConnected(i)?White:Dim);
+            if(session.IsConnected(i))Rounded(px+7,35.5f,4,4,2,Mint);
+        }
+        if(l>0)Rounded(368,394,94*l/100f,7.7f,Math.Min(3.8f,47*l/100f),Purple);
+        if(r>0)Rounded(368,408,94*r/100f,7.7f,Math.Min(3.8f,47*r/100f),Purple);
+        if(exit>0)Rect(38,451,566*exit/100f,1.5f,Mint);
         int used=Math.Max(glyphCount,oldGlyphCount);for(int i=glyphCount;i<used;i++)glyphs[i]=default;
         if(used>0)dynamicText.SetVertices(glyphs,0,used);oldGlyphCount=glyphCount;
         used=Math.Max(shapeCount,oldShapeCount);for(int i=shapeCount;i<used;i++)shapes[i]=default;
@@ -120,18 +119,6 @@ internal sealed class ControllerHud : IDisposable
             for(int i=0;i<4;i++){float a=(corner*90+180+i*22.5f)*.01745329252f,b=a+22.5f*.01745329252f;Triangle(ox,oy,ox+(float)Math.Cos(a)*radius,oy+(float)Math.Sin(a)*radius,ox+(float)Math.Cos(b)*radius,oy+(float)Math.Sin(b)*radius,color);}}
     }
     private static VertexPositionColor Vertex(float x,float y,Color32 color)=>new VertexPositionColor(new Vector3(x-320,240-y,0),color);
-    internal static Mesh CreateBackground()
-    {
-        var b=new ShapeBuilder();
-        for(int y=0;y<12;y++)for(int x=0;x<16;x++){
-            float x0=x*40,y0=y*40;
-            b.GradientQuad(x0,y0,40,40,BackgroundColor(x0,y0),BackgroundColor(x0+40,y0),BackgroundColor(x0+40,y0+40),BackgroundColor(x0,y0+40));
-        }
-        for(int i=-9;i<=9;i++)b.Line(320+i*12,144,320+i*66,371,new Color32(29,21,47),.45f);
-        float[] rows={154,169,188,212,242,279,324,368};for(int i=0;i<rows.Length;i++)b.Line(0,rows[i],640,rows[i],new Color32(29,21,47),.45f);
-        return b.Build();
-    }
-    private static Color32 BackgroundColor(float x,float y){float d=((x-320)*(x-320)/170000f+(y-230)*(y-230)/160000f);float glow=Math.Max(0,1-d);return new Color32((byte)(10+6*glow),(byte)(6+2*glow),(byte)(23+14*glow));}
     public void Dispose(){dynamicShapes.Dispose();dynamicText.Dispose();chrome.Dispose();text.Dispose();atlas.Dispose();}
     private sealed class TextBuilder
     {

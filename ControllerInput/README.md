@@ -1,18 +1,19 @@
 # Controller input and hotplugging
 
-An original indigo GameCube controller is rendered as a solid 3D model with
-separate rigid controls. Both sticks pivot, the D-pad rocks, face buttons and
-Start depress, Z moves, and L/R follow analog travel with a distinct full-click
-position. The controller proportions and camera follow the supplied hardware
-reference and [approved mockup](Design/approved-mockup.png). This PNG is a design
-reference, not a screenshot of the application.
+The [approved mockup](Design/approved-mockup.png) supplies the fixed shell,
+background and static UI. A shared texture from the original mockup is mapped
+onto real 3D controls using the same neutral camera projection. Both sticks pivot, the
+D-pad rocks, face buttons and Start depress, the single right-side Z moves, and
+L/R follow analog travel with a distinct full-click position. A shell depth mask
+hides control bases behind the socket rims while allowing raised caps to protrude.
+The camera stays fixed so the moving controls remain registered to the artwork.
 
 The sample reads all four physical ports once per frame. Input activity selects
 the controller shown on screen; held buttons or stick drift do not repeatedly
-steal selection. Connected port indicators and the latest connection event show
-real SDK hotplug state. Removing the selected controller chooses another
-connected port, or returns to a neutral model when none remain. A held control
-on connection establishes a baseline rather than generating a false press.
+steal selection. The four port indicators and current connection status reflect
+SDK hotplug state. Removing the selected controller chooses another connected
+port, or returns the controls to neutral when none remain. A held control on
+connection establishes a baseline rather than generating a false press.
 
 All twelve digital inputs, both sticks, analog L/R values and separate digital
 L/R clicks remain available to test. The displayed analog values include the
@@ -21,23 +22,27 @@ opts out of the shared Z statistics shortcut. Release Start and Z, then hold
 both for two seconds to exit. Switching or disconnecting a port cancels the
 exit gesture.
 
-Geometry, label meshes and UI chrome are created once. Control animation changes
-transforms; changed telemetry updates two bounded meshes. The licensed Nunito
-atlas is shared with VideoMode, with its existing SIL OFL notice. No original
-Nintendo firmware, game assets or downloaded model is required at runtime.
-The project requests a bounded 2 MiB managed arena through the published SDK's
-`DndManagedHeapBytes` setting. Startup temporarily owns list storage and upload
-arrays together; the default 256 KiB arena cannot hold even the body upload.
-This arena reservation is separate from native GX geometry and texture bytes.
+Geometry and textures are uploaded once. Control animation changes transforms;
+changed telemetry updates two bounded meshes. The licensed Nunito atlas is
+shared with VideoMode, with its existing SIL OFL notice. The shell depth mask
+uses black additive geometry to write depth without changing the plate's color.
+No firmware resources, external models or network downloads are needed at runtime.
+The project reserves a bounded 4 MiB managed arena through the published SDK's
+`DndManagedHeapBytes` setting for texture staging and startup construction. This
+arena reservation is separate from native GX geometry and texture bytes.
 
-The checked-in shell surface shares interior vertices and preserves the exact
-silhouette boundary. Its offline generator verifies the boundary, area,
-manifold edges and interpolation error before emitting data; it is not part of
-normal builds. With NumPy and SciPy 1.17.0 installed, a managed build can be
-checked without running any graphics intrinsics:
+`Design/clean-plate-source.png` is an inpainted version of the approved artwork
+with moving controls and changing UI fields removed. The offline asset cooker
+composites its functional cutouts into the original artwork, preserving the
+unmasked source pixels. It resamples to 640×480, cooks the two GX textures and
+emits the checked-in C# asset factories and provenance hashes. Normal builds use
+these checked-in assets and do not run image generation or require an asset tool.
+To regenerate after editing the source artwork, install Pillow and the matching
+published asset tool, then run from the repository root:
 
 ```sh
-python3 ControllerInput/Tools/generate_surface.py --check
+dotnet tool install DolphinDotNet.Assets --version 0.1.0-preview.361.1 --tool-path .tools/controller-assets
+python3 ControllerInput/Tools/cook_assets.py --tool .tools/controller-assets/dnd-assets
 ```
 
 Build against the repository's pinned published NuGet packages:
@@ -54,6 +59,10 @@ matching PowerPC ELF. Portable production-linked input tests run with:
 dotnet run --project tests/ControllerInputTests -c Release
 ```
 
-Actual native screenshots, recording, performance and memory measurements are
-recorded separately from the mockup. Dolphin acceptance does not establish
-physical-controller timing or original-console rendering performance.
+The controller native CI job also verifies real emulator input, SI-device
+hotplugging on all four ports, neutral state after unplugging, trigger detents
+and the exit gesture. Its `controller-input-native-review` artifact contains the
+DOL/ELF, original native screenshots, a recording and capture/profiling reports.
+The design images are source artwork, not application screenshots. Dolphin
+measurements do not establish physical-controller timing or rendering performance
+on an original console.

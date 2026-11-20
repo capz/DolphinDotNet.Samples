@@ -3,9 +3,9 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
-    <!-- Bounded startup workspace for authored mesh construction and the font;
+    <!-- Bounded startup workspace for the two cooked photo textures and the font;
          validated through the published SDK rather than a runtime/source patch. -->
-    <DndManagedHeapBytes>2097152</DndManagedHeapBytes>
+    <DndManagedHeapBytes>4194304</DndManagedHeapBytes>
     <!-- Every physical button belongs to the visualizer, including Z and Start. -->
     <DndSampleControls>false</DndSampleControls>
   </PropertyGroup>

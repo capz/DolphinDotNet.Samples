@@ -22,7 +22,7 @@ import time
 import urllib.request
 import xml.etree.ElementTree as ET
 
-from PIL import Image
+from PIL import Image, ImageChops, ImageDraw, ImageStat
 
 from decode_native_xfb import decode
 from controller_hotplug import DolphinHotplug
@@ -46,16 +46,21 @@ def source_provenance(source):
         return subprocess.check_output(['git','-c','safe.directory='+str(source),'-C',str(source),*args],text=True).strip()
     project=source/'ControllerInput/ControllerInput.csproj'
     files=set((source/'ControllerInput').glob('*.cs'))
+    files.update(p for p in (source/'ControllerInput/Assets').rglob('*') if p.is_file())
+    files.update(p for p in (source/'ControllerInput/Tools').rglob('*') if p.is_file() and '__pycache__' not in p.parts)
+    files.update((source/'ControllerInput/Design').glob('*.png'))
     files.update((source/'Common').glob('*.cs'))
     files.update((project,source/'global.json',source/'Directory.Build.props'))
     for optional in ('Directory.Build.targets','NuGet.Config','nuget.config'):
         if (source/optional).is_file():files.add(source/optional)
     for element in ET.parse(project).getroot().iter():
         include=element.get('Include','')
-        if element.tag not in ('Compile','None') or '$(' in include or '*' in include:continue
+        if element.tag not in ('Compile','None','EmbeddedResource','Content') or '$(' in include or '*' in include:continue
         path=(project.parent/include).resolve()
         if path.is_file():
             path.relative_to(source);files.add(path)
+    approved=source/'ControllerInput/Design/approved-mockup.png'
+    if approved.is_file():files.add(approved)
     status=git('status','--porcelain','--untracked-files=no')
     untracked=git('ls-files','--others','--exclude-standard','ControllerInput','Common').splitlines()
     return dict(git_head=git('rev-parse','HEAD'),git_tree=git('rev-parse','HEAD^{tree}'),
@@ -87,11 +92,12 @@ def sdk_tools(args, output):
 
 
 def symbols(elf):
-    found = {}
+    found = {};probe=None
     for line in subprocess.check_output(['nm', '-S', '-a', str(elf)], text=True).splitlines():
         fields = line.split()
         if len(fields)!=4:continue
         address, size, _, name = fields
+        if name=='dnd_graphics_end_frame' and int(size,16)>=32:probe=int(address,16)
         key = name.split('.lto_priv.')[0]
         wanted={'pads':144,'lines':790,'dnd_value_heap':4,'total_bytes':4,
                 'overlay_serial':4,'currentFb':4,'mode':4,'dnd_type_ControllerSession':44}
@@ -102,6 +108,19 @@ def symbols(elf):
             found[key] = int(address,16)
     if set(found)!=set(wanted):
         raise ValueError('Missing native read-only diagnostics: '+str(found))
+    # Prove the shared mapping is MEM1 at offset 0 instead of trusting its name
+    # or size. This custom SDK function is not a Dolphin HLE patch target.
+    if probe is None:raise ValueError('Missing DOL text mapping probe')
+    dol=elf.with_suffix('.dol').read_bytes()
+    for section in range(7):
+        offset=struct.unpack_from('>I',dol,section*4)[0]
+        address=struct.unpack_from('>I',dol,0x48+section*4)[0]
+        size=struct.unpack_from('>I',dol,0x90+section*4)[0]
+        if address<=probe<=address+size-32:
+            found['mem1_probe_address']=probe
+            found['mem1_probe_bytes']=dol[offset+probe-address:offset+probe-address+32]
+            break
+    else:raise ValueError('Native mapping probe is outside the matching DOL text')
     return found
 
 
@@ -121,7 +140,12 @@ class LiveMemory:
                     target=os.readlink(path)
                     if 'dolphin-emu' not in target or '/dev/shm/' not in target:continue
                     fd=os.open(path,os.O_RDONLY)
-                    if os.fstat(fd).st_size>=24*1024*1024:self.fd=fd;return
+                    if os.fstat(fd).st_size>=24*1024*1024:
+                        actual=os.pread(fd,32,points['mem1_probe_address']-0x80000000)
+                        if actual==points['mem1_probe_bytes']:
+                            self.fd=fd;self.mapping_probe=dict(address=hex(points['mem1_probe_address']),
+                                matching_dol_text_sha256=hashlib.sha256(actual).hexdigest(),bytes=32)
+                            return
                     os.close(fd)
                 except (FileNotFoundError,PermissionError):pass
             time.sleep(.05)
@@ -255,7 +279,8 @@ def runtime_capture(memory,points,output,name):
         raw=output/(name+'-xfb.yuv');info=memory.capture_xfb(raw)
         if len(set(raw.read_bytes()))<8:raise AssertionError('Native XFB remains clear: Dolphin RAM copies are required')
         png=output/(name+'-xfb.png');decode(raw.read_bytes(),info['width'],info['height']).save(png)
-    return dict(capture=name,frame_serial=serial,xfb=info,xfb_file=raw.name,xfb_sha256=digest(raw),
+    return dict(capture=name,frame_serial=serial,mem1_mapping_probe=memory.mapping_probe,
+                xfb=info,xfb_file=raw.name,xfb_sha256=digest(raw),
                 native_png=png.name,png_sha256=digest(png),snapshot=snapshot)
 
 
@@ -304,11 +329,17 @@ def benchmark(dol,points,sdk,output):
             profile=next((re.search(r'CONTROLLER PROFILE samples (\d+) active_us (\d+) max_us (\d+)',line) for line in console if 'CONTROLLER PROFILE' in line),None)
             frame=next((re.search(r'CONTROLLER FRAME mean_us (\d+) native (\d+)',line) for line in console if 'CONTROLLER FRAME' in line),None)
             if not profile or not frame:raise AssertionError('Missing uninterrupted native 120-frame profile')
-            if after['managed_heap']['capacity_bytes']!=2097152:raise AssertionError('Packaged managed heap property did not reach native runtime')
+            project=Path(__file__).resolve().parents[1]/'ControllerInput/ControllerInput.csproj'
+            configured=ET.parse(project).find('.//DndManagedHeapBytes')
+            if configured is None or configured.text is None:raise AssertionError('Sample must declare its native managed heap budget')
+            expected_capacity=int(configured.text.strip(),0)
+            if after['managed_heap']['capacity_bytes']!=expected_capacity:
+                raise AssertionError('Packaged managed heap property did not reach native runtime')
             mode=memory.word(points['mode']);tv_mode=memory.word(mode);standard=tv_mode>>2
             hz=50 if standard in (1,4) else 60
             result=dict(method='Uninterrupted real Dolphin, no debugger/dumps/screenshots/input, software OpenGL; original hardware unmeasured',
                         clock_scope='Application measurements use emulated GameCube Clock; wall interval is separately measured on the host',
+                        configured_managed_heap_bytes=expected_capacity,
                         vi_tv_mode=tv_mode,vi_standard=standard,native_refresh_hz=hz,native_frame_target_us=1000000/hz,
                         samples=int(profile[1]),active_mean_us=int(profile[2]),active_max_us=int(profile[3]),
                         frame_mean_us=int(frame[1]),profile_native_bytes=int(frame[2]),
@@ -340,24 +371,54 @@ def make_video(user,output,hz):
                 presentation_rate_hz=hz,emulator_wall_speed_is_playback_speed=False)
 
 
-FACE_ROIS={'A':(438,193,28,30),'B':(395,216,18,20),'X':(479,182,18,30),
-           'Y':(427,149,26,19),'START':(320,191,13,14),'Z':(450,117,32,19),
-           'L':(192,91,38,22),'R':(450,91,38,22)}
+FACE_ROIS={'A':(435.8,170.4,27,27),'B':(391.6,190.3,17,17),'X':(477.6,159.6,16,24),
+           'Y':(423.9,128.8,24,17),'START':(319.1,166.6,12,12),'Z':(448.4,95.3,35,17),
+           'L':(190.9,92.4,37,24),'R':(447.5,86.2,32,16)}
 
 
 def face_difference(neutral,current,button):
-    # Projected final sample cap centers at its original 640x528 PAL viewport;
-    # normalized coordinates also cover the native NTSC viewport, without
+    # Approved plate/control registration is defined in a 640x480 viewport;
+    # normalized coordinates also cover the native PAL viewport, without
     # resizing either capture or comparing HUD text instead of the real cap.
     with Image.open(neutral) as base,Image.open(current) as image:
         if base.size!=image.size:raise AssertionError('Native capture dimensions changed')
         width,height=base.size;x,y,rx,ry=FACE_ROIS[button]
-        box=(round((x-rx)*width/640),round((y-ry)*height/528),
-             round((x+rx)*width/640),round((y+ry)*height/528))
+        box=(round((x-rx)*width/640),round((y-ry)*height/480),
+             round((x+rx)*width/640),round((y+ry)*height/480))
         a=list(base.convert('RGB').crop(box).getdata());b=list(image.convert('RGB').crop(box).getdata())
         changed=sum(max(abs(c-d) for c,d in zip(p,q))>=12 for p,q in zip(a,b))
         mean=sum(abs(c-d) for p,q in zip(a,b) for c,d in zip(p,q))/(len(a)*3)
         return dict(roi=list(box),pixels=len(a),changed_pixels=changed,mean_absolute_channel_difference=mean)
+
+
+def plate_registration(native,approved):
+    """Check fixed artwork, allowing hardware texture/color quantization.
+
+    All changing controls and live UI are excluded. This checks the real XFB
+    against the approved source, not against another generated screenshot.
+    """
+    with Image.open(native) as image,Image.open(approved) as source:
+        actual=image.convert('RGB');width,height=actual.size
+        reference=source.convert('RGB').resize(actual.size,Image.Resampling.LANCZOS)
+        mask=Image.new('L',actual.size,255);draw=ImageDraw.Draw(mask)
+        # Include a generous border around moving controls and their clean-plate
+        # cavities, so input geometry or foreground masks cannot skew this check.
+        excluded=[(150,65,232,120),(410,66,487,116),
+                  (169,136,238,204),(225,221,289,285),(347,220,415,288),
+                  (405,139,467,202),(371,169,412,211),(458,131,497,188),
+                  (396,108,452,150),(304,151,334,182),
+                  (440,20,622,68),(30,366,610,430),(30,431,616,458)]
+        for x0,y0,x1,y1 in excluded:
+            draw.rectangle((round(x0*width/640),round(y0*height/480),
+                            round(x1*width/640),round(y1*height/480)),fill=0)
+        difference=ImageChops.difference(actual,reference)
+        statistics=ImageStat.Stat(difference,mask)
+        return dict(reference='ControllerInput/Design/approved-mockup.png',
+                    reference_sha256=digest(approved),native_size=list(actual.size),
+                    compared_pixels=statistics.count[0],
+                    mean_absolute_channel_difference=sum(statistics.mean)/3,
+                    maximum_allowed_mean_difference=12,
+                    exclusions='Moving controls/cavities, live UI, and texture-filter borders')
 
 
 def main(args):
@@ -386,6 +447,10 @@ def main(args):
             process=subprocess.Popen(['/usr/games/dolphin-emu','-u',str(user),'-C','SYSCONF.IPL.PGS=True','-e',str(dol)],env=env,stdout=log,stderr=subprocess.STDOUT)
             memory=LiveMemory(process,points);memory.wait_frames(10)
             event=runtime_capture(memory,points,output,'neutral');report['events'].append(event)
+            registration=plate_registration(output/event['native_png'],source/'ControllerInput/Design/approved-mockup.png')
+            report['approved_art_registration']=registration
+            if registration['mean_absolute_channel_difference']>registration['maximum_allowed_mean_difference']:
+                raise AssertionError('Native fixed shell/background do not match the approved mockup')
             report['native_presentation']=capture_client(process,env,user,output)
             report['capture_vi_tv_mode']=event['xfb']['vi_tv_mode']
             if not event['snapshot']['pads'][0]['connected'] or any(p['connected'] for p in event['snapshot']['pads'][1:]):
@@ -401,13 +466,16 @@ def main(args):
                     for port,fd in enumerate(fds):
                         data=commands(case,port).encode()
                         if os.write(fd,data)!=len(data):raise RuntimeError('Partial real controller pipe write')
-                    memory.wait_frames(4)
+                    # Keep each visual action on screen for 0.3 native seconds
+                    # in the chronological video, and let its spring settle.
+                    hold=18 if image else 4
+                    memory.wait_frames(hold)
                     if image:result=runtime_capture(memory,points,output,name)
                     else:
                         with memory.paused():
                             snapshot=native_snapshot(memory,points);snapshot['session']=memory.session()
                             result=dict(capture=name,frame_serial=memory.read_serial(),snapshot=snapshot)
-                    result['input']=case;report['events'].append(result)
+                    result['input']=case;result['input_hold_native_frames']=hold;report['events'].append(result)
                     port=case['port'];pad=result['snapshot']['pads'][port]
                     if not pad['connected']:raise AssertionError('Input delivered to a disconnected real SI controller')
                     held=sum(masks[b] for b in case.get('buttons',()))
@@ -440,7 +508,7 @@ def main(args):
                         result=inject(dict(port=0,axis=axis,value=value),f'trigger-{axis-4}-{value}',image=True)
                         actual=result['snapshot']['pads'][0]['axes'][axis]
                         # A Dolphin pipe is raw 0..255. The public SDK's default
-                        # InputOptions intentionally maps min30/max180 to0..1.
+                        # InputOptions maps the raw range 30..180 to 0..1.
                         expected=max(0,min(1,(value*255-30)/150))
                         result['expected_sdk_trigger']=expected
                         if abs(actual-expected)>.02:raise AssertionError('Actual analog trigger differs from SDK normalization')
