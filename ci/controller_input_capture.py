@@ -8,6 +8,7 @@ controller inputs and emulator SI hotplug; --initial-only is a visual review.
 """
 import argparse
 from contextlib import contextmanager
+from fractions import Fraction
 import hashlib
 import json
 import os
@@ -365,10 +366,29 @@ def make_video(user,output,hz):
     listing.write_text(''.join("file '"+str(p).replace("'","'\\''")+f"'\nduration {1/hz:.9f}\n" for p in frames))
     video=output/'controller-input.mp4'
     subprocess.run(['ffmpeg','-v','error','-y','-f','concat','-safe','0','-i',str(listing),
-                    '-an','-r',str(hz),'-c:v','libx264','-preset','fast','-crf','18','-pix_fmt','yuv420p',str(video)],check=True)
+                    '-an','-r',str(hz),'-c:v','libx264','-preset','fast','-crf','18','-pix_fmt','yuv420p',
+                    '-aspect','4:3',str(video)],check=True)
     return dict(file=video.name,sha256=digest(video),frames=len(frames),
-                source='Unmodified real Dolphin native frame dumps; no mockup/composited frames',
+                source='Chronological real Dolphin frame dumps; no resized pixels, replacement frames, or post-capture visual overlays',
+                display_aspect='4:3; sample-aspect metadata preserves the original native frame dimensions',
+                encoded_video=probe_video(video),
                 presentation_rate_hz=hz,emulator_wall_speed_is_playback_speed=False)
+
+
+def probe_video(video):
+    probe=json.loads(subprocess.check_output(['ffprobe','-v','error','-select_streams','v:0',
+        '-show_entries','stream=codec_name,width,height,sample_aspect_ratio,display_aspect_ratio,r_frame_rate,nb_frames',
+        '-show_entries','format=duration,size','-of','json',str(video)],text=True))
+    if len(probe['streams'])!=1:raise AssertionError('Expected one native capture video stream')
+    stream=probe['streams'][0]
+    sar=Fraction(stream['sample_aspect_ratio'].replace(':','/'))
+    dar=Fraction(stream['display_aspect_ratio'].replace(':','/'))
+    if dar!=Fraction(4,3) or Fraction(stream['width'],stream['height'])*sar!=Fraction(4,3):
+        raise AssertionError('Native capture video must display at the approved 4:3 aspect ratio')
+    return dict(coded_width=stream['width'],coded_height=stream['height'],
+                sample_aspect_ratio=stream['sample_aspect_ratio'],display_aspect_ratio=stream['display_aspect_ratio'],
+                codec=stream['codec_name'],frame_rate=stream['r_frame_rate'],frames=int(stream['nb_frames']),
+                duration_seconds=float(probe['format']['duration']),bytes=int(probe['format']['size']))
 
 
 FACE_ROIS={'A':(435.8,170.4,27,27),'B':(391.6,190.3,17,17),'X':(477.6,159.6,16,24),
