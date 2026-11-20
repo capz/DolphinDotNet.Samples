@@ -1,0 +1,22 @@
+{
+  "size": [
+    640,
+    480
+  ],
+  "sdk_assets_version": "0.1.0-preview.361.1",
+  "format": "GX RGBA8",
+  "sources": {
+    "approved-mockup.png": "fb18d43c9627803a6143dbeb512b3b4346c11bba5b48bedbd42d0daaae719436",
+    "clean-plate-source.png": "b5f35842205a99afb92a9e1927b51aedf0be7f6c8e6cba58da1ac32360271262"
+  },
+  "packages": {
+    "Original": {
+      "bytes": 1228832,
+      "sha256": "9317a5daf6cf6746346645841ee3d2a1bbc145fc121d64fc51cfb35e46a5fa27"
+    },
+    "Plate": {
+      "bytes": 1228832,
+      "sha256": "1433e736880cac7b1c2dc1bd7ebf5c638fec55b866ecd82ebd6f90e4a46407ac"
+    }
+  }
+}

@@ -1,0 +1,17 @@
+<Project Sdk="DolphinDotNet.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <!-- Bounded startup workspace for the two cooked photo textures and the font;
+         validated through the published SDK rather than a runtime/source patch. -->
+    <DndManagedHeapBytes>4194304</DndManagedHeapBytes>
+    <!-- Every physical button belongs to the visualizer, including Z and Start. -->
+    <DndSampleControls>false</DndSampleControls>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="DolphinDotNet.GameCube" Version="$(DndPackageVersion)" />
+    <Compile Include="../VideoMode/Assets/IplFontData.g.cs" Link="Assets/IplFontData.g.cs" />
+    <None Include="../VideoMode/Assets/OFL-Nunito.txt" Link="Assets/OFL-Nunito.txt" />
+  </ItemGroup>
+</Project>

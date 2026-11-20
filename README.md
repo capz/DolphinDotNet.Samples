@@ -11,8 +11,10 @@ the GameCube runs generated native code, using only the supported AOT API subset
 | [ShaderDemo](ShaderDemo/README.md) | GPU TEV color ramp and two-stage toon shading, with a smooth reference | No assets or network; Start pauses, B exits, Z statistics |
 | [HttpTexture](HttpTexture/README.md) | Download a PNG with `HttpClient`, decode in memory into tiled RGBA8 and display it | Internet-capable BBA; DHCP/DNS defaults, B exits |
 | [AsyncNetworking](AsyncNetworking/Program.cs) | Standard `async Task<int> Main`, `HttpClient`, `Task.Run` and `ConfigureAwait(false)`; bounded Dolphin JSON parsing | Local DNS/HTTP fixture defaults; returns 0 when JSON `value` is 42, otherwise 1 |
+| [ControllerInput](ControllerInput/README.md) | Live four-port input and hot-plug status; photographic indigo controller shell with masked 3D sticks, buttons and triggers | Follows the last active connected port; hold Start+Z for two seconds to exit |
 | [HardwareDiagnostics](HardwareDiagnostics/Program.cs) | Safe/extended GameCube device scanning, presence status, physical reset button, controlled reboot | Controller 1 A scans, Start+X restarts, Start+Y requests menu |
 | [DiscBrowser](DiscBrowser/README.md) | GC Loader SD mount, read-only GameCube ISO FST, original-game FST on DVD interface | GC Loader-compatible firmware or original DVD/ODE optional; skips unavailable devices |
+| [StorageIntegrity](StorageIntegrity/README.md) | Opt-in SD write, fragmentation and recovery probe | Headless; requires an explicit arm file on a writable test SD volume |
 | [Kart](Kart/README.md) | Original 3D island kart racer: drift boosts, gliding jump, items, three laps and two-player UDP peer discovery | Immediate offline play; optional LAN BBA with DHCP, UDP 28777 |
 | [Fox](Fox/README.md) | Minimal polygon rail shooter: 3D flight, twin lasers, boost/brake, barrel rolls, shield rings and a boss | One controller; generated geometry/audio, no external assets |
 | [GreenMen](GreenMen/README.md) | Space Invaders-style arcade game: marching pixel aliens, destructible bunkers, waves, three lives and synthesized sound | One controller; no external assets or storage required |
@@ -24,13 +26,18 @@ the GameCube runs generated native code, using only the supported AOT API subset
 
 ## Shared controls
 
-In every GameCube sample, press **Z on controller 1 (port 0)** to toggle the
+In GameCube samples other than ControllerInput, press **Z on controller 1 (port 0)** to toggle the
 statistics panel, including its network and debugger status. Holding Z toggles
 only once; release and press again to toggle back. In Dolphin, use the keyboard
 or gamepad input mapped to the GameCube **Z button** in Controller Settings.
 ManagedGameCube starts with statistics visible; the other samples start hidden.
 
-When a sample's managed Main finishes, the native launcher keeps its result
+ControllerInput reserves **Z and Start** for input visualization and disables the
+shared sample controls. Hold **Start+Z for two seconds** on the selected controller
+to exit. Release both buttons after connecting before using this gesture, so
+connecting with buttons held cannot accidentally close the sample.
+
+When another sample's managed Main finishes, the native launcher keeps its result
 screen open: Z still toggles statistics and **Start** exits. Async demos reach
 this screen after their operation completes or fails. Games retain their existing
 controls during play. The shared `Directory.Build.props` enables this
@@ -127,11 +134,18 @@ physical console acceptance remain separate checks.
 
 ## Required native AOT builds
 
-The [CI workflow](.github/workflows/samples.yml) validates all **17 sample projects** in independent NuGet-only builds. The native matrix additionally:
+The [CI workflow](.github/workflows/samples.yml) validates all **18 sample projects** in independent NuGet-only builds. The native matrix additionally:
 
 1. Builds the managed .NET assembly and invokes the **published SDK's own `tools/compiler/DolphinDotNet.Compiler.dll --aot`** to emit and check native C.
 2. Uses the NuGet SDK's native build target (`DndBuildNative=true`, `DndBuildBackend=Docker`) to produce a linked GameCube `.dol` and PowerPC `.elf`.
 3. Verifies both outputs and uploads them as CI artifacts.
+
+ControllerInput has a dedicated native lane that boots its newly built DOL in
+Dolphin, exercises controller inputs and connection changes, and captures PNGs
+and an MP4. The `controller-input-native-review` artifact includes the matching
+DOL/ELF, input report and capture provenance; failed runs retain their logs.
+This verifies emulated input and presentation, with physical controller behavior
+remaining a separate hardware check.
 
 A source checkout of the framework compiler is neither referenced nor used. For a local, complete native AOT build:
 
@@ -208,13 +222,14 @@ python3 ci/validate_sample_tests.py
 for project in tests/*/*.csproj; do dotnet run --project "$project" -c Release || exit 1; done
 ```
 
-CI executes ten CLR-compatible host suites and verifies that the two AOT-native
+CI executes the CLR-compatible host suites, including ControllerInput's production
+port-selection and exit-gesture logic, and verifies that the two AOT-native
 Kart input/networking harnesses compile against the preview package. The full Kart
 native-input and UDP fixtures must be run through the DolphinDotNet toolchain's
 emulator/host harness, since the published GameCube package rejects native
 intrinsics when executed under the desktop CLR.
 
-CI runs these tests separately from the seventeen managed sample builds.
+CI runs these tests separately from the eighteen managed sample builds.
 Compiler runtime, native GX, PowerPC, and emulator integration tests remain
 in the [DolphinDotNet runtime repository](https://github.com/capz/DolphinDotNet),
 where their internal native sources and fixtures are maintained.
