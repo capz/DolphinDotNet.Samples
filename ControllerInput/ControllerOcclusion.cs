@@ -42,7 +42,19 @@ internal sealed class ControllerOcclusion : IDisposable
                 if (Math.Abs(a.Y - b.Y) > .0001f) edges.Add(new Edge(a, b));
             }
         }
-        heights.Sort();
+        // Primitive comparisons keep the startup path within the published
+        // AOT runtime; Single.CompareTo/IComparer<float> are unnecessary here.
+        for (int i = 1; i < heights.Count; i++)
+        {
+            float value = heights[i];
+            int at = i;
+            while (at > 0 && heights[at - 1] > value)
+            {
+                heights[at] = heights[at - 1];
+                at--;
+            }
+            heights[at] = value;
+        }
         var vertices = new List<VertexPositionColor>();
         var indices = new List<ushort>();
         var crossings = new List<Crossing>();
@@ -58,7 +70,17 @@ internal sealed class ControllerOcclusion : IDisposable
                 if (middle > edge.Top && middle < edge.Bottom)
                     crossings.Add(new Crossing(edge.At(middle), i));
             }
-            crossings.Sort((a, b) => a.X.CompareTo(b.X));
+            for (int i = 1; i < crossings.Count; i++)
+            {
+                var value = crossings[i];
+                int at = i;
+                while (at > 0 && crossings[at - 1].X > value.X)
+                {
+                    crossings[at] = crossings[at - 1];
+                    at--;
+                }
+                crossings[at] = value;
+            }
             if ((crossings.Count & 1) != 0)
                 throw new InvalidOperationException("Controller shell mask has an open contour.");
             // Every vertex height splits a band, so no edges cross within a
