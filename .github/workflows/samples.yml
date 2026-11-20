@@ -148,7 +148,17 @@ jobs:
           path: |
             ControllerInput/bin/Release/net8.0/ControllerInput.dol
             ControllerInput/bin/Release/net8.0/ControllerInput.elf
-            ${{ runner.temp }}/controller-input/
+            ${{ runner.temp }}/controller-input/*.json
+            ${{ runner.temp }}/controller-input/*.png
+            ${{ runner.temp }}/controller-input/*.yuv
+            ${{ runner.temp }}/controller-input/*.ppm
+            ${{ runner.temp }}/controller-input/*.mp4
+            ${{ runner.temp }}/controller-input/*.log
+            ${{ runner.temp }}/controller-input/*.txt
+            ${{ runner.temp }}/controller-input/steady-profile/*.json
+            ${{ runner.temp }}/controller-input/steady-profile/*.log
+            ${{ runner.temp }}/controller-input/user/Logs/dolphin.log
+            ${{ runner.temp }}/controller-input/steady-profile/user/Logs/dolphin.log
           if-no-files-found: warn
           retention-days: 14
       - name: Stage IPL resource demo download
