@@ -4,7 +4,7 @@ FROM debian:trixie-slim
 # each capture manifest; this image contains test tooling, never game assets.
 RUN apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-       binutils ca-certificates dolphin-emu ffmpeg fonts-dejavu-core \
+       binutils ca-certificates dolphin-emu ffmpeg fonts-dejavu-core git \
        libgl1-mesa-dri mesa-utils python3 python3-pil \
        x11-utils xauth xdotool xvfb \
     && rm -rf /var/lib/apt/lists/*

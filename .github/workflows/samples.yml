@@ -132,7 +132,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p "$RUNNER_TEMP/controller-input"
-          docker run --rm --shm-size=512m \
+          docker run --rm --init --shm-size=512m \
             --mount "type=bind,src=$GITHUB_WORKSPACE,dst=/work,readonly" \
             --mount "type=bind,src=$RUNNER_TEMP/controller-input,dst=/capture" \
             -w /work controller-input-dolphin:ci \

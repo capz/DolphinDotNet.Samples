@@ -51,7 +51,7 @@ internal sealed class ControllerHud : IDisposable
         Number(x,83,395,10.5f);Number(y,124,395,10.5f);Number(cx,237,395,10.5f);Number(cy,277,395,10.5f);
         Integer(l,480,391,9);Integer(r,480,405,9);
         DynamicText(session.StatusText,605-Measure(session.StatusText,9),51,9,ports==0?Dim:Mint);
-        DynamicText(session.ButtonsText=="NONE"?"No buttons held":session.ButtonsText,521,392,9,White,75);
+        DynamicText(session.ButtonsText=="NONE"?"No buttons held":session.ButtonsText,521,392,9,White,75,420);
         float[] centers=PortCenters;
         if(session.SelectedPort>=0)Rounded(centers[session.SelectedPort]-15.7f,30.1f,31.4f,16.2f,7.8f,new Color32(76,52,140));
         for(int i=0;i<4;i++){
@@ -84,12 +84,12 @@ internal sealed class ControllerHud : IDisposable
         if(value>=100)Glyph('1',ref x,y,size,White);if(value>=10)Glyph((char)('0'+value/10%10),ref x,y,size,White);
         Glyph((char)('0'+value%10),ref x,y,size,White);Glyph('%',ref x,y,size,White);
     }
-    private void DynamicText(string value,float x,float y,float size,Color32 color,float maxWidth=640)
+    private void DynamicText(string value,float x,float y,float size,Color32 color,float maxWidth=640,float maxBottom=480)
     {
         float start=x;
         for(int i=0;i<value.Length;i++){
             float width=Advance(value[i],size);
-            if(x+width>start+maxWidth){x=start;y+=size+3;if(y>418&&start==523)return;}
+            if(x+width>start+maxWidth){x=start;y+=size+3;if(y+40*size/28>maxBottom)return;}
             Glyph(value[i],ref x,y,size,color);
         }
     }
