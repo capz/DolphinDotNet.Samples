@@ -68,7 +68,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        group: [ipl, basics, games, services]
+        group: [ipl, basics, games, services, controller]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -97,6 +97,7 @@ jobs:
             games) samples="Fox Kart Snake DiscBrowser StorageIntegrity" ;;
             services) samples="AsyncNetworking AudioDemo GoogleLogoAram HttpTexture HardwareDiagnostics" ;;
             ipl) samples="IplResources" ;;
+            controller) samples="ControllerInput" ;;
             *) echo "Unexpected sample group $SAMPLE_GROUP" >&2; exit 1 ;;
           esac
           mkdir -p "$RUNNER_TEMP/dnd-aot"
@@ -122,6 +123,33 @@ jobs:
             */bin/Release/net8.0/*.dol
             */bin/Release/net8.0/*.elf
           if-no-files-found: error
+          retention-days: 14
+      - name: Build the controller input capture runtime
+        if: matrix.group == 'controller'
+        run: docker build -f ci/controller_input.Dockerfile -t controller-input-dolphin:ci ci
+      - name: Validate live controller input and capture the native sample
+        if: matrix.group == 'controller'
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/controller-input"
+          docker run --rm --shm-size=512m \
+            --mount "type=bind,src=$GITHUB_WORKSPACE,dst=/work,readonly" \
+            --mount "type=bind,src=$RUNNER_TEMP/controller-input,dst=/capture" \
+            -w /work controller-input-dolphin:ci \
+            xvfb-run -a -s '-screen 0 1280x960x24' \
+            python3 ci/controller_input_capture.py \
+              --dol ControllerInput/bin/Release/net8.0/ControllerInput.dol \
+              --output /capture
+      - name: Upload controller executable and native input evidence
+        if: always() && matrix.group == 'controller'
+        uses: actions/upload-artifact@v4
+        with:
+          name: controller-input-native-review
+          path: |
+            ControllerInput/bin/Release/net8.0/ControllerInput.dol
+            ControllerInput/bin/Release/net8.0/ControllerInput.elf
+            ${{ runner.temp }}/controller-input/
+          if-no-files-found: warn
           retention-days: 14
       - name: Stage IPL resource demo download
         if: matrix.group == 'ipl'

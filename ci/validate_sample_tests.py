@@ -6,6 +6,7 @@ import xml.etree.ElementTree as ET
 
 root = pathlib.Path(__file__).resolve().parents[1]
 expected = {
+    'ControllerInputTests',
     'DiscBrowserNavigationTests', 'FoxRulesSmoke', 'GreenMenRulesSmoke',
     'KartInputSmoke', 'KartItemSmoke', 'KartNetworkSmoke', 'KartRulesSmoke',
     'PongRulesSmoke', 'SampleDownloadTests', 'SampleRecordsTests',

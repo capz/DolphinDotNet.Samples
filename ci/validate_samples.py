@@ -4,6 +4,7 @@ import json
 import pathlib
 import re
 import xml.etree.ElementTree as ET
+from collections import Counter
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 VERSION = "0.1.0-preview.361.1"
@@ -12,7 +13,7 @@ props = ET.parse(ROOT / "Directory.Build.props").getroot()
 version = props.find(".//DndPackageVersion").text
 assert sdk == version == VERSION, (sdk, version)
 projects = list(ROOT.glob("*/*.csproj"))
-assert len(projects) == 17, f"Expected 17 projects, got {len(projects)}"
+assert len(projects) == 18, f"Expected 18 projects, got {len(projects)}"
 for path in projects:
     xml = ET.parse(path).getroot()
     assert xml.attrib.get("Sdk") == "DolphinDotNet.Sdk", str(path)
@@ -27,12 +28,23 @@ for path in projects:
     assert "DolphinDotNet.GameCube.csproj" not in source
     assert "DolphinDotNet.Core.csproj" not in source
     assert not re.search(r"\.\.\\\.\.\\src\\", source), str(sln)
+controller = ROOT / "ControllerInput"
+for filename in ("Program.cs", "ControllerSession.cs", "README.md"):
+    assert (controller / filename).is_file(), f"Missing controller sample file: {filename}"
+controller_project = ET.parse(controller / "ControllerInput.csproj").getroot()
+assert controller_project.findtext(".//DndSampleControls") == "false", \
+    "ControllerInput must reserve Z and Start for input visualization"
+for filename in ("controller_input_capture.py", "controller_input.Dockerfile"):
+    assert (ROOT / "ci" / filename).is_file(), f"Missing controller native acceptance tool: {filename}"
 # The required native matrix must explicitly cover all migrated applications.
 workflow = (ROOT / ".github/workflows/samples.yml").read_text()
-for group in ("basics", "games", "services", "ipl"):
-    assert group in workflow, group
-for name in sorted(path.stem for path in projects):
-    assert name in workflow, f"{name} missing from packaged AOT build matrix"
+groups = dict(re.findall(r'^\s*(\w+)\) samples="([^"]+)" ;;', workflow, re.M))
+assert set(groups) == {"basics", "games", "services", "ipl", "controller"}, groups
+matrix = re.search(r"group:\s*\[([^\]]+)\]", workflow)
+assert matrix and {name.strip() for name in matrix[1].split(',')} == set(groups)
+native_samples = Counter(name for samples in groups.values() for name in samples.split())
+assert native_samples == Counter(path.stem for path in projects), \
+    "Every sample must appear exactly once in the packaged native build groups"
 for condition in ("DND_AOT_COMPILER", " --aot ", "DndBuildNative=true",
                   "DndBuildBackend=Docker", "verify_aot.py"):
     assert condition in workflow, condition
